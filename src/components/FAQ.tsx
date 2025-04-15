@@ -6,12 +6,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { MessageCircleQuestion, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const FAQ = () => {
   const faqs = [
     {
       question: "How does the booking process work?",
-      answer: "Simply fill out our booking form with your preferred date, time, and call type. After you complete your payment, you'll receive a confirmation with details for your scheduled call."
+      answer: "Simply fill out our booking form with your preferred date and call type. After you complete your payment, you'll receive a confirmation with details for your scheduled call."
     },
     {
       question: "What payment methods do you accept?",
@@ -19,7 +21,7 @@ const FAQ = () => {
     },
     {
       question: "How do I know when my call will happen?",
-      answer: "After booking, you'll receive a confirmation email with your scheduled date and time. We'll also send you a reminder 30 minutes before your call."
+      answer: "After booking, you'll receive a confirmation email with your scheduled date. We'll also send you a reminder 30 minutes before your call."
     },
     {
       question: "Is my personal information kept confidential?",
@@ -43,11 +45,20 @@ const FAQ = () => {
     }
   ];
 
+  const scrollToBooking = () => {
+    const element = document.getElementById('booking');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <section id="faq" className="py-20 px-4 bg-gradient-to-b from-black/90 to-background">
-      <div className="container mx-auto max-w-4xl">
+    <section id="faq" className="py-20 px-4 bg-gradient-to-b from-black/90 to-background relative">
+      <div className="absolute inset-0 bg-sensual-gradient opacity-30"></div>
+      
+      <div className="container mx-auto max-w-4xl relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">Frequently Asked <span className="text-hotline">Questions</span></h2>
+          <h2 className="text-3xl md:text-5xl font-bold mb-6">Frequently Asked <span className="text-hotline bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Questions</span></h2>
           <p className="text-lg text-gray-300">
             Have questions about our service? Find answers to common inquiries below.
           </p>
@@ -58,7 +69,7 @@ const FAQ = () => {
             <AccordionItem 
               key={index} 
               value={`item-${index}`}
-              className="bg-card border border-border rounded-lg px-6 overflow-hidden"
+              className="bg-card border border-border rounded-lg px-6 overflow-hidden glass-effect"
             >
               <AccordionTrigger className="text-left py-4 font-medium hover:text-hotline transition-all">
                 {faq.question}
@@ -70,13 +81,24 @@ const FAQ = () => {
           ))}
         </Accordion>
         
-        <div className="mt-12 text-center">
-          <p className="text-muted-foreground">
-            Still have questions? Contact our support team at{" "}
-            <a href="mailto:support@sweet-talk-hotline.com" className="text-hotline hover:underline">
-              support@sweet-talk-hotline.com
-            </a>
+        <div className="mt-12 p-6 rounded-xl border border-hotline/30 bg-black/30 backdrop-blur-sm text-center">
+          <div className="flex items-center justify-center mb-4">
+            <MessageCircleQuestion size={24} className="text-hotline mr-2" />
+            <h3 className="text-xl font-bold">Still have questions?</h3>
+          </div>
+          <p className="text-gray-300 mb-6">
+            Our support team is available 24/7 to assist you with any inquiries.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="mailto:support@sweet-talk-hotline.com" className="text-hotline hover:underline inline-flex items-center">
+              Email Support <ArrowRight size={16} className="ml-1" />
+            </a>
+            <Button 
+              onClick={scrollToBooking}
+              className="bg-hotline hover:bg-hotline-dark text-white px-6 py-2 rounded-md transition-all duration-300">
+              Book a Call Now
+            </Button>
+          </div>
         </div>
       </div>
     </section>

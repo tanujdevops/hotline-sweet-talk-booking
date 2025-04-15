@@ -105,13 +105,23 @@ export default {
 						opacity: '1',
 						transform: 'translateY(0)'
 					}
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' },
+				},
+				'shimmer': {
+					'0%': { backgroundPosition: '-200% 0' },
+					'100%': { backgroundPosition: '200% 0' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'pulse-slow': 'pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-				'fade-in': 'fade-in 0.5s ease-out'
+				'fade-in': 'fade-in 0.5s ease-out',
+				'float': 'float 6s ease-in-out infinite',
+				'shimmer': 'shimmer 2s infinite linear'
 			},
 			fontFamily: {
 				'playfair': ['"Playfair Display"', 'serif'],
@@ -120,6 +130,7 @@ export default {
 			},
 			backgroundImage: {
 				'hotline-gradient': 'linear-gradient(to right, #9b87f5, #D946EF)',
+				'sensual-gradient': 'linear-gradient(135deg, rgba(155, 135, 245, 0.2), rgba(217, 70, 239, 0.2))',
 			}
 		}
 	},

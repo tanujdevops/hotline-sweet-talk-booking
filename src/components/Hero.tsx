@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { PhoneCall } from "lucide-react";
+import { PhoneCall, ShieldCheck, Clock, Heart } from "lucide-react";
 
 const Hero = () => {
   const scrollToBooking = () => {
@@ -14,31 +14,52 @@ const Hero = () => {
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center px-4 py-16 overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/80 to-transparent opacity-80"></div>
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://images.unsplash.com/photo-1542736667-7c405c485dd6')] bg-cover bg-center"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/80 to-transparent opacity-90"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://images.unsplash.com/photo-1542736667-7c405c485dd6')] bg-cover bg-center bg-fixed"></div>
       </div>
       
       <div className="container mx-auto relative z-10 flex justify-center">
-        <div className="max-w-xl md:max-w-2xl text-center animate-fade-in">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight text-white">
-            Your <span className="text-hotline-pink">Sweet Talk</span> is Just a Call Away
+        <div className="max-w-xl md:max-w-3xl text-center animate-fade-in">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight text-white font-cormorant">
+            Experience <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Authentic Connection</span> in Minutes
           </h1>
-          <p className="text-lg md:text-xl mb-10 text-gray-200 max-w-xl mx-auto">
-            Connect with our professional talkers for intimate conversations that will leave you wanting more. Affordable rates with premium experiences.
+          <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto font-montserrat">
+            Connect with our professional talkers for meaningful conversations that will leave you feeling understood and valued. No waiting, just quality connection.
           </p>
+          
+          <div className="flex flex-wrap justify-center gap-6 mb-12">
+            <div className="flex items-center gap-2 px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
+              <ShieldCheck size={18} className="text-hotline" />
+              <span className="text-gray-200">100% Confidential</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
+              <Clock size={18} className="text-hotline" />
+              <span className="text-gray-200">24/7 Availability</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
+              <Heart size={18} className="text-hotline" />
+              <span className="text-gray-200">Premium Experience</span>
+            </div>
+          </div>
+          
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               onClick={scrollToBooking}
-              className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white px-8 py-6 text-lg rounded-md flex items-center gap-2 transition-all duration-300 shadow-lg">
+              className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white px-8 py-6 text-lg rounded-md flex items-center gap-2 transition-all duration-300 shadow-lg pulse-glow">
               <PhoneCall size={18} />
-              Book a Call Now
+              Speak With a Pro Today
             </Button>
             <Button 
               variant="outline"
               onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
               className="border-hotline-pink text-hotline-pink hover:bg-hotline-pink/10 px-8 py-6 text-lg rounded-md transition-all duration-300">
-              View Pricing
+              View Our Packages
             </Button>
+          </div>
+          
+          <div className="mt-6 text-sm text-gray-400 flex items-center justify-center gap-2">
+            <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span>Only 3 slots left for tonight's conversations!</span>
           </div>
         </div>
       </div>
