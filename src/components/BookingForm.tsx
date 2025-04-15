@@ -55,7 +55,7 @@ const BookingForm = () => {
       } else {
         toast({
           title: "Booking Confirmed!",
-          description: "We'll be calling you at the scheduled time. Get ready for a pleasurable conversation!",
+          description: "We've scheduled your call for " + (date ? format(date, "PPPP") : "soon") + ". Get ready for a pleasurable conversation!",
           variant: "default",
         });
         
@@ -169,7 +169,7 @@ const BookingForm = () => {
                 </div>
                 
                 <div>
-                  <Label>Preferred Date & Time</Label>
+                  <Label>Preferred Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -189,6 +189,7 @@ const BookingForm = () => {
                         selected={date}
                         onSelect={setDate}
                         initialFocus
+                        className="pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>

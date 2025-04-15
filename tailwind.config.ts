@@ -116,6 +116,7 @@ export default {
 			fontFamily: {
 				'playfair': ['"Playfair Display"', 'serif'],
 				'montserrat': ['Montserrat', 'sans-serif'],
+				'cormorant': ['"Cormorant Garamond"', 'serif'],
 			},
 			backgroundImage: {
 				'hotline-gradient': 'linear-gradient(to right, #9b87f5, #D946EF)',
