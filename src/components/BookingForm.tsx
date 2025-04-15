@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon, PhoneCall } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const BookingForm = () => {
   const { toast } = useToast();
@@ -22,27 +23,60 @@ const BookingForm = () => {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: "Booking Confirmed!",
-        description: "We'll be calling you at the scheduled time. Get ready for a pleasurable conversation!",
-        variant: "default",
-      });
+    try {
+      // Format the date for Supabase
+      const formattedDate = date ? new Date(date).toISOString() : null;
       
-      // Reset form
-      setName("");
-      setPhone("");
-      setEmail("");
-      setDate(undefined);
-      setCallType("quick");
-      setMessage("");
+      // Insert booking data into Supabase
+      const { error } = await supabase
+        .from('bookings')
+        .insert([
+          { 
+            name, 
+            phone, 
+            email, 
+            booking_date: formattedDate, 
+            call_type: callType, 
+            message 
+          }
+        ]);
+      
+      if (error) {
+        console.error('Error saving booking:', error);
+        toast({
+          title: "Booking Failed",
+          description: "There was a problem saving your booking. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Booking Confirmed!",
+          description: "We'll be calling you at the scheduled time. Get ready for a pleasurable conversation!",
+          variant: "default",
+        });
+        
+        // Reset form
+        setName("");
+        setPhone("");
+        setEmail("");
+        setDate(undefined);
+        setCallType("quick");
+        setMessage("");
+      }
+    } catch (error) {
+      console.error('Error in booking submission:', error);
+      toast({
+        title: "Something went wrong",
+        description: "Please try again later or contact support.",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
