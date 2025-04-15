@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Clock, Check, ShieldCheck, CreditCard, Lock } from "lucide-react";
@@ -36,7 +35,7 @@ const PricingCards = () => {
             </div>
             
             <div className="mb-6">
-              <p className="text-4xl font-bold">$2</p>
+              <p className="text-4xl font-bold">$1.99</p>
               <p className="text-muted-foreground">per call</p>
             </div>
             
@@ -87,7 +86,7 @@ const PricingCards = () => {
             </div>
             
             <div className="mb-6">
-              <p className="text-4xl font-bold">$3</p>
+              <p className="text-4xl font-bold">$2.99</p>
               <p className="text-muted-foreground">per call</p>
             </div>
             
