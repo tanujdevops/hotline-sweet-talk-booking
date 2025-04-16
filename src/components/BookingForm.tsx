@@ -55,7 +55,7 @@ const BookingForm = () => {
       } else {
         toast({
           title: "Booking Confirmed!",
-          description: "We've scheduled your call for " + (date ? format(date, "PPPP") : "soon") + ". Get ready for a pleasurable conversation!",
+          description: "We've scheduled your call for " + (date ? format(date, "PPP") : "soon") + ". Get ready for a pleasurable conversation!",
           variant: "default",
         });
         
@@ -128,7 +128,7 @@ const BookingForm = () => {
             </div>
           </div>
           
-          <div className="bg-card p-8 rounded-xl border border-border">
+          <div className="bg-card p-8 rounded-xl border border-border shadow-lg transform hover:scale-[1.01] transition-transform duration-300">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
                 <div>
@@ -200,22 +200,23 @@ const BookingForm = () => {
                   <RadioGroup value={callType} onValueChange={setCallType} className="mt-2">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="quick" id="quick" />
-                      <Label htmlFor="quick" className="cursor-pointer">Quick Tease - $2 (2 minutes)</Label>
+                      <Label htmlFor="quick" className="cursor-pointer">Quick Tease - $1.99 (2 minutes)</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="extended" id="extended" />
-                      <Label htmlFor="extended" className="cursor-pointer">Extended Pleasure - $3 (4 minutes)</Label>
+                      <Label htmlFor="extended" className="cursor-pointer">Extended Pleasure - $2.99 (4 minutes)</Label>
                     </div>
                   </RadioGroup>
                 </div>
                 
                 <div>
-                  <Label htmlFor="message">Special Requests (Optional)</Label>
+                  <Label htmlFor="message">Special Requests</Label>
                   <Textarea 
                     id="message" 
-                    placeholder="Tell us about any preferences or special requests"
+                    placeholder="Tell us about your preferences or special requests"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
+                    required
                     className="bg-secondary/50 border-muted mt-2 min-h-[100px]"
                   />
                 </div>

@@ -2,8 +2,11 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { PhoneCall, ShieldCheck, Clock, Heart } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Hero = () => {
+  const isMobile = useIsMobile();
+  
   const scrollToBooking = () => {
     const element = document.getElementById('booking');
     if (element) {
@@ -19,12 +22,12 @@ const Hero = () => {
       </div>
       
       <div className="container mx-auto relative z-10 flex justify-center">
-        <div className="max-w-xl md:max-w-3xl text-center animate-fade-in">
+        <div className={`max-w-xl md:max-w-3xl text-center animate-fade-in ${!isMobile ? 'px-8' : ''}`}>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight text-white font-cormorant">
-            Experience <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Authentic Connection</span> in Minutes
+            Discover <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Intimate Connections</span> That Transform Your Day
           </h1>
           <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto font-montserrat">
-            Connect with our professional talkers for meaningful conversations that will leave you feeling understood and valued. No waiting, just quality connection.
+            Experience the thrill of genuine conversation with our professional talkers. Every moment is crafted to leave you feeling valued, understood, and completely satisfied.
           </p>
           
           <div className="flex flex-wrap justify-center gap-6 mb-12">

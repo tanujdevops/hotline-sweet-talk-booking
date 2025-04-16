@@ -63,6 +63,31 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-cormorant;
   }
+  
+  /* Improved responsive behavior */
+  @media (max-width: 640px) {
+    h1 {
+      @apply text-3xl;
+    }
+    h2 {
+      @apply text-2xl;
+    }
+  }
+  
+  /* Smooth scroll behavior for the entire site */
+  html {
+    @apply scroll-smooth;
+  }
+  
+  /* Improved focus states for accessibility */
+  :focus-visible {
+    @apply outline-hotline outline-offset-2;
+  }
+  
+  /* Ensure inputs are easily readable */
+  input, textarea, select {
+    @apply text-base;
+  }
 }
 
 .glow {
@@ -145,4 +170,49 @@
   background: rgba(20, 16, 30, 0.7);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(155, 135, 245, 0.2);
+}
+
+/* Enhanced touch targets for mobile */
+@media (max-width: 640px) {
+  button, 
+  [role="button"],
+  a {
+    @apply py-2.5 px-4 min-h-[44px] min-w-[44px];
+  }
+  
+  .form-control {
+    @apply mb-4;
+  }
+}
+
+/* Improved form elements on touch devices */
+@media (hover: none) {
+  input, select, textarea {
+    @apply text-base py-3;
+  }
+  
+  /* Larger tap targets on mobile */
+  .radio-group label,
+  .checkbox-group label {
+    @apply py-2 min-h-[44px] flex items-center;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .container {
+    @apply px-6;
+  }
+}
+
+/* Transition utilities */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Focus ring styles for accessibility */
+.focus-ring {
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-hotline focus-visible:ring-offset-2;
 }
