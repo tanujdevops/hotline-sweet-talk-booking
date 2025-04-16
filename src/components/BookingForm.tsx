@@ -9,19 +9,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { CalendarIcon, PhoneCall } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { PhoneInput } from "@/components/ui/phone-input";
+import BookingSuccess from "@/components/BookingSuccess";
 
 const BookingForm = () => {
   const { toast } = useToast();
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [countryCode, setCountryCode] = useState("+1");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [callType, setCallType] = useState("quick");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,19 +36,23 @@ const BookingForm = () => {
       // Format the date for Supabase
       const formattedDate = date ? new Date(date).toISOString() : null;
       
+      // Combine country code and phone number
+      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+      
       // Insert booking data into Supabase
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('bookings')
         .insert([
           { 
             name, 
-            phone, 
+            phone: fullPhoneNumber, 
             email, 
             booking_date: formattedDate, 
             call_type: callType, 
             message 
           }
-        ]);
+        ])
+        .select('booking_id');
       
       if (error) {
         console.error('Error saving booking:', error);
@@ -53,19 +62,16 @@ const BookingForm = () => {
           variant: "destructive",
         });
       } else {
+        // Get the booking ID from the response
+        const newBookingId = data && data.length > 0 ? data[0].booking_id : null;
+        setBookingId(newBookingId);
+        setBookingSuccess(true);
+        
         toast({
           title: "Booking Confirmed!",
-          description: "We've scheduled your call for " + (date ? format(date, "PPP") : "soon") + ". Get ready for a pleasurable conversation!",
+          description: `We've scheduled your call for ${date ? format(date, "PPP") : "soon"}. Your booking reference is #${newBookingId}.`,
           variant: "default",
         });
-        
-        // Reset form
-        setName("");
-        setPhone("");
-        setEmail("");
-        setDate(undefined);
-        setCallType("quick");
-        setMessage("");
       }
     } catch (error) {
       console.error('Error in booking submission:', error);
@@ -78,6 +84,16 @@ const BookingForm = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Function to disable dates before today
+  const disabledDays = (date: Date) => {
+    return isBefore(date, startOfDay(new Date()));
+  };
+
+  // If booking was successful, show success message
+  if (bookingSuccess && bookingId) {
+    return <BookingSuccess bookingId={bookingId} date={date} name={name} email={email} />;
+  }
 
   return (
     <section id="booking" className="py-20 px-4 bg-gradient-to-b from-black/90 to-background">
@@ -143,17 +159,13 @@ const BookingForm = () => {
                   />
                 </div>
                 
-                <div>
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
-                    id="phone" 
-                    placeholder="Enter your phone number"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    className="bg-secondary/50 border-muted mt-2"
-                  />
-                </div>
+                <PhoneInput
+                  countryCode={countryCode}
+                  setCountryCode={setCountryCode}
+                  phoneNumber={phoneNumber}
+                  setPhoneNumber={setPhoneNumber}
+                  required
+                />
                 
                 <div>
                   <Label htmlFor="email">Email Address</Label>
@@ -189,6 +201,7 @@ const BookingForm = () => {
                         selected={date}
                         onSelect={setDate}
                         initialFocus
+                        disabled={disabledDays}
                         className="pointer-events-auto"
                       />
                     </PopoverContent>
@@ -210,7 +223,7 @@ const BookingForm = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="message">Special Requests</Label>
+                  <Label htmlFor="message">Special Requests <span className="text-destructive">*</span></Label>
                   <Textarea 
                     id="message" 
                     placeholder="Tell us about your preferences or special requests"

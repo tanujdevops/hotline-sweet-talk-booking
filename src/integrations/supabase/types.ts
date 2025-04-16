@@ -12,6 +12,7 @@ export type Database = {
       bookings: {
         Row: {
           booking_date: string | null
+          booking_id: string | null
           call_type: string
           created_at: string
           email: string
@@ -22,6 +23,7 @@ export type Database = {
         }
         Insert: {
           booking_date?: string | null
+          booking_id?: string | null
           call_type: string
           created_at?: string
           email: string
@@ -32,6 +34,7 @@ export type Database = {
         }
         Update: {
           booking_date?: string | null
+          booking_id?: string | null
           call_type?: string
           created_at?: string
           email?: string
@@ -47,7 +50,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_booking_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

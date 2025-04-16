@@ -50,7 +50,7 @@ const Hero = () => {
               onClick={scrollToBooking}
               className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white px-8 py-6 text-lg rounded-md flex items-center gap-2 transition-all duration-300 shadow-lg pulse-glow">
               <PhoneCall size={18} />
-              Speak With a Pro Today
+              Speak With a Sweety Today
             </Button>
             <Button 
               variant="outline"
