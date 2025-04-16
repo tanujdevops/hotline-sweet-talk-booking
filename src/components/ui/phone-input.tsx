@@ -12,7 +12,7 @@ interface PhoneInputProps {
   required?: boolean;
 }
 
-// Comprehensive list of country codes with flags
+// Comprehensive list of country codes with flags (optimized with unique codes)
 const countryCodes = [
   { code: "+1", country: "US 🇺🇸" },
   { code: "+44", country: "UK 🇬🇧" },
@@ -186,6 +186,16 @@ const countryCodes = [
   { code: "+263", country: "ZW 🇿🇼" },
 ];
 
+// Create a clean unique list for display
+const uniqueCountryCodes = countryCodes.reduce((acc, current) => {
+  const x = acc.find(item => item.code === current.code && item.country === current.country);
+  if (!x) {
+    return acc.concat([current]);
+  } else {
+    return acc;
+  }
+}, []);
+
 export const PhoneInput = ({ 
   countryCode, 
   setCountryCode, 
@@ -209,7 +219,7 @@ export const PhoneInput = ({
               <SelectValue placeholder="Code" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
-              {countryCodes.map((country) => (
+              {uniqueCountryCodes.map((country) => (
                 <SelectItem key={`${country.code}-${country.country}`} value={country.code}>
                   {country.code} {country.country}
                 </SelectItem>

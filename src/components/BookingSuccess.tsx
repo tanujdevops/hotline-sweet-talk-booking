@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { format } from 'date-fns';
-import { Check, Calendar, Phone } from 'lucide-react';
+import { Check, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface BookingSuccessProps {
   bookingId: string;
@@ -58,25 +59,18 @@ const BookingSuccess = ({ bookingId, date, name, email }: BookingSuccessProps) =
             </div>
             
             <p className="text-muted-foreground mb-6">
-              We've sent a confirmation email to <span className="font-semibold">{email}</span> with all 
-              the details. Please save your booking ID for future reference.
+              We've sent a confirmation email to <span className="font-semibold">{email}</span>. 
+              Please keep a check on your email for further details and instructions.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 w-full">
-              <Button 
-                className="bg-hotline hover:bg-hotline-dark flex-1"
-                onClick={() => window.location.href = "/"}
-              >
-                Return to Home
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="border-hotline text-hotline hover:bg-hotline/10 flex-1 flex items-center justify-center"
-              >
-                <Phone size={16} className="mr-2" />
-                Contact Support
-              </Button>
+            <div className="w-full">
+              <Link to="/">
+                <Button 
+                  className="bg-hotline hover:bg-hotline-dark w-full"
+                >
+                  Return to Home
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
