@@ -1,7 +1,7 @@
 
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, DayClickEventHandler } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -15,14 +15,14 @@ function Calendar({
   ...props
 }: CalendarProps) {
   // Create custom day renderer to close popover after selection
-  const modifiedOnSelect = (day: Date | undefined, selectedDay: Date | undefined, activeModifiers: any, e: any) => {
-    // Call the original onSelect if it exists
-    if (props.onSelect) {
-      props.onSelect(day, selectedDay, activeModifiers, e);
+  const handleDayClick: DayClickEventHandler = (day, modifiers, e) => {
+    // Call the original onDayClick if it exists
+    if (props.onDayClick) {
+      props.onDayClick(day, modifiers, e);
     }
     
     // Close the popover by simulating a click outside or pressing Escape
-    if (day) {
+    if (day && !modifiers.disabled) {
       requestAnimationFrame(() => {
         // Find the closest popover and dispatch escape key to close it
         const event = new KeyboardEvent('keydown', {
@@ -76,8 +76,8 @@ function Calendar({
         IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
       }}
+      onDayClick={handleDayClick}
       {...props}
-      onSelect={modifiedOnSelect}
     />
   );
 }
