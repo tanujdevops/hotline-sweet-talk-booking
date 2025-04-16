@@ -28,8 +28,62 @@ const BookingForm = () => {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
 
+  // Validate form inputs before submission
+  const validateForm = () => {
+    if (!name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter your name.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!phoneNumber.trim() || phoneNumber.length < 7) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid phone number.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!date) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a date for your call.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!message.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please provide some details about your call request.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) return;
+
     setIsSubmitting(true);
     
     try {
@@ -50,8 +104,7 @@ const BookingForm = () => {
             booking_date: formattedDate, 
             call_type: callType, 
             message 
-          }
-        ])
+          }])
         .select('booking_id');
       
       if (error) {
@@ -85,7 +138,7 @@ const BookingForm = () => {
     }
   };
 
-  // Function to disable dates before today
+  // Function to disable dates before today and in the past
   const disabledDays = (date: Date) => {
     return isBefore(date, startOfDay(new Date()));
   };

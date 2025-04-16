@@ -33,6 +33,12 @@ export const PhoneInput = ({
   setPhoneNumber,
   required = false 
 }: PhoneInputProps) => {
+  // Validate phone number input to allow only digits
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ''); // Remove non-digit characters
+    setPhoneNumber(value);
+  };
+
   return (
     <div className="space-y-2">
       <Label htmlFor="phone">Phone Number {required && <span className="text-destructive">*</span>}</Label>
@@ -56,10 +62,11 @@ export const PhoneInput = ({
             id="phone"
             placeholder="Phone number"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
+            onChange={handlePhoneNumberChange}
             required={required}
             className="bg-secondary/50 border-muted"
             type="tel"
+            maxLength={15} // Prevent extremely long phone numbers
           />
         </div>
       </div>
