@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +14,10 @@ import { format, isBefore, startOfDay } from "date-fns";
 import { CalendarIcon, PhoneCall } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PhoneInput } from "@/components/ui/phone-input";
-import BookingSuccess from "@/components/BookingSuccess";
 
 const BookingForm = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("+1");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -25,8 +26,6 @@ const BookingForm = () => {
   const [callType, setCallType] = useState("quick");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [bookingId, setBookingId] = useState<string | null>(null);
 
   // Validate form inputs before submission
   const validateForm = () => {
@@ -117,13 +116,22 @@ const BookingForm = () => {
       } else {
         // Get the booking ID from the response
         const newBookingId = data && data.length > 0 ? data[0].booking_id : null;
-        setBookingId(newBookingId);
-        setBookingSuccess(true);
         
+        // Show a toast notification for confirmation
         toast({
           title: "Booking Confirmed!",
-          description: `We've scheduled your call for ${date ? format(date, "PPP") : "soon"}. Your booking reference is #${newBookingId}.`,
+          description: `We've scheduled your call for ${date ? format(date, "PPP") : "soon"}.`,
           variant: "default",
+        });
+        
+        // Navigate to the BookingConfirmation page with the booking information
+        navigate('/booking-confirmation', { 
+          state: { 
+            bookingId: newBookingId,
+            date: date ? date.toISOString() : null,
+            name,
+            email
+          }
         });
       }
     } catch (error) {
@@ -142,11 +150,6 @@ const BookingForm = () => {
   const disabledDays = (date: Date) => {
     return isBefore(date, startOfDay(new Date()));
   };
-
-  // If booking was successful, show success message
-  if (bookingSuccess && bookingId) {
-    return <BookingSuccess bookingId={bookingId} date={date} name={name} email={email} />;
-  }
 
   return (
     <section id="booking" className="py-20 px-4 bg-gradient-to-b from-black/90 to-background">
@@ -255,7 +258,6 @@ const BookingForm = () => {
                         onSelect={setDate}
                         initialFocus
                         disabled={disabledDays}
-                        className="pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>

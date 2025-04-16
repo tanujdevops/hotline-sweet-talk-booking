@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
@@ -13,10 +14,30 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
+  // Create custom day renderer to close popover after selection
+  const modifiedOnSelect = (day: Date | undefined, selectedDay: Date | undefined, activeModifiers: any, e: any) => {
+    // Call the original onSelect if it exists
+    if (props.onSelect) {
+      props.onSelect(day, selectedDay, activeModifiers, e);
+    }
+    
+    // Close the popover by simulating a click outside or pressing Escape
+    if (day) {
+      requestAnimationFrame(() => {
+        // Find the closest popover and dispatch escape key to close it
+        const event = new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true
+        });
+        document.dispatchEvent(event);
+      });
+    }
+  };
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn("p-3 pointer-events-auto", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
@@ -56,6 +77,7 @@ function Calendar({
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
       }}
       {...props}
+      onSelect={modifiedOnSelect}
     />
   );
 }

@@ -67,12 +67,10 @@ const Hero = () => {
         </div>
       </div>
       
-      <div className="absolute bottom-10 left-0 right-0 flex justify-center">
-        <div className="animate-bounce">
-          <svg className="w-6 h-6 text-hotline" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-            <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-          </svg>
-        </div>
+      <div className="absolute bottom-10 left-0 right-0 flex justify-center animate-bounce">
+        <svg className="w-8 h-8 text-hotline opacity-75" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+          <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+        </svg>
       </div>
     </section>
   );
