@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -107,6 +108,7 @@ const BookingForm = () => {
           description: "There was a problem saving your booking. Please try again.",
           variant: "destructive",
         });
+        setIsSubmitting(false);
       } else {
         const newBookingId = data && data.length > 0 ? data[0].booking_id : null;
         
@@ -116,14 +118,24 @@ const BookingForm = () => {
           variant: "default",
         });
         
-        navigate('/booking-confirmation', { 
-          state: { 
-            bookingId: newBookingId,
-            date: date ? date.toISOString() : null,
-            name,
-            email
-          }
-        });
+        // Only navigate to booking confirmation if we have a valid booking ID
+        if (newBookingId) {
+          navigate('/booking-confirmation', { 
+            state: { 
+              bookingId: newBookingId,
+              date: date ? date.toISOString() : null,
+              name,
+              email
+            }
+          });
+        } else {
+          setIsSubmitting(false);
+          toast({
+            title: "Something went wrong",
+            description: "Booking was processed but couldn't retrieve the booking ID. Please contact support.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Error in booking submission:', error);
@@ -132,7 +144,6 @@ const BookingForm = () => {
         description: "Please try again later or contact support.",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -194,7 +205,7 @@ const BookingForm = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Your Name</Label>
+                  <Label htmlFor="name">Your Name <span className="text-destructive">*</span></Label>
                   <Input 
                     id="name" 
                     placeholder="Enter your name"
@@ -214,7 +225,7 @@ const BookingForm = () => {
                 />
                 
                 <div>
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">Email Address <span className="text-destructive">*</span></Label>
                   <Input 
                     id="email" 
                     type="email"
@@ -227,7 +238,7 @@ const BookingForm = () => {
                 </div>
                 
                 <div>
-                  <Label>Preferred Date</Label>
+                  <Label>Preferred Date <span className="text-destructive">*</span></Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -254,7 +265,7 @@ const BookingForm = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Choose Your Experience</Label>
+                  <Label>Choose Your Experience <span className="text-destructive">*</span></Label>
                   <RadioGroup value={callType} onValueChange={setCallType} className="mt-2">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="quick" id="quick" />
@@ -284,6 +295,7 @@ const BookingForm = () => {
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full bg-hotline hover:bg-hotline-dark text-white py-6 rounded-md transition-all duration-300"
+                aria-label={isSubmitting ? "Processing your booking..." : "Book your call now"}
               >
                 {isSubmitting ? "Processing..." : "Book Your Call Now"}
               </Button>

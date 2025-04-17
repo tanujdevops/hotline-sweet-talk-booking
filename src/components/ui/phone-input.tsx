@@ -51,6 +51,7 @@ export const PhoneInput = ({
             onChange={handleCountryCodeChange}
             className="bg-secondary/50 border-muted"
             maxLength={5} // Limit to reasonable country code length
+            aria-label="Country code"
           />
         </div>
         <div className="w-2/3">
@@ -63,6 +64,7 @@ export const PhoneInput = ({
             className="bg-secondary/50 border-muted"
             type="tel"
             maxLength={15} // Prevent extremely long phone numbers
+            aria-label="Phone number"
           />
         </div>
       </div>
