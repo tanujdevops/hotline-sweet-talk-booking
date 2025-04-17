@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-12">
           <div className="space-y-4">
             <h3 className="text-2xl font-bold">
-              <span className="text-hotline-pink">Sweet</span>Talk
+              <span className="text-hotline-pink">Sweety</span>OnCall
             </h3>
             <p className="text-muted-foreground">
               Premium hotline services for those seeking intimate conversations at affordable rates.
@@ -62,8 +62,8 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-2">
                 <Mail size={16} className="text-hotline-pink" />
-                <a href="mailto:info@sweet-talk-hotline.com" className="text-muted-foreground hover:text-hotline-pink transition-colors">
-                  info@sweet-talk-hotline.com
+                <a href="mailto:support@sweetyoncall.com" className="text-muted-foreground hover:text-hotline-pink transition-colors">
+                  support@sweetyoncall.com
                 </a>
               </li>
             </ul>
@@ -72,7 +72,7 @@ const Footer = () => {
         
         <div className="border-t border-border pt-8 text-center">
           <p className="text-muted-foreground text-sm">
-            &copy; {new Date().getFullYear()} Sweet Talk Hotline. All rights reserved.
+            &copy; {new Date().getFullYear()} SweetyOnCall. All rights reserved.
           </p>
           <div className="flex justify-center gap-4 mt-2 text-sm">
             <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors">

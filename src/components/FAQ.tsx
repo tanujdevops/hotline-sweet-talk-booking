@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Accordion,
@@ -90,7 +89,7 @@ const FAQ = () => {
             Our support team is available 24/7 to assist you with any inquiries.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="mailto:support@sweet-talk-hotline.com" className="text-hotline hover:underline inline-flex items-center">
+            <a href="mailto:support@sweetyoncall.com" className="text-hotline hover:underline inline-flex items-center">
               Email Support <ArrowRight size={16} className="ml-1" />
             </a>
             <Button 
