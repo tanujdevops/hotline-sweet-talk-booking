@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PhoneCall, Mail, Instagram, Twitter, Facebook } from "lucide-react";
+import { Mail, Instagram, Twitter, Facebook } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -56,10 +56,6 @@ const Footer = () => {
           <div>
             <h4 className="font-bold mb-4">Contact Us</h4>
             <ul className="space-y-2">
-              <li className="flex items-center gap-2">
-                <PhoneCall size={16} className="text-hotline-pink" />
-                <span className="text-muted-foreground">+1 (555) 123-4567</span>
-              </li>
               <li className="flex items-center gap-2">
                 <Mail size={16} className="text-hotline-pink" />
                 <a href="mailto:support@sweetyoncall.com" className="text-muted-foreground hover:text-hotline-pink transition-colors">
