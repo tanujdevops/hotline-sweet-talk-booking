@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -27,7 +26,6 @@ const BookingForm = () => {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Validate form inputs before submission
   const validateForm = () => {
     if (!name.trim()) {
       toast({
@@ -80,19 +78,15 @@ const BookingForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form before submission
     if (!validateForm()) return;
 
     setIsSubmitting(true);
     
     try {
-      // Format the date for Supabase
       const formattedDate = date ? new Date(date).toISOString() : null;
       
-      // Combine country code and phone number
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
       
-      // Insert booking data into Supabase
       const { data, error } = await supabase
         .from('bookings')
         .insert([
@@ -114,17 +108,14 @@ const BookingForm = () => {
           variant: "destructive",
         });
       } else {
-        // Get the booking ID from the response
         const newBookingId = data && data.length > 0 ? data[0].booking_id : null;
         
-        // Show a toast notification for confirmation
         toast({
           title: "Booking Confirmed!",
           description: `We've scheduled your call for ${date ? format(date, "PPP") : "soon"}.`,
           variant: "default",
         });
         
-        // Navigate to the BookingConfirmation page with the booking information
         navigate('/booking-confirmation', { 
           state: { 
             bookingId: newBookingId,
@@ -146,7 +137,6 @@ const BookingForm = () => {
     }
   };
 
-  // Function to disable dates before today and in the past
   const disabledDays = (date: Date) => {
     return isBefore(date, startOfDay(new Date()));
   };
