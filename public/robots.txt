@@ -1,11 +1,18 @@
 
+# robots.txt for SweetyOnCall.com
 User-agent: *
 Allow: /
+
+# Important pages
+Allow: /booking-confirmation
+Allow: /#pricing
+Allow: /#booking
+Allow: /#faq
 
 # Sitemaps
 Sitemap: https://sweetyoncall.com/sitemap.xml
 
-# Allow all bots to access the site
+# Allow all major search engines
 User-agent: Googlebot
 Allow: /
 
@@ -24,12 +31,32 @@ Allow: /
 User-agent: YandexBot
 Allow: /
 
+# Allow social media crawlers
 User-agent: facebookexternalhit
 Allow: /
 
 User-agent: Twitterbot
 Allow: /
 
+# AI and Generative Engine Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GoogleBot-News
+Allow: /
+
+User-agent: Storebot-Google
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
 # Disallow crawling of admin or sensitive areas if they exist
 # Disallow: /admin/
 # Disallow: /private/
+
+# Crawl-delay directive (in seconds) - optional, use if needed
+# Crawl-delay: 1
