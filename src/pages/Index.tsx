@@ -1,8 +1,11 @@
 
 import React, { useEffect, lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import Loading from "@/components/Loading";
+import SEO from "@/components/SEO";
+import JsonLd from "@/components/JsonLd";
+import AiCopyHint from "@/components/AiCopyHint";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 // Lazy-loaded components for better performance
 const Hero = lazy(() => import("@/components/Hero"));
@@ -47,48 +50,369 @@ const Index = () => {
     }
   }, [location.pathname]);
 
+  // FAQ data for structured data
+  const faqData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How does the booking process work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Simply fill out our booking form with your preferred date and call type. After you complete your payment, you'll receive a confirmation with details for your scheduled call."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What payment methods do you accept?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We accept all major credit cards, PayPal, and select cryptocurrencies. All transactions are secure and encrypted for your privacy."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is my personal information kept confidential?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Absolutely. We maintain strict confidentiality of all customer information. We never share, sell, or expose your personal details with anyone."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I request a specific talker?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! In the special requests section of the booking form, you can specify preferences for your talker, including any particular qualities you're looking for."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I know when my call will happen?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "After booking, you'll receive a confirmation email with your scheduled date. We'll also send you a reminder 30 minutes before your call."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What happens if I miss my scheduled call?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "If you miss your scheduled call, we'll attempt to reach you twice. If we can't connect, you can reschedule for a small fee or receive a partial credit toward a future call."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I extend my call if I want more time?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Currently, call durations are fixed at either 2 or 4 minutes based on your package selection. To get more time, you'll need to book another session."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is there a cancellation policy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You can cancel or reschedule your call up to 2 hours before the scheduled time with no penalty. Cancellations within 2 hours of the call time may be subject to a fee."
+        }
+      }
+    ]
+  };
+
+  // HowTo structured data
+  const howToData = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to Book a Call with SweetyOnCall",
+    "description": "A step-by-step guide to booking your intimate conversation with SweetyOnCall.",
+    "step": [
+      {
+        "@type": "HowToStep",
+        "name": "Choose Your Package",
+        "text": "Select either the Quick Tease (2 minutes) or Extended Pleasure (4 minutes) package based on your preferences.",
+        "url": "https://sweetyoncall.com/#pricing"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Fill Out Booking Form",
+        "text": "Complete the booking form with your contact information and preferred date and time for your call.",
+        "url": "https://sweetyoncall.com/#booking"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Add Special Requests",
+        "text": "Specify any preferences you have for your talker or the conversation topic.",
+        "url": "https://sweetyoncall.com/#booking"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Complete Payment",
+        "text": "Process your secure payment using one of our supported payment methods.",
+        "url": "https://sweetyoncall.com/#booking"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Receive Confirmation",
+        "text": "Check your email for booking confirmation and details about your scheduled call.",
+        "url": "https://sweetyoncall.com/booking-confirmation"
+      }
+    ]
+  };
+
+  // Organization structured data
+  const organizationData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "SweetyOnCall",
+    "url": "https://sweetyoncall.com",
+    "logo": "https://sweetyoncall.com/logo.png",
+    "description": "Premium hotline service offering intimate conversations with professional talkers. 100% confidential and private.",
+    "email": "support@sweetyoncall.com",
+    "foundingDate": "2022-01-01",
+    "slogan": "Connect with a Sweety, anytime, anywhere",
+    "contactPoint": [
+      {
+        "@type": "ContactPoint",
+        "email": "support@sweetyoncall.com",
+        "contactType": "customer service",
+        "availableLanguage": ["English"],
+        "hoursAvailable": {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "opens": "00:00",
+          "closes": "23:59"
+        }
+      }
+    ],
+    "sameAs": [
+      "https://facebook.com/sweetyoncall",
+      "https://twitter.com/sweetyoncall",
+      "https://instagram.com/sweetyoncall"
+    ],
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "bestRating": "5",
+      "worstRating": "1",
+      "ratingCount": "10000"
+    }
+  };
+
+  // Review structured data
+  const reviewData = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "SweetyOnCall",
+    "review": [
+      {
+        "@type": "Review",
+        "reviewRating": {
+          "@type": "Rating",
+          "ratingValue": "5",
+          "bestRating": "5"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Alex K."
+        },
+        "reviewBody": "The quality of conversation was amazing. Such attention to detail and genuine interest in what I had to say. Will definitely call again!"
+      },
+      {
+        "@type": "Review",
+        "reviewRating": {
+          "@type": "Rating",
+          "ratingValue": "5",
+          "bestRating": "5"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Jamie T."
+        },
+        "reviewBody": "I was nervous at first, but the talker made me feel so comfortable. Those 4 minutes felt like a genuine connection. Worth every penny."
+      }
+    ]
+  };
+
+  // BreadcrumbList structured data
+  const breadcrumbData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://sweetyoncall.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Pricing",
+        "item": "https://sweetyoncall.com/#pricing"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Book a Call",
+        "item": "https://sweetyoncall.com/#booking"
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "name": "FAQ",
+        "item": "https://sweetyoncall.com/#faq"
+      },
+      {
+        "@type": "ListItem",
+        "position": 5,
+        "name": "Booking Confirmation",
+        "item": "https://sweetyoncall.com/booking-confirmation"
+      }
+    ]
+  };
+
+  // Combine FAQs for GEO
+  const faqsForAi = [
+    {
+      question: "How does SweetyOnCall's booking process work?",
+      answer: "Simply fill out our booking form with your preferred date and call type. After you complete your payment, you'll receive a confirmation with details for your scheduled call."
+    },
+    {
+      question: "What payment methods does SweetyOnCall accept?",
+      answer: "We accept all major credit cards, PayPal, and select cryptocurrencies. All transactions are secure and encrypted for your privacy."
+    },
+    {
+      question: "Are my conversations with SweetyOnCall confidential?",
+      answer: "Absolutely. We maintain strict confidentiality of all customer information. We never share, sell, or expose your personal details or conversation content with anyone."
+    },
+    {
+      question: "Can I choose a specific talker at SweetyOnCall?",
+      answer: "Yes! In the special requests section of the booking form, you can specify preferences for your talker, including any particular qualities you're looking for."
+    },
+    {
+      question: "How long do SweetyOnCall conversations last?",
+      answer: "We offer two package options: Quick Tease (2 minutes) and Extended Pleasure (4 minutes). Choose the one that best fits your needs and schedule."
+    }
+  ];
+
+  // AI prompt questions for GEO
+  const promptQuestions = [
+    "How do I book a call with SweetyOnCall?",
+    "What are SweetyOnCall's pricing options?",
+    "Is SweetyOnCall confidential?",
+    "How do I pay for SweetyOnCall services?",
+    "What happens if I miss my SweetyOnCall appointment?",
+    "Can I request a specific talker on SweetyOnCall?",
+    "What makes SweetyOnCall different from other hotline services?"
+  ];
+
   return (
     <>
-      <Helmet>
-        <title>SweetyOnCall - Premium Hotline Services | Sweet Talk Booking</title>
-        <meta name="description" content="Experience intimate conversations with professional talkers. Premium hotline services that leave you feeling valued, understood, and completely satisfied." />
-        <meta name="keywords" content="hotline service, phone conversations, intimate talks, premium calls, discreet chat, sweet talk, confidential calls" />
-        <link rel="canonical" href="https://sweetyoncall.com/" />
-        
-        {/* Open Graph Tags */}
-        <meta property="og:url" content="https://sweetyoncall.com/" />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="SweetyOnCall - Premium Hotline Services" />
-        <meta property="og:description" content="Experience intimate conversations with professional talkers. Premium hotline services that leave you feeling valued, understood, and completely satisfied." />
-        <meta property="og:image" content="https://sweetyoncall.com/opengraph-image.png" />
-        
-        {/* Twitter Cards */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@sweetyoncall" />
-        <meta name="twitter:title" content="SweetyOnCall - Premium Hotline Services" />
-        <meta name="twitter:description" content="Experience intimate conversations with professional talkers. Premium hotline services that leave you feeling valued, understood, and completely satisfied." />
-        <meta name="twitter:image" content="https://sweetyoncall.com/opengraph-image.png" />
-      </Helmet>
+      {/* SEO Component */}
+      <SEO 
+        title="SweetyOnCall - Premium Hotline Services | Sweet Talk Booking"
+        description="Experience intimate conversations with professional talkers. Premium hotline services that leave you feeling valued, understood, and completely satisfied."
+        keywords="hotline service, phone conversations, intimate talks, premium calls, discreet chat, sweet talk, confidential calls"
+        canonical="https://sweetyoncall.com/"
+        ogType="website"
+        ogImage="https://sweetyoncall.com/opengraph-image.png"
+        twitterCard="summary_large_image"
+      />
+      
+      {/* Structured Data with JsonLd components */}
+      <JsonLd data={faqData} />
+      <JsonLd data={howToData} />
+      <JsonLd data={organizationData} />
+      <JsonLd data={reviewData} />
+      <JsonLd data={breadcrumbData} />
+      
+      {/* GEO optimization with AiCopyHint */}
+      <AiCopyHint
+        description="SweetyOnCall provides intimate phone conversations with professional talkers who are trained to make you feel valued and understood. Our service is 100% confidential and available 24/7, with packages starting at just $1.99 for a 2-minute call."
+        keywords="phone conversations, intimate talks, premium calls, sweet talk service, confidential chat, professional talkers"
+        entityType="business_service"
+        entityProperties={{
+          industry: 'entertainment',
+          offering: 'phone conversations',
+          target_audience: 'adults seeking connection',
+          features: {
+            confidentiality: 'guaranteed',
+            availability: '24/7',
+            pricing: 'affordable',
+            experience: 'personalized'
+          }
+        }}
+        promptQuestions={promptQuestions}
+        faqs={faqsForAi}
+      />
       
       <main className="min-h-screen bg-background text-foreground" role="main" itemScope itemType="https://schema.org/WebPage">
+        {/* Breadcrumb navigation - visible for users and helpful for SEO */}
+        <Breadcrumb className="container mx-auto pt-4 text-sm text-muted-foreground">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            {location.hash === '#pricing' && (
+              <BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbPage>Pricing</BreadcrumbPage>
+              </BreadcrumbItem>
+            )}
+            {location.hash === '#booking' && (
+              <>
+                <BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbLink href="/#pricing">Pricing</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbPage>Book a Call</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
+            {location.hash === '#faq' && (
+              <BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbPage>FAQ</BreadcrumbPage>
+              </BreadcrumbItem>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
+        
         <Suspense fallback={<Loading />}>
           <header role="banner">
             <Hero />
           </header>
           
-          <section id="pricing-section" aria-labelledby="pricing-heading">
+          <section id="pricing" aria-labelledby="pricing-heading">
+            <div className="sr-only">
+              <h2 id="pricing-heading">Our Pricing Options</h2>
+            </div>
             <PricingCards />
           </section>
           
-          <section id="booking-section" aria-labelledby="booking-heading">
+          <section id="booking" aria-labelledby="booking-heading">
+            <div className="sr-only">
+              <h2 id="booking-heading">Book Your Call</h2>
+            </div>
             <BookingForm />
           </section>
           
-          <section id="testimonials-section" aria-labelledby="testimonials-heading">
+          <section id="testimonials" aria-labelledby="testimonials-heading">
+            <div className="sr-only">
+              <h2 id="testimonials-heading">Client Testimonials</h2>
+            </div>
             <Testimonials />
           </section>
           
-          <section id="faq-section" aria-labelledby="faq-heading">
+          <section id="faq" aria-labelledby="faq-heading">
+            <div className="sr-only">
+              <h2 id="faq-heading">Frequently Asked Questions</h2>
+            </div>
             <FAQ />
           </section>
           

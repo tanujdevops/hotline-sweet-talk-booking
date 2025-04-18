@@ -6,6 +6,8 @@ interface AiCopyHintProps {
   keywords?: string;
   entityType?: string;
   entityProperties?: Record<string, any>;
+  promptQuestions?: string[];
+  faqs?: Array<{question: string, answer: string}>;
   children?: React.ReactNode;
 }
 
@@ -14,6 +16,8 @@ const AiCopyHint = ({
   keywords,
   entityType,
   entityProperties,
+  promptQuestions,
+  faqs,
   children
 }: AiCopyHintProps) => {
   // This component doesn't render anything visible but includes hidden metadata
@@ -35,6 +39,31 @@ const AiCopyHint = ({
       {entityType && (
         <div className="hidden" aria-hidden="true" data-ai-entity-type={entityType} data-ai-entity-properties={JSON.stringify(entityProperties || {})}>
           {entityType}
+        </div>
+      )}
+      
+      {/* AI prompt questions for generative engines */}
+      {promptQuestions && promptQuestions.length > 0 && (
+        <div className="hidden" aria-hidden="true" data-ai-prompt-questions>
+          <ul>
+            {promptQuestions.map((question, index) => (
+              <li key={index} data-ai-prompt-question={question}>{question}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      
+      {/* FAQs in a format optimized for AI crawlers */}
+      {faqs && faqs.length > 0 && (
+        <div className="hidden" aria-hidden="true" data-ai-faqs>
+          <dl>
+            {faqs.map((faq, index) => (
+              <React.Fragment key={index}>
+                <dt data-ai-faq-question>{faq.question}</dt>
+                <dd data-ai-faq-answer>{faq.answer}</dd>
+              </React.Fragment>
+            ))}
+          </dl>
         </div>
       )}
       

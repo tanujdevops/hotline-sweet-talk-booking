@@ -54,9 +54,17 @@ Allow: /
 User-agent: Bingbot
 Allow: /
 
-# Disallow crawling of admin or sensitive areas if they exist
-# Disallow: /admin/
-# Disallow: /private/
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Cohere-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
 
 # Crawl-delay directive (in seconds) - optional, use if needed
-# Crawl-delay: 1
+Crawl-delay: 1
