@@ -350,39 +350,7 @@ const Index = () => {
       />
       
       <main className="min-h-screen bg-background text-foreground" role="main" itemScope itemType="https://schema.org/WebPage">
-        <Navbar />
-        {/* Breadcrumb navigation - visible for users and helpful for SEO */}
-        <Breadcrumb className="container mx-auto pt-4 text-sm text-muted-foreground">
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/">Home</BreadcrumbLink>
-            </BreadcrumbItem>
-            {location.hash === '#pricing' && (
-              <BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbPage>Pricing</BreadcrumbPage>
-              </BreadcrumbItem>
-            )}
-            {location.hash === '#booking' && (
-              <>
-                <BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbLink href="/#pricing">Pricing</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbPage>Book a Call</BreadcrumbPage>
-                </BreadcrumbItem>
-              </>
-            )}
-            {location.hash === '#faq' && (
-              <BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbPage>FAQ</BreadcrumbPage>
-              </BreadcrumbItem>
-            )}
-          </BreadcrumbList>
-        </Breadcrumb>
+        
         
         <Suspense fallback={<Loading />}>
           <header role="banner">
