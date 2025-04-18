@@ -1,10 +1,10 @@
-
 import React, { useEffect, lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import Loading from "@/components/Loading";
 import SEO from "@/components/SEO";
 import JsonLd from "@/components/JsonLd";
 import AiCopyHint from "@/components/AiCopyHint";
+import Navbar from "@/components/Navbar";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 // Lazy-loaded components for better performance
@@ -350,6 +350,7 @@ const Index = () => {
       />
       
       <main className="min-h-screen bg-background text-foreground" role="main" itemScope itemType="https://schema.org/WebPage">
+        <Navbar />
         {/* Breadcrumb navigation - visible for users and helpful for SEO */}
         <Breadcrumb className="container mx-auto pt-4 text-sm text-muted-foreground">
           <BreadcrumbList>
