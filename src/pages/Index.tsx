@@ -1,6 +1,7 @@
 
 import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Hero from "@/components/Hero";
 import PricingCards from "@/components/PricingCards";
 import BookingForm from "@/components/BookingForm";
@@ -44,14 +45,22 @@ const Index = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Hero />
-      <PricingCards />
-      <BookingForm />
-      <Testimonials />
-      <FAQ />
-      <Footer />
-    </div>
+    <>
+      <Helmet>
+        <title>SweetyOnCall - Premium Hotline Services | Sweet Talk Booking</title>
+        <meta name="description" content="Experience intimate conversations with professional talkers. Premium hotline services that leave you feeling valued, understood, and completely satisfied." />
+        <meta name="keywords" content="hotline service, phone conversations, intimate talks, premium calls, discreet chat" />
+      </Helmet>
+      
+      <main className="min-h-screen bg-background text-foreground">
+        <Hero />
+        <PricingCards />
+        <BookingForm />
+        <Testimonials />
+        <FAQ />
+        <Footer />
+      </main>
+    </>
   );
 };
 
