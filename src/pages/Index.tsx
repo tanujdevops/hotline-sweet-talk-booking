@@ -5,6 +5,7 @@ import SEO from "@/components/SEO";
 import JsonLd from "@/components/JsonLd";
 import AiCopyHint from "@/components/AiCopyHint";
 import Navbar from "@/components/Navbar";
+import { faqData } from "@/components/FAQ";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 // Lazy-loaded components for better performance
@@ -51,75 +52,17 @@ const Index = () => {
   }, [location.pathname]);
 
   // FAQ data for structured data
-  const faqData = {
+  const faqStructuredData = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "How does the booking process work?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Simply fill out our booking form with your preferred date and call type. After you complete your payment, you'll receive a confirmation with details for your scheduled call."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What payment methods do you accept?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "We accept all major credit cards, PayPal, and select cryptocurrencies. All transactions are secure and encrypted for your privacy."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is my personal information kept confidential?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Absolutely. We maintain strict confidentiality of all customer information. We never share, sell, or expose your personal details with anyone."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Can I request a specific talker?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes! In the special requests section of the booking form, you can specify preferences for your talker, including any particular qualities you're looking for."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How do I know when my call will happen?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "After booking, you'll receive a confirmation email with your scheduled date. We'll also send you a reminder 30 minutes before your call."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What happens if I miss my scheduled call?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "If you miss your scheduled call, we'll attempt to reach you twice. If we can't connect, you can reschedule for a small fee or receive a partial credit toward a future call."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Can I extend my call if I want more time?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Currently, call durations are fixed at either 2 or 4 minutes based on your package selection. To get more time, you'll need to book another session."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is there a cancellation policy?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "You can cancel or reschedule your call up to 2 hours before the scheduled time with no penalty. Cancellations within 2 hours of the call time may be subject to a fee."
-        }
+    "mainEntity": faqData.map(faq => ({
+      "@type": "Question",
+      "name": faq.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.answer
       }
-    ]
+    }))
   };
 
   // HowTo structured data
@@ -201,11 +144,18 @@ const Index = () => {
     }
   };
 
-  // Review structured data
-  const reviewData = {
+  // Individual review data now includes required aggregateRating
+  const reviewsData = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": "SweetyOnCall",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "bestRating": "5",
+      "worstRating": "1",
+      "ratingCount": "8"
+    },
     "review": [
       {
         "@type": "Review",
@@ -322,11 +272,11 @@ const Index = () => {
         twitterCard="summary_large_image"
       />
       
-      {/* Structured Data with JsonLd components */}
-      <JsonLd data={faqData} />
+      {/* Structured Data with JsonLd components - Each in a separate script tag to avoid duplication */}
+      <JsonLd data={faqStructuredData} />
       <JsonLd data={howToData} />
       <JsonLd data={organizationData} />
-      <JsonLd data={reviewData} />
+      <JsonLd data={reviewsData} />
       <JsonLd data={breadcrumbData} />
       
       {/* GEO optimization with AiCopyHint */}

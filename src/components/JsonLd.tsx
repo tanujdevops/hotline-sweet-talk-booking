@@ -7,10 +7,30 @@ interface JsonLdProps {
   removeEmpty?: boolean;
 }
 
+/**
+ * Component for adding structured data (JSON-LD) to the page
+ * @param data - The structured data object or array of objects
+ * @param removeEmpty - Whether to remove empty values from the data
+ */
 const JsonLd = ({ data, removeEmpty = true }: JsonLdProps) => {
   // Process the data to remove empty values if needed
   const processedData = removeEmpty ? removeEmptyValues(data) : data;
   
+  // If data is an array, we need to create a script tag for each item
+  // to avoid the duplicate script tag issue
+  if (Array.isArray(processedData)) {
+    return (
+      <Helmet>
+        {processedData.map((item, index) => (
+          <script key={index} type="application/ld+json">
+            {JSON.stringify(item)}
+          </script>
+        ))}
+      </Helmet>
+    );
+  }
+  
+  // If data is a single object, create a single script tag
   return (
     <Helmet>
       <script type="application/ld+json">
