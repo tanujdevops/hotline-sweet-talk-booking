@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from "@/components/ui/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,14 +9,13 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format, isBefore, startOfDay } from "date-fns";
-import { CalendarIcon, PhoneCall, Clock, CreditCard } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { CalendarIcon, CreditCard } from "lucide-react";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { PRICING_TIERS, PRICING_DETAILS, type PricingTier } from "@/lib/pricing";
+import { useBookingForm } from "@/hooks/use-booking-form";
 
 const BookingForm = () => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("+1");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -25,141 +23,37 @@ const BookingForm = () => {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [message, setMessage] = useState("");
   const [pricingTier, setPricingTier] = useState<PricingTier>(PRICING_TIERS.STANDARD);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const validateForm = () => {
-    if (!name.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter your name.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (!phoneNumber.trim() || phoneNumber.length < 7) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter a valid phone number.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (!date) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a date for your call.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (!message.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Please provide some details about your call request.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-
-    setIsSubmitting(true);
-    
-    try {
-      const formattedDate = date ? new Date(date).toISOString() : null;
-      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
-      
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert([
-          { 
-            name, 
-            phone: fullPhoneNumber, 
-            email, 
-            booking_date: formattedDate,
-            message,
-            pricing_tier: pricingTier,
-          }])
-        .select('booking_id');
-      
-      if (error) {
-        console.error('Error saving booking:', error);
-        toast({
-          title: "Booking Failed",
-          description: "There was a problem saving your booking. Please try again.",
-          variant: "destructive",
-        });
-      } else {
-        const newBookingId = data && data.length > 0 ? data[0].booking_id : null;
-        
-        toast({
-          title: "Booking Confirmed!",
-          description: `Your ${PRICING_DETAILS[pricingTier].duration}-minute call is scheduled for ${date ? format(date, "PPP") : "soon"}.`,
-          variant: "default",
-        });
-        
-        if (newBookingId) {
-          navigate('/booking-confirmation', { 
-            state: { 
-              bookingId: newBookingId,
-              date: date ? date.toISOString() : null,
-              name,
-              email
-            }
-          });
-        } else {
-          toast({
-            title: "Something went wrong",
-            description: "Booking was processed but couldn't retrieve the booking ID. Please contact support.",
-            variant: "destructive",
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error in booking submission:', error);
-      toast({
-        title: "Something went wrong",
-        description: "Please try again later or contact support.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const { isSubmitting, handleSubmit } = useBookingForm();
 
   const disabledDays = (date: Date) => {
     return isBefore(date, startOfDay(new Date()));
   };
 
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit({
+      name,
+      countryCode,
+      phoneNumber,
+      email,
+      date,
+      message,
+      pricingTier
+    });
+  };
+
   return (
-    <section id="booking" className="py-20 px-4 bg-gradient-to-b from-black/90 to-background">
-      <div className="container mx-auto">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Book Your <span className="text-hotline">Sweet Talk</span> Session</h2>
-            <p className="text-lg text-gray-300 mb-8">
-              Fill out the form below and we'll schedule your call with one of our professional sweet talkers. Get ready for a pleasurable conversation!
+    <section id="booking" className="py-6 md:py-20 px-4 bg-gradient-to-b from-black/90 to-background">
+      <div className="container mx-auto max-w-4xl">
+        <div className="grid md:grid-cols-2 gap-6 md:gap-12 items-start">
+          <div className="md:sticky md:top-24">
+            <h2 className="text-2xl md:text-4xl font-bold mb-4">Book Your <span className="text-hotline">Sweet Talk</span> Session</h2>
+            <p className="text-base md:text-lg text-gray-300 mb-6">
+              Fill out the form and get ready for a pleasurable conversation!
             </p>
             
-            <div className="space-y-6">
+            <div className="space-y-4 hidden md:block">
               <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-lg">
                 <div className="rounded-full bg-hotline p-3">
                   <PhoneCall size={24} className="text-white" />
@@ -198,20 +92,16 @@ const BookingForm = () => {
             </div>
           </div>
           
-          <div className="bg-card p-8 rounded-xl border border-border shadow-lg transform hover:scale-[1.01] transition-transform duration-300">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-card p-6 md:p-8 rounded-xl border border-border shadow-lg">
+            <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Your Name <span className="text-destructive">*</span></Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Enter your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="bg-secondary/50 border-muted mt-2"
-                  />
-                </div>
+                <Input 
+                  placeholder="Your Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="bg-secondary/50 border-muted"
+                />
                 
                 <PhoneInput
                   countryCode={countryCode}
@@ -221,89 +111,77 @@ const BookingForm = () => {
                   required
                 />
                 
-                <div>
-                  <Label htmlFor="email">Email Address <span className="text-destructive">*</span></Label>
-                  <Input 
-                    id="email" 
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-secondary/50 border-muted mt-2"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Preferred Date <span className="text-destructive">*</span></Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal bg-secondary/50 border-muted mt-2",
-                          !date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date ? format(date, "PPP") : <span>Select date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        initialFocus
-                        disabled={disabledDays}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Choose Your Experience <span className="text-destructive">*</span></Label>
-                  <RadioGroup 
-                    value={pricingTier} 
-                    onValueChange={(value: PricingTier) => setPricingTier(value)} 
-                    className="mt-2 space-y-4"
+                <Input 
+                  type="email"
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-secondary/50 border-muted"
+                />
+              </div>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-secondary/50 border-muted",
+                      !date && "text-muted-foreground"
+                    )}
                   >
-                    {Object.entries(PRICING_DETAILS).map(([tier, details]) => (
-                      <div key={tier} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-hotline transition-colors">
-                        <div className="flex items-start gap-2 flex-1">
-                          <RadioGroupItem value={tier} id={tier} />
-                          <div className="flex flex-col">
-                            <Label htmlFor={tier} className="cursor-pointer text-lg">
-                              {details.label}
-                            </Label>
-                            <span className="text-muted-foreground text-sm">{details.description}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock size={16} className="text-hotline" />
-                          <span className="text-sm">{details.duration} min</span>
-                          <span className="text-sm font-semibold ml-2">
-                            {details.price === 0 ? 'FREE' : `$${details.price}`}
-                          </span>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                    disabled={disabledDays}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <div className="space-y-2">
+                <RadioGroup 
+                  value={pricingTier} 
+                  onValueChange={(value: PricingTier) => setPricingTier(value)} 
+                  className="grid grid-cols-1 gap-2"
+                >
+                  {Object.entries(PRICING_DETAILS).map(([tier, details]) => (
+                    <label
+                      key={tier}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors",
+                        pricingTier === tier ? "border-hotline bg-secondary/50" : "border-border hover:border-hotline"
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        <RadioGroupItem value={tier} id={tier} />
+                        <div>
+                          <p className="font-medium">{details.label}</p>
+                          <p className="text-sm text-muted-foreground">{details.description}</p>
                         </div>
                       </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-                
-                <div>
-                  <Label htmlFor="message">Special Requests <span className="text-destructive">*</span></Label>
-                  <Textarea 
-                    id="message" 
-                    placeholder="Tell us about your preferences or special requests"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    required
-                    className="bg-secondary/50 border-muted mt-2 min-h-[100px]"
-                  />
-                </div>
+                      <p className="text-sm font-semibold whitespace-nowrap">
+                        {details.price === 0 ? 'FREE' : `$${details.price}`}
+                      </p>
+                    </label>
+                  ))}
+                </RadioGroup>
               </div>
-              
+
+              <Textarea 
+                placeholder="Tell us about your preferences or special requests"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                required
+                className="bg-secondary/50 border-muted min-h-[80px]"
+              />
+
               <Button 
                 type="submit"
                 disabled={isSubmitting}
@@ -316,13 +194,13 @@ const BookingForm = () => {
                 ) : (
                   <>
                     <CreditCard className="mr-2 h-4 w-4" />
-                    {`Book Your ${PRICING_DETAILS[pricingTier].duration}-Minute Call`}
+                    Book Now
                   </>
                 )}
               </Button>
               
               <p className="text-xs text-center text-muted-foreground">
-                By booking a call, you agree to our <a href="#" className="text-hotline hover:underline">Terms of Service</a> and <a href="#" className="text-hotline hover:underline">Privacy Policy</a>.
+                By booking, you agree to our <a href="#" className="text-hotline hover:underline">Terms</a> & <a href="#" className="text-hotline hover:underline">Privacy Policy</a>
               </p>
             </form>
           </div>
