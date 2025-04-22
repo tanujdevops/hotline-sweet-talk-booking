@@ -24,24 +24,24 @@ const Hero = () => {
       <div className="container mx-auto relative z-10 flex justify-center">
         <div className={`max-w-xl md:max-w-3xl text-center animate-fade-in ${!isMobile ? 'px-8' : ''}`}>
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight text-white font-cormorant">
-            Discover <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Intimate Connections</span> That Transform Your Day
+            Experience a <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Sensual Connection</span> That Leaves You Breathless
           </h1>
           <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto font-montserrat">
-            Experience the thrill of genuine conversation with our professional talkers. Every moment is crafted to leave you feeling valued, understood, and completely satisfied.
+            Feel the warmth of an intimate conversation with our elite companions. Every whisper, every moment is crafted to awaken your senses and fulfill your deepest desires.
           </p>
           
           <div className="flex flex-wrap justify-center gap-3 md:gap-6 mb-8 md:mb-12">
             <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
               <ShieldCheck size={16} className="text-hotline" />
-              <span className="text-sm md:text-base text-gray-200">100% Confidential</span>
+              <span className="text-sm md:text-base text-gray-200">100% Private & Discreet</span>
             </div>
             <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
               <Clock size={16} className="text-hotline" />
-              <span className="text-sm md:text-base text-gray-200">24/7 Availability</span>
+              <span className="text-sm md:text-base text-gray-200">Available Now</span>
             </div>
             <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
               <Heart size={16} className="text-hotline" />
-              <span className="text-sm md:text-base text-gray-200">Premium Experience</span>
+              <span className="text-sm md:text-base text-gray-200">5-Star Experience</span>
             </div>
           </div>
           
@@ -50,19 +50,25 @@ const Hero = () => {
               onClick={() => scrollToSection('booking')}
               className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white px-6 py-5 text-base md:text-lg rounded-md flex items-center gap-2 transition-all duration-300 shadow-lg pulse-glow">
               <PhoneCall size={18} />
-              Speak With a Sweety Today
+              Start Your Free Trial Now
             </Button>
             <Button 
               variant="outline"
               onClick={() => scrollToSection('pricing')}
               className="border-hotline-pink text-hotline-pink hover:bg-hotline-pink/10 px-6 py-5 text-base md:text-lg rounded-md transition-all duration-300">
-              View Our Packages
+              View Exclusive Packages
             </Button>
           </div>
           
-          <div className="mt-6 text-sm text-gray-400 flex items-center justify-center gap-2">
-            <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            <span>Only 3 slots left for tonight's conversations!</span>
+          <div className="mt-6 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div className="text-sm text-gray-400 flex items-center gap-2">
+              <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              <span>23 companions available now</span>
+            </div>
+            <div className="text-sm text-gray-400 flex items-center gap-2">
+              <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+              <span>Only 3 prime-time slots remaining!</span>
+            </div>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Clock, Check, Star } from "lucide-react";
+import { Clock, Check, Star, Heart, ShieldCheck, Sparkles } from "lucide-react";
 
 const PricingCards = () => {
   const scrollToBooking = () => {
@@ -16,9 +16,9 @@ const PricingCards = () => {
     <section id="pricing" className="py-20 px-4 bg-gradient-to-b from-background to-black/90">
       <div className="container mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">Choose Your <span className="text-hotline bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Experience</span></h2>
+          <h2 className="text-3xl md:text-5xl font-bold mb-6">Choose Your Perfect <span className="text-hotline bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Experience</span></h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Start with a free trial, then select the perfect plan for your desired conversation length.
+            Start with a risk-free trial, then select the package that matches your desires. Our most passionate callers prefer the 3-minute experience.
           </p>
         </div>
         
@@ -28,7 +28,7 @@ const PricingCards = () => {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-2xl font-bold">Free Trial</h3>
-                <p className="text-muted-foreground mt-1">Try it risk-free</p>
+                <p className="text-muted-foreground mt-1">First taste of pleasure</p>
               </div>
               <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1 rounded-full">
                 <Clock size={16} className="text-hotline" />
@@ -38,21 +38,21 @@ const PricingCards = () => {
             
             <div className="mb-6">
               <p className="text-4xl font-bold">$0</p>
-              <p className="text-muted-foreground">no credit card required</p>
+              <p className="text-muted-foreground">no commitment needed</p>
             </div>
             
             <ul className="space-y-3 mb-8">
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span>Experience our service</span>
+                <span>Sample our elite service</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span>Professional talkers</span>
+                <span>No card required</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span>No commitment</span>
+                <span>Available instantly</span>
               </li>
             </ul>
             
@@ -73,7 +73,7 @@ const PricingCards = () => {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-2xl font-bold">Standard</h3>
-                <p className="text-muted-foreground mt-1">Perfect length</p>
+                <p className="text-muted-foreground mt-1">Perfect passion</p>
               </div>
               <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1 rounded-full">
                 <Clock size={16} className="text-hotline" />
@@ -83,21 +83,21 @@ const PricingCards = () => {
             
             <div className="mb-6">
               <p className="text-4xl font-bold">$2.49</p>
-              <p className="text-muted-foreground">per call</p>
+              <p className="text-muted-foreground">best-selling experience</p>
             </div>
             
             <ul className="space-y-3 mb-8">
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span>Premium talkers</span>
+                <span>Elite companions</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span>Most popular duration</span>
+                <span>Perfect duration</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span>$0.83/minute value</span>
+                <span>Just $0.83/minute</span>
               </li>
             </ul>
             
@@ -106,6 +106,13 @@ const PricingCards = () => {
               className="w-full bg-hotline hover:bg-hotline-dark text-white py-6 rounded-md transition-all duration-300 min-h-[44px] pulse-glow">
               Choose Standard
             </Button>
+
+            <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                89% of callers choose this package
+              </p>
+            </div>
           </Card>
 
           {/* Extended Plan */}
@@ -113,7 +120,7 @@ const PricingCards = () => {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-2xl font-bold">Extended</h3>
-                <p className="text-muted-foreground mt-1">Longer connection</p>
+                <p className="text-muted-foreground mt-1">Ultimate pleasure</p>
               </div>
               <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1 rounded-full">
                 <Clock size={16} className="text-hotline" />
@@ -123,21 +130,21 @@ const PricingCards = () => {
             
             <div className="mb-6">
               <p className="text-4xl font-bold">$4.99</p>
-              <p className="text-muted-foreground">best value ($0.71/min)</p>
+              <p className="text-muted-foreground">premium value ($0.71/min)</p>
             </div>
             
             <ul className="space-y-3 mb-8">
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span>Extended conversations</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span>Volume discount</span>
+                <span>Extended satisfaction</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
                 <span>Best price per minute</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
+                <span>Premium experience</span>
               </li>
             </ul>
             
@@ -147,6 +154,21 @@ const PricingCards = () => {
               Choose Extended
             </Button>
           </Card>
+        </div>
+
+        <div className="mt-12 flex justify-center items-center gap-8 flex-wrap">
+          <div className="flex items-center gap-2 text-gray-300">
+            <ShieldCheck size={20} className="text-hotline" />
+            <span>100% Private & Secure</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-300">
+            <Heart size={20} className="text-hotline" />
+            <span>Satisfaction Guaranteed</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-300">
+            <Sparkles size={20} className="text-hotline" />
+            <span>Elite Companions</span>
+          </div>
         </div>
       </div>
     </section>
