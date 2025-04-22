@@ -84,6 +84,10 @@ export function useBookingForm() {
     try {
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
       const formattedDate = date ? new Date(date).toISOString() : null;
+
+      // Get user's IP for free trial tracking
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const { ip } = await ipResponse.json();
       
       const { data, error } = await supabase
         .from('bookings')
@@ -94,12 +98,42 @@ export function useBookingForm() {
           booking_date: formattedDate,
           message,
           pricing_tier: pricingTier,
+          user_ip: ip,
         }])
         .select('booking_id');
       
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Free trial not available')) {
+          toast({
+            title: "Free Trial Not Available",
+            description: "Please wait 24 hours between free trials.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
 
       const newBookingId = data && data.length > 0 ? data[0].booking_id : null;
+
+      // If it's a free trial, initiate the vAPI call
+      if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
+        const { data: vapiResponse, error: vapiError } = await supabase.functions.invoke('vapi-call', {
+          body: {
+            name,
+            phone: fullPhoneNumber,
+          },
+        });
+
+        if (vapiError) {
+          console.error('Error initiating vAPI call:', vapiError);
+          toast({
+            title: "Call Initiation Failed",
+            description: "We couldn't initiate your call. Our team will contact you shortly.",
+            variant: "destructive",
+          });
+        }
+      }
       
       toast({
         title: "Booking Confirmed!",

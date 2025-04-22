@@ -24,6 +24,7 @@ export type Database = {
           phone: string
           price: number | null
           pricing_tier: string
+          user_ip: string | null
         }
         Insert: {
           booking_date?: string | null
@@ -39,6 +40,7 @@ export type Database = {
           phone: string
           price?: number | null
           pricing_tier?: string
+          user_ip?: string | null
         }
         Update: {
           booking_date?: string | null
@@ -54,6 +56,7 @@ export type Database = {
           phone?: string
           price?: number | null
           pricing_tier?: string
+          user_ip?: string | null
         }
         Relationships: []
       }
@@ -62,6 +65,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_free_trial_cooldown: {
+        Args: { client_ip: string }
+        Returns: boolean
+      }
       generate_booking_id: {
         Args: Record<PropertyKey, never>
         Returns: string
