@@ -13,35 +13,47 @@ export type Database = {
         Row: {
           booking_date: string | null
           booking_id: string | null
-          call_type: string
+          call_type: string | null
           created_at: string
+          duration_minutes: number | null
           email: string
           id: string
+          is_trial: boolean | null
           message: string | null
           name: string
           phone: string
+          price: number | null
+          pricing_tier: string
         }
         Insert: {
           booking_date?: string | null
           booking_id?: string | null
-          call_type: string
+          call_type?: string | null
           created_at?: string
+          duration_minutes?: number | null
           email: string
           id?: string
+          is_trial?: boolean | null
           message?: string | null
           name: string
           phone: string
+          price?: number | null
+          pricing_tier?: string
         }
         Update: {
           booking_date?: string | null
           booking_id?: string | null
-          call_type?: string
+          call_type?: string | null
           created_at?: string
+          duration_minutes?: number | null
           email?: string
           id?: string
+          is_trial?: boolean | null
           message?: string | null
           name?: string
           phone?: string
+          price?: number | null
+          pricing_tier?: string
         }
         Relationships: []
       }

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -11,9 +10,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format, isBefore, startOfDay } from "date-fns";
-import { CalendarIcon, PhoneCall } from "lucide-react";
+import { CalendarIcon, PhoneCall, Clock, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { PRICING_TIERS, PRICING_DETAILS, type PricingTier } from "@/lib/pricing";
 
 const BookingForm = () => {
   const { toast } = useToast();
@@ -23,8 +23,8 @@ const BookingForm = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [date, setDate] = useState<Date | undefined>(undefined);
-  const [callType, setCallType] = useState("quick");
   const [message, setMessage] = useState("");
+  const [pricingTier, setPricingTier] = useState<PricingTier>(PRICING_TIERS.STANDARD);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = () => {
@@ -85,7 +85,6 @@ const BookingForm = () => {
     
     try {
       const formattedDate = date ? new Date(date).toISOString() : null;
-      
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
       
       const { data, error } = await supabase
@@ -95,9 +94,9 @@ const BookingForm = () => {
             name, 
             phone: fullPhoneNumber, 
             email, 
-            booking_date: formattedDate, 
-            call_type: callType, 
-            message 
+            booking_date: formattedDate,
+            message,
+            pricing_tier: pricingTier,
           }])
         .select('booking_id');
       
@@ -108,17 +107,15 @@ const BookingForm = () => {
           description: "There was a problem saving your booking. Please try again.",
           variant: "destructive",
         });
-        setIsSubmitting(false);
       } else {
         const newBookingId = data && data.length > 0 ? data[0].booking_id : null;
         
         toast({
           title: "Booking Confirmed!",
-          description: `We've scheduled your call for ${date ? format(date, "PPP") : "soon"}.`,
+          description: `Your ${PRICING_DETAILS[pricingTier].duration}-minute call is scheduled for ${date ? format(date, "PPP") : "soon"}.`,
           variant: "default",
         });
         
-        // Only navigate to booking confirmation if we have a valid booking ID
         if (newBookingId) {
           navigate('/booking-confirmation', { 
             state: { 
@@ -129,7 +126,6 @@ const BookingForm = () => {
             }
           });
         } else {
-          setIsSubmitting(false);
           toast({
             title: "Something went wrong",
             description: "Booking was processed but couldn't retrieve the booking ID. Please contact support.",
@@ -144,6 +140,7 @@ const BookingForm = () => {
         description: "Please try again later or contact support.",
         variant: "destructive",
       });
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -266,15 +263,31 @@ const BookingForm = () => {
                 
                 <div className="space-y-2">
                   <Label>Choose Your Experience <span className="text-destructive">*</span></Label>
-                  <RadioGroup value={callType} onValueChange={setCallType} className="mt-2">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="quick" id="quick" />
-                      <Label htmlFor="quick" className="cursor-pointer">Quick Tease - $1.99 (2 minutes)</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="extended" id="extended" />
-                      <Label htmlFor="extended" className="cursor-pointer">Extended Pleasure - $2.99 (4 minutes)</Label>
-                    </div>
+                  <RadioGroup 
+                    value={pricingTier} 
+                    onValueChange={(value: PricingTier) => setPricingTier(value)} 
+                    className="mt-2 space-y-4"
+                  >
+                    {Object.entries(PRICING_DETAILS).map(([tier, details]) => (
+                      <div key={tier} className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-hotline transition-colors">
+                        <div className="flex items-start gap-2 flex-1">
+                          <RadioGroupItem value={tier} id={tier} />
+                          <div className="flex flex-col">
+                            <Label htmlFor={tier} className="cursor-pointer text-lg">
+                              {details.label}
+                            </Label>
+                            <span className="text-muted-foreground text-sm">{details.description}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock size={16} className="text-hotline" />
+                          <span className="text-sm">{details.duration} min</span>
+                          <span className="text-sm font-semibold ml-2">
+                            {details.price === 0 ? 'FREE' : `$${details.price}`}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </RadioGroup>
                 </div>
                 
@@ -295,9 +308,17 @@ const BookingForm = () => {
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full bg-hotline hover:bg-hotline-dark text-white py-6 rounded-md transition-all duration-300"
-                aria-label={isSubmitting ? "Processing your booking..." : "Book your call now"}
               >
-                {isSubmitting ? "Processing..." : "Book Your Call Now"}
+                {isSubmitting ? (
+                  "Processing..."
+                ) : pricingTier === PRICING_TIERS.FREE_TRIAL ? (
+                  "Start Your Free Trial"
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    {`Book Your ${PRICING_DETAILS[pricingTier].duration}-Minute Call`}
+                  </>
+                )}
               </Button>
               
               <p className="text-xs text-center text-muted-foreground">
