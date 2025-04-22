@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format, isBefore, startOfDay } from "date-fns";
-import { CalendarIcon, CreditCard } from "lucide-react";
+import { CalendarIcon, CreditCard, PhoneCall } from "lucide-react";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { PRICING_TIERS, PRICING_DETAILS, type PricingTier } from "@/lib/pricing";
 import { useBookingForm } from "@/hooks/use-booking-form";
