@@ -9,54 +9,201 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      bookings: {
+      active_calls: {
         Row: {
-          booking_date: string | null
-          booking_id: string | null
-          call_type: string | null
-          created_at: string
-          duration_minutes: number | null
-          email: string
-          id: string
-          is_trial: boolean | null
-          message: string | null
-          name: string
-          phone: string
-          price: number | null
-          pricing_tier: string
-          user_ip: string | null
+          booking_id: string
+          started_at: string
         }
         Insert: {
-          booking_date?: string | null
-          booking_id?: string | null
-          call_type?: string | null
-          created_at?: string
-          duration_minutes?: number | null
-          email: string
-          id?: string
-          is_trial?: boolean | null
-          message?: string | null
-          name: string
-          phone: string
-          price?: number | null
-          pricing_tier?: string
-          user_ip?: string | null
+          booking_id: string
+          started_at?: string
         }
         Update: {
-          booking_date?: string | null
-          booking_id?: string | null
-          call_type?: string | null
+          booking_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_calls_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          plan_id: number | null
+          scheduled_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+          user_id: string | null
+          user_ip: unknown | null
+          vapi_call_id: string | null
+        }
+        Insert: {
           created_at?: string
-          duration_minutes?: number | null
+          id?: string
+          message?: string | null
+          plan_id?: number | null
+          scheduled_at: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          user_id?: string | null
+          user_ip?: unknown | null
+          vapi_call_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          plan_id?: number | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          user_id?: string | null
+          user_ip?: unknown | null
+          vapi_call_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_events: {
+        Row: {
+          booking_id: string | null
+          details: Json | null
+          event_time: string
+          event_type: string
+          id: number
+        }
+        Insert: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type: string
+          id?: number
+        }
+        Update: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type?: string
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount_cents: number
+          booking_id: string | null
+          created_at: string
+          cryptomus_invoice_id: string | null
+          cryptomus_payment_id: string | null
+          currency: string
+          id: number
+          status: string
+        }
+        Insert: {
+          amount_cents: number
+          booking_id?: string | null
+          created_at?: string
+          cryptomus_invoice_id?: string | null
+          cryptomus_payment_id?: string | null
+          currency: string
+          id?: number
+          status: string
+        }
+        Update: {
+          amount_cents?: number
+          booking_id?: string | null
+          created_at?: string
+          cryptomus_invoice_id?: string | null
+          cryptomus_payment_id?: string | null
+          currency?: string
+          id?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          cryptomus_price_id: string | null
+          duration_seconds: number
+          id: number
+          key: Database["public"]["Enums"]["plan_key"]
+          price_cents: number
+          vapi_assistant_id: string | null
+        }
+        Insert: {
+          cryptomus_price_id?: string | null
+          duration_seconds: number
+          id?: number
+          key: Database["public"]["Enums"]["plan_key"]
+          price_cents: number
+          vapi_assistant_id?: string | null
+        }
+        Update: {
+          cryptomus_price_id?: string | null
+          duration_seconds?: number
+          id?: number
+          key?: Database["public"]["Enums"]["plan_key"]
+          price_cents?: number
+          vapi_assistant_id?: string | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
           email?: string
           id?: string
-          is_trial?: boolean | null
-          message?: string | null
           name?: string
           phone?: string
-          price?: number | null
-          pricing_tier?: string
-          user_ip?: string | null
         }
         Relationships: []
       }
@@ -75,7 +222,13 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      booking_status:
+        | "pending"
+        | "confirmed"
+        | "completed"
+        | "cancelled"
+        | "failed"
+      plan_key: "free_trial" | "standard" | "extended" | "premium"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -190,6 +343,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      booking_status: [
+        "pending",
+        "confirmed",
+        "completed",
+        "cancelled",
+        "failed",
+      ],
+      plan_key: ["free_trial", "standard", "extended", "premium"],
+    },
   },
 } as const

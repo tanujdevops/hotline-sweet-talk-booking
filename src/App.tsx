@@ -1,4 +1,3 @@
-
 import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,6 +10,7 @@ import Loading from "@/components/Loading";
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const BookingConfirmation = lazy(() => import("./pages/BookingConfirmation"));
+const WaitingPage = lazy(() => import("./pages/WaitingPage"));
 
 // Create a query client with optimal caching settings
 const queryClient = new QueryClient({
@@ -36,8 +36,8 @@ const App = () => (
             <Route path="/pricing" element={<Index />} />
             <Route path="/bookcall" element={<Index />} />
             <Route path="/faq" element={<Index />} />
+            <Route path="/waiting" element={<WaitingPage />} />
             <Route path="/booking-confirmation" element={<BookingConfirmation />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
