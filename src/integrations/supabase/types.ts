@@ -43,7 +43,6 @@ export type Database = {
           plan_id: number | null
           status: Database["public"]["Enums"]["booking_status"]
           user_id: string | null
-          user_ip: unknown | null
           vapi_call_id: string | null
         }
         Insert: {
@@ -53,7 +52,6 @@ export type Database = {
           plan_id?: number | null
           status?: Database["public"]["Enums"]["booking_status"]
           user_id?: string | null
-          user_ip?: unknown | null
           vapi_call_id?: string | null
         }
         Update: {
@@ -63,7 +61,6 @@ export type Database = {
           plan_id?: number | null
           status?: Database["public"]["Enums"]["booking_status"]
           user_id?: string | null
-          user_ip?: unknown | null
           vapi_call_id?: string | null
         }
         Relationships: [

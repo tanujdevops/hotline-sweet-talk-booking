@@ -5,12 +5,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PRICING_TIERS, type PricingTier } from "@/lib/pricing";
 
-const DURATION_MAPPING = {
-  [PRICING_TIERS.FREE_TRIAL]: 30,
-  [PRICING_TIERS.STANDARD]: 180,
-  [PRICING_TIERS.EXTENDED]: 420,
-} as const;
-
 export function useBookingForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -46,6 +40,55 @@ export function useBookingForm() {
     }
 
     return true;
+  };
+
+  const initiateVapiCall = async (bookingId: string, phone: string, name: string) => {
+    try {
+      console.log("Checking VAPI concurrency...");
+      // First, check concurrency
+      const { data: concurrencyData, error: concurrencyError } = await supabase.functions.invoke('check-vapi-concurrency', {
+        body: { bookingId }
+      });
+
+      if (concurrencyError) {
+        console.error("Error checking VAPI concurrency:", concurrencyError);
+        throw new Error("Failed to check call availability");
+      }
+
+      console.log("Concurrency check response:", concurrencyData);
+      if (concurrencyData?.canMakeCall === false) {
+        // Update booking status to queued
+        await supabase
+          .from('bookings')
+          .update({ status: 'queued' })
+          .eq('id', bookingId);
+          
+        console.log("Call queued due to concurrency limits");
+        return;
+      }
+
+      // If we can make a call, initiate it
+      console.log("Initiating VAPI call...");
+      const { data: initiateData, error: initiateError } = await supabase.functions.invoke('initiate-vapi-call', {
+        body: { bookingId, phone, name }
+      });
+
+      if (initiateError) {
+        console.error("Error initiating VAPI call:", initiateError);
+        throw new Error("Failed to initiate call");
+      }
+
+      console.log("VAPI call initiated:", initiateData);
+      // Update booking status to calling
+      await supabase
+        .from('bookings')
+        .update({ status: 'calling' })
+        .eq('id', bookingId);
+        
+    } catch (error) {
+      console.error("Error in VAPI call process:", error);
+      throw error;
+    }
   };
 
   const handleSubmit = async ({
@@ -124,15 +167,48 @@ export function useBookingForm() {
       }
 
       console.log("Booking data response:", bookingData);
+      const bookingId = bookingData?.[0]?.id;
 
-      toast({
-        title: "Booking Confirmed!",
-        description: "We'll process your request shortly.",
-      });
+      if (!bookingId) {
+        throw new Error('Failed to create booking');
+      }
+
+      // Handle different flows for free trial vs paid plans
+      if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
+        // For free trial, directly initiate VAPI call
+        await initiateVapiCall(bookingId, fullPhoneNumber, name);
+        
+        toast({
+          title: "Booking Confirmed!",
+          description: "Your call will be initiated shortly.",
+        });
+      } else {
+        // For paid plans, we'll update status to pending_payment
+        // and redirect to a payment page (to be implemented)
+        await supabase
+          .from('bookings')
+          .update({ status: 'pending_payment' })
+          .eq('id', bookingId);
+          
+        toast({
+          title: "Payment Required",
+          description: "Please complete the payment to confirm your booking.",
+        });
+        
+        // In a real implementation, we would integrate with Stripe here
+        // and only call initiateVapiCall after successful payment
+        
+        // For now, we'll just simulate a successful payment for demo purposes
+        console.log("Payment would be processed here for paid tier:", pricingTier);
+        console.log("After payment success, we would initiate the VAPI call");
+        
+        // This is just a placeholder - in a real app, this would happen after payment confirmation
+        // await initiateVapiCall(bookingId, fullPhoneNumber, name);
+      }
 
       navigate('/waiting', { 
         state: { 
-          bookingId: bookingData?.[0]?.id,
+          bookingId,
           planKey: pricingTier,
         }
       });
