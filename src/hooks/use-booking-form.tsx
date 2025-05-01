@@ -112,23 +112,51 @@ export function useBookingForm() {
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
       console.log("Form data being submitted:", { name, phone: fullPhoneNumber, pricingTier, message });
 
-      // First, upsert the user
-      const { data: userData, error: userError } = await supabase
+      // First, check if the user exists
+      const { data: existingUser, error: fetchError } = await supabase
         .from('users')
-        .upsert({ 
-          name, 
-          phone: fullPhoneNumber 
-        })
-        .select();
+        .select()
+        .eq('phone', fullPhoneNumber)
+        .maybeSingle();
 
-      if (userError) {
-        console.error("User upsert error:", userError);
-        throw userError;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error("Error fetching user:", fetchError);
+        throw fetchError;
       }
 
-      console.log("User data response:", userData);
-      
-      const userId = userData?.[0]?.id;
+      let userId;
+
+      if (existingUser) {
+        console.log("User already exists:", existingUser);
+        userId = existingUser.id;
+        
+        // Optionally update the name if it's different
+        if (existingUser.name !== name) {
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ name })
+            .eq('id', userId);
+            
+          if (updateError) {
+            console.error("Error updating user name:", updateError);
+          }
+        }
+      } else {
+        // Create a new user
+        const { data: newUser, error: userError } = await supabase
+          .from('users')
+          .insert({ name, phone: fullPhoneNumber })
+          .select();
+
+        if (userError) {
+          console.error("Error creating user:", userError);
+          throw userError;
+        }
+        
+        userId = newUser?.[0]?.id;
+        console.log("New user created:", newUser);
+      }
+
       if (!userId) {
         console.error("Failed to get user ID");
         throw new Error('Failed to create or get user');
