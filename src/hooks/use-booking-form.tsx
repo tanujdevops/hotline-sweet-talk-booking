@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -90,24 +91,24 @@ export function useBookingForm() {
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
       const formattedDate = date ? new Date(date).toISOString() : null;
 
+      // First, upsert the user
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .upsert(
-          { 
-            name, 
-            phone: fullPhoneNumber, 
-            email 
-          },
-          { 
-            onConflict: 'email',
-            returning: true 
-          }
-        )
-        .select()
-        .single();
+        .upsert({ 
+          name, 
+          phone: fullPhoneNumber, 
+          email 
+        }, { 
+          onConflict: 'email'
+        })
+        .select();
 
       if (userError) throw userError;
 
+      const userId = userData?.[0]?.id;
+      if (!userId) throw new Error('Failed to create or get user');
+
+      // Get the plan data
       const { data: planData, error: planError } = await supabase
         .from('plans')
         .select()
@@ -116,19 +117,19 @@ export function useBookingForm() {
 
       if (planError) throw planError;
 
+      // Create the booking
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert([
           {
-            user_id: userData.id,
+            user_id: userId,
             plan_id: planData.id,
             scheduled_at: formattedDate,
             status: 'pending',
             message
           }
         ])
-        .select()
-        .single();
+        .select();
 
       if (bookingError) throw bookingError;
 
@@ -139,7 +140,7 @@ export function useBookingForm() {
 
       navigate('/waiting', { 
         state: { 
-          bookingId: bookingData.id,
+          bookingId: bookingData?.[0]?.id,
           planKey: pricingTier,
           scheduledAt: formattedDate
         }

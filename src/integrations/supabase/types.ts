@@ -13,14 +13,17 @@ export type Database = {
         Row: {
           booking_id: string
           started_at: string
+          vapi_call_id: string | null
         }
         Insert: {
           booking_id: string
           started_at?: string
+          vapi_call_id?: string | null
         }
         Update: {
           booking_id?: string
           started_at?: string
+          vapi_call_id?: string | null
         }
         Relationships: [
           {
@@ -38,7 +41,6 @@ export type Database = {
           id: string
           message: string | null
           plan_id: number | null
-          scheduled_at: string
           status: Database["public"]["Enums"]["booking_status"]
           user_id: string | null
           user_ip: unknown | null
@@ -49,7 +51,6 @@ export type Database = {
           id?: string
           message?: string | null
           plan_id?: number | null
-          scheduled_at: string
           status?: Database["public"]["Enums"]["booking_status"]
           user_id?: string | null
           user_ip?: unknown | null
@@ -60,7 +61,6 @@ export type Database = {
           id?: string
           message?: string | null
           plan_id?: number | null
-          scheduled_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
           user_id?: string | null
           user_ip?: unknown | null
@@ -186,21 +186,18 @@ export type Database = {
       users: {
         Row: {
           created_at: string
-          email: string
           id: string
           name: string
           phone: string
         }
         Insert: {
           created_at?: string
-          email: string
           id?: string
           name: string
           phone: string
         }
         Update: {
           created_at?: string
-          email?: string
           id?: string
           name?: string
           phone?: string
@@ -228,6 +225,11 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "failed"
+        | "pending_payment"
+        | "payment_failed"
+        | "queued"
+        | "initiating"
+        | "calling"
       plan_key: "free_trial" | "standard" | "extended" | "premium"
     }
     CompositeTypes: {
@@ -350,6 +352,11 @@ export const Constants = {
         "completed",
         "cancelled",
         "failed",
+        "pending_payment",
+        "payment_failed",
+        "queued",
+        "initiating",
+        "calling",
       ],
       plan_key: ["free_trial", "standard", "extended", "premium"],
     },
