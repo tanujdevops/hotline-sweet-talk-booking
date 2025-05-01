@@ -12,18 +12,18 @@ export const PRICING_DETAILS = {
     duration: 0.5,
     price: 0,
     label: 'Free Trial',
-    description: '30-second preview'
+    description: 'A quick taste of the experience, completely free.'
   },
   [PRICING_TIERS.STANDARD]: {
     duration: 3,
-    price: 2.49,
+    price: 2.99,
     label: 'Standard',
-    description: '3-minute experience'
+    description: 'The perfect balance for a satisfying session.'
   },
   [PRICING_TIERS.EXTENDED]: {
     duration: 7,
-    price: 4.99,
+    price: 6.49,
     label: 'Extended',
-    description: '7-minute premium session'
+    description: 'Indulge longer for a deeper connection.'
   }
 } as const;
