@@ -33,13 +33,16 @@ serve(async (req) => {
     }
 
     // Get the free trial agent ID
-    const FREE_TRIAL_AGENT = Deno.env.get("VAPI_PHONE_NUMBER_ID");
-    if (!FREE_TRIAL_AGENT) {
-      throw new Error("VAPI agent ID not configured");
+    const VAPI_PHONE_NUMBER_ID = Deno.env.get("VAPI_PHONE_NUMBER_ID");
+    if (!VAPI_PHONE_NUMBER_ID) {
+      throw new Error("VAPI phone number ID not configured");
     }
     
     // Make API request to VAPI to initiate the call
     console.log(`Initiating VAPI call for booking ${bookingId} to ${phone}`);
+    
+    // Updated API request payload based on VAPI's current API requirements
+    // Removing agent_id, customer_number, and customer_name as they're causing errors
     const response = await fetch('https://api.vapi.ai/call', {
       method: 'POST',
       headers: {
@@ -47,9 +50,10 @@ serve(async (req) => {
         'Authorization': `Bearer ${VAPI_KEY}`,
       },
       body: JSON.stringify({
-        agent_id: FREE_TRIAL_AGENT,
-        customer_number: phone,
-        customer_name: name,
+        phone_number_id: VAPI_PHONE_NUMBER_ID, // Using phone_number_id instead of agent_id
+        to: phone, // Using 'to' instead of customer_number
+        caller_name: name, // Using caller_name instead of customer_name
+        // Add any other required parameters here based on VAPI's current API
       }),
     });
 
