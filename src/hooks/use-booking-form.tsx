@@ -19,8 +19,6 @@ export function useBookingForm() {
   const validateForm = (
     name: string,
     phoneNumber: string,
-    email: string,
-    date: Date | undefined,
     message: string
   ) => {
     if (!name.trim()) {
@@ -34,22 +32,6 @@ export function useBookingForm() {
     if (!phoneNumber.trim() || phoneNumber.length < 7) {
       toast({
         title: "Please enter a valid phone number",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
-      toast({
-        title: "Please enter a valid email",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (!date) {
-      toast({
-        title: "Please select a date",
         variant: "destructive",
       });
       return false;
@@ -70,43 +52,44 @@ export function useBookingForm() {
     name,
     countryCode,
     phoneNumber,
-    email,
-    date,
     message,
     pricingTier
   }: {
     name: string;
     countryCode: string;
     phoneNumber: string;
-    email: string;
-    date: Date | undefined;
     message: string;
     pricingTier: PricingTier;
   }) => {
-    if (!validateForm(name, phoneNumber, email, date, message)) return;
+    if (!validateForm(name, phoneNumber, message)) return;
 
     setIsSubmitting(true);
     
     try {
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
-      const formattedDate = date ? new Date(date).toISOString() : null;
+      console.log("Form data being submitted:", { name, phone: fullPhoneNumber, pricingTier, message });
 
       // First, upsert the user
       const { data: userData, error: userError } = await supabase
         .from('users')
         .upsert({ 
           name, 
-          phone: fullPhoneNumber, 
-          email 
-        }, { 
-          onConflict: 'email'
+          phone: fullPhoneNumber 
         })
         .select();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error("User upsert error:", userError);
+        throw userError;
+      }
 
+      console.log("User data response:", userData);
+      
       const userId = userData?.[0]?.id;
-      if (!userId) throw new Error('Failed to create or get user');
+      if (!userId) {
+        console.error("Failed to get user ID");
+        throw new Error('Failed to create or get user');
+      }
 
       // Get the plan data
       const { data: planData, error: planError } = await supabase
@@ -115,7 +98,12 @@ export function useBookingForm() {
         .eq('key', pricingTier)
         .single();
 
-      if (planError) throw planError;
+      if (planError) {
+        console.error("Plan fetch error:", planError);
+        throw planError;
+      }
+
+      console.log("Plan data response:", planData);
 
       // Create the booking
       const { data: bookingData, error: bookingError } = await supabase
@@ -124,14 +112,18 @@ export function useBookingForm() {
           {
             user_id: userId,
             plan_id: planData.id,
-            scheduled_at: formattedDate,
             status: 'pending',
             message
           }
         ])
         .select();
 
-      if (bookingError) throw bookingError;
+      if (bookingError) {
+        console.error("Booking insert error:", bookingError);
+        throw bookingError;
+      }
+
+      console.log("Booking data response:", bookingData);
 
       toast({
         title: "Booking Confirmed!",
@@ -142,7 +134,6 @@ export function useBookingForm() {
         state: { 
           bookingId: bookingData?.[0]?.id,
           planKey: pricingTier,
-          scheduledAt: formattedDate
         }
       });
 

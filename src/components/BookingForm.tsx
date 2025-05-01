@@ -3,33 +3,22 @@ import React, { useState } from 'react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { format, isBefore, startOfDay } from "date-fns";
-import { CalendarIcon, CreditCard, PhoneCall } from "lucide-react";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { PRICING_TIERS, PRICING_DETAILS, type PricingTier } from "@/lib/pricing";
 import { useBookingForm } from "@/hooks/use-booking-form";
+import { PhoneCall, CreditCard } from "lucide-react";
 
 const BookingForm = () => {
   const isMobile = useIsMobile();
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("+1");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [email, setEmail] = useState("");
-  const [date, setDate] = useState<Date | undefined>(undefined);
   const [message, setMessage] = useState("");
   const [pricingTier, setPricingTier] = useState<PricingTier>(PRICING_TIERS.STANDARD);
 
   const { isSubmitting, handleSubmit } = useBookingForm();
-
-  const disabledDays = (date: Date) => {
-    return isBefore(date, startOfDay(new Date()));
-  };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +26,6 @@ const BookingForm = () => {
       name,
       countryCode,
       phoneNumber,
-      email,
-      date,
       message,
       pricingTier
     });
@@ -111,40 +98,7 @@ const BookingForm = () => {
                   setPhoneNumber={setPhoneNumber}
                   required
                 />
-                
-                <Input 
-                  type="email"
-                  placeholder="Email Address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="bg-secondary/50 border-muted"
-                />
               </div>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal bg-secondary/50 border-muted",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : "Select date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                    disabled={disabledDays}
-                  />
-                </PopoverContent>
-              </Popover>
 
               <div className="space-y-2">
                 <RadioGroup 
@@ -155,10 +109,9 @@ const BookingForm = () => {
                   {Object.entries(PRICING_DETAILS).map(([tier, details]) => (
                     <label
                       key={tier}
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors",
+                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
                         pricingTier === tier ? "border-hotline bg-secondary/50" : "border-border hover:border-hotline"
-                      )}
+                      }`}
                     >
                       <div className="flex items-start gap-2">
                         <RadioGroupItem value={tier} id={tier} />
