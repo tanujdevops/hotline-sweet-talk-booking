@@ -40,6 +40,9 @@ export type Database = {
           created_at: string
           id: string
           message: string | null
+          payment_amount: number | null
+          payment_intent_id: string | null
+          payment_status: string | null
           plan_id: number | null
           status: Database["public"]["Enums"]["booking_status"]
           user_id: string | null
@@ -49,6 +52,9 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string | null
+          payment_amount?: number | null
+          payment_intent_id?: string | null
+          payment_status?: string | null
           plan_id?: number | null
           status?: Database["public"]["Enums"]["booking_status"]
           user_id?: string | null
@@ -58,6 +64,9 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string | null
+          payment_amount?: number | null
+          payment_intent_id?: string | null
+          payment_status?: string | null
           plan_id?: number | null
           status?: Database["public"]["Enums"]["booking_status"]
           user_id?: string | null
