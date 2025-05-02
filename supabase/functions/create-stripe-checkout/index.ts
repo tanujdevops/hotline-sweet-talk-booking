@@ -75,7 +75,7 @@ serve(async (req) => {
       customerId = customer.id;
     }
     
-    // Create a Stripe checkout session with branding options
+    // Create a Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -86,6 +86,7 @@ serve(async (req) => {
             product_data: {
               name: `Sweet Talk ${booking.plans.key.replace('_', ' ')} Call`,
               description: `${booking.plans.key === 'standard' ? '3' : '7'} minute sweet talk conversation`,
+              images: ['https://sweetyoncall.com/logo.png'],
             },
             unit_amount: booking.plans.price_cents, // Price in cents
           },
@@ -98,7 +99,7 @@ serve(async (req) => {
       metadata: {
         booking_id: booking.id,
       },
-      // Branding options to match sweetyoncall.com
+      // Branding options to match sweetyoncall.com - using supported parameters
       payment_intent_data: {
         description: `Sweet Talk Call - ${booking.plans.key}`,
       },
@@ -106,11 +107,6 @@ serve(async (req) => {
         submit: {
           message: "We'll connect you with your sweet talker right after payment is complete.",
         },
-      },
-      // Set custom branding
-      custom_branding: {
-        logo: "https://sweetyoncall.com/logo.png",
-        brand_color: "#ff6b6b",
       },
     });
     

@@ -42,55 +42,6 @@ export function useBookingForm() {
     return true;
   };
 
-  const initiateVapiCall = async (bookingId: string, phone: string, name: string) => {
-    try {
-      console.log("Checking VAPI concurrency...");
-      // First, check concurrency
-      const { data: concurrencyData, error: concurrencyError } = await supabase.functions.invoke('check-vapi-concurrency', {
-        body: { bookingId }
-      });
-
-      if (concurrencyError) {
-        console.error("Error checking VAPI concurrency:", concurrencyError);
-        throw new Error("Failed to check call availability");
-      }
-
-      console.log("Concurrency check response:", concurrencyData);
-      if (concurrencyData?.canMakeCall === false) {
-        // Update booking status to queued
-        await supabase
-          .from('bookings')
-          .update({ status: 'queued' })
-          .eq('id', bookingId);
-          
-        console.log("Call queued due to concurrency limits");
-        return;
-      }
-
-      // If we can make a call, initiate it
-      console.log("Initiating VAPI call...");
-      const { data: initiateData, error: initiateError } = await supabase.functions.invoke('initiate-vapi-call', {
-        body: { bookingId, phone, name }
-      });
-
-      if (initiateError) {
-        console.error("Error initiating VAPI call:", initiateError);
-        throw new Error("Failed to initiate call");
-      }
-
-      console.log("VAPI call initiated:", initiateData);
-      // Update booking status to calling
-      await supabase
-        .from('bookings')
-        .update({ status: 'calling' })
-        .eq('id', bookingId);
-        
-    } catch (error) {
-      console.error("Error in VAPI call process:", error);
-      throw error;
-    }
-  };
-
   const handleSubmit = async ({
     name,
     countryCode,
@@ -183,7 +134,7 @@ export function useBookingForm() {
           {
             user_id: userId,
             plan_id: planData.id,
-            status: pricingTier === PRICING_TIERS.FREE_TRIAL ? 'pending' : 'pending_payment',
+            status: 'pending_payment', // Always start with pending payment for all plans
             message
           }
         ])
@@ -203,25 +154,90 @@ export function useBookingForm() {
 
       // Handle different flows for free trial vs paid plans
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
-        // For free trial, directly initiate VAPI call
-        await initiateVapiCall(bookingId, fullPhoneNumber, name);
-        
-        toast({
-          title: "Booking Confirmed!",
-          description: "Your call will be initiated shortly.",
-        });
-        
-        navigate('/waiting', { 
-          state: { 
-            bookingId,
-            planKey: pricingTier,
+        try {
+          // Update booking status from pending_payment to pending since it's free
+          await supabase
+            .from('bookings')
+            .update({ status: 'pending' })
+            .eq('id', bookingId);
+
+          // For free trial, directly initiate VAPI call
+          console.log("Checking VAPI concurrency...");
+          // First, check concurrency
+          const { data: concurrencyData, error: concurrencyError } = await supabase.functions.invoke('check-vapi-concurrency', {
+            body: { bookingId }
+          });
+
+          if (concurrencyError) {
+            console.error("Error checking VAPI concurrency:", concurrencyError);
+            throw new Error("Failed to check call availability");
           }
-        });
+
+          console.log("Concurrency check response:", concurrencyData);
+          if (concurrencyData?.canMakeCall === false) {
+            // Update booking status to queued
+            await supabase
+              .from('bookings')
+              .update({ status: 'queued' })
+              .eq('id', bookingId);
+              
+            console.log("Call queued due to concurrency limits");
+            
+            toast({
+              title: "Booking Confirmed!",
+              description: "Your call has been placed in queue and will be initiated shortly.",
+            });
+            
+            navigate('/waiting', { 
+              state: { 
+                bookingId,
+                planKey: pricingTier,
+              }
+            });
+            
+            return;
+          }
+
+          // If we can make a call, initiate it
+          console.log("Initiating VAPI call...");
+          const { data: initiateData, error: initiateError } = await supabase.functions.invoke('initiate-vapi-call', {
+            body: { bookingId, phone: fullPhoneNumber, name }
+          });
+
+          if (initiateError) {
+            console.error("Error initiating VAPI call:", initiateError);
+            throw new Error("Failed to initiate call");
+          }
+
+          console.log("VAPI call initiated:", initiateData);
+          // Update booking status to calling
+          await supabase
+            .from('bookings')
+            .update({ status: 'calling' })
+            .eq('id', bookingId);
+            
+          toast({
+            title: "Booking Confirmed!",
+            description: "Your call will be initiated shortly.",
+          });
+          
+          navigate('/waiting', { 
+            state: { 
+              bookingId,
+              planKey: pricingTier,
+            }
+          });
+        } catch (error) {
+          console.error('Error in VAPI call process:', error);
+          toast({
+            title: "Call Initiation Failed",
+            description: "We couldn't initiate your call. Please try again or contact support.",
+            variant: "destructive",
+          });
+        }
       } else {
         // For paid plans, redirect to Stripe checkout directly
         try {
-          setIsSubmitting(true);
-          
           console.log("Creating Stripe checkout for booking:", bookingId);
           const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
             body: { bookingId }
