@@ -183,7 +183,7 @@ export function useBookingForm() {
           {
             user_id: userId,
             plan_id: planData.id,
-            status: 'pending',
+            status: pricingTier === PRICING_TIERS.FREE_TRIAL ? 'pending' : 'pending_payment',
             message
           }
         ])
@@ -210,37 +210,54 @@ export function useBookingForm() {
           title: "Booking Confirmed!",
           description: "Your call will be initiated shortly.",
         });
-      } else {
-        // For paid plans, we'll update status to pending_payment
-        // and redirect to a payment page (to be implemented)
-        await supabase
-          .from('bookings')
-          .update({ status: 'pending_payment' })
-          .eq('id', bookingId);
-          
-        toast({
-          title: "Payment Required",
-          description: "Please complete the payment to confirm your booking.",
+        
+        navigate('/waiting', { 
+          state: { 
+            bookingId,
+            planKey: pricingTier,
+          }
         });
-        
-        // In a real implementation, we would integrate with Stripe here
-        // and only call initiateVapiCall after successful payment
-        
-        // For now, we'll just simulate a successful payment for demo purposes
-        console.log("Payment would be processed here for paid tier:", pricingTier);
-        console.log("After payment success, we would initiate the VAPI call");
-        
-        // This is just a placeholder - in a real app, this would happen after payment confirmation
-        // await initiateVapiCall(bookingId, fullPhoneNumber, name);
-      }
+      } else {
+        // For paid plans, redirect to Stripe checkout directly
+        try {
+          setIsSubmitting(true);
+          
+          console.log("Creating Stripe checkout for booking:", bookingId);
+          const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
+            body: { bookingId }
+          });
 
-      navigate('/waiting', { 
-        state: { 
-          bookingId,
-          planKey: pricingTier,
+          if (error) {
+            console.error('Error creating checkout session:', error);
+            toast({
+              title: "Payment Error",
+              description: "We couldn't process your payment request. Please try again.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          if (data && data.checkout_url) {
+            console.log("Redirecting to Stripe checkout:", data.checkout_url);
+            // Redirect to Stripe Checkout directly
+            window.location.href = data.checkout_url;
+          } else {
+            console.error("No checkout URL returned");
+            toast({
+              title: "Payment Error",
+              description: "No checkout URL returned. Please try again.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error('Error in payment process:', error);
+          toast({
+            title: "Payment Error",
+            description: "An unexpected error occurred. Please try again.",
+            variant: "destructive",
+          });
         }
-      });
-
+      }
     } catch (error) {
       console.error('Error in booking submission:', error);
       toast({

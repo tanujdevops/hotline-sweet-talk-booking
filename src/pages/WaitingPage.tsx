@@ -52,6 +52,9 @@ export default function WaitingPage() {
         description: "Your payment has been processed. Your call will be initiated soon.",
         variant: "default",
       });
+      
+      // Check payment status immediately when success=true is in URL
+      checkPaymentStatus();
     } else if (paymentCanceled) {
       toast({
         title: "Payment Canceled",
@@ -61,58 +64,63 @@ export default function WaitingPage() {
     }
   }, [paymentSuccess, paymentCanceled, toast]);
 
-  useEffect(() => {
-    const fetchBookingStatus = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('bookings')
-          .select('status, payment_status')
-          .eq('id', bookingId)
-          .single();
+  // Function to check payment status from Stripe
+  const checkPaymentStatus = async () => {
+    try {
+      console.log("Checking payment status for booking:", bookingId);
+      const { data, error } = await supabase.functions.invoke('check-payment-status', {
+        body: { bookingId }
+      });
 
-        if (error) {
-          console.error('Error fetching booking status:', error);
-          return;
-        }
-
-        if (data) {
-          setBookingStatus(data.status);
-          setPaymentStatus(data.payment_status || 'pending');
-          
-          // If payment is completed but status is still pending_payment, check payment status
-          if (data.status === 'pending_payment' && data.payment_status !== 'completed') {
-            checkPaymentStatus();
-          }
-        }
-      } catch (error) {
-        console.error('Error in fetching booking status:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Function to check payment status from Stripe
-    const checkPaymentStatus = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('check-payment-status', {
-          body: { bookingId }
-        });
-
-        if (error) {
-          console.error('Error checking payment status:', error);
-          return;
-        }
-
-        if (data && data.status === 'completed') {
-          setPaymentStatus('completed');
-          // Refresh booking status to see updated status
-          fetchBookingStatus();
-        }
-      } catch (error) {
+      if (error) {
         console.error('Error checking payment status:', error);
+        return;
       }
-    };
 
+      console.log("Payment status check response:", data);
+      
+      if (data && data.status === 'completed') {
+        setPaymentStatus('completed');
+        // Refresh booking status to see updated status
+        fetchBookingStatus();
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+    }
+  };
+
+  // Function to fetch booking status
+  const fetchBookingStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('status, payment_status')
+        .eq('id', bookingId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching booking status:', error);
+        return;
+      }
+
+      if (data) {
+        console.log("Booking status:", data);
+        setBookingStatus(data.status);
+        setPaymentStatus(data.payment_status || 'pending');
+        
+        // If payment is completed but status is still pending_payment, check payment status
+        if (data.status === 'pending_payment' && data.payment_status !== 'completed') {
+          checkPaymentStatus();
+        }
+      }
+    } catch (error) {
+      console.error('Error in fetching booking status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     // Fetch status immediately and then every 5 seconds
     fetchBookingStatus();
     const interval = setInterval(fetchBookingStatus, 5000);
@@ -123,6 +131,7 @@ export default function WaitingPage() {
   const handlePayment = async () => {
     setProcessingPayment(true);
     try {
+      console.log("Initiating payment for booking:", bookingId);
       const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
         body: { bookingId }
       });
@@ -138,8 +147,16 @@ export default function WaitingPage() {
       }
 
       if (data && data.checkout_url) {
+        console.log("Redirecting to Stripe checkout:", data.checkout_url);
         // Redirect to Stripe Checkout
         window.location.href = data.checkout_url;
+      } else {
+        console.error("No checkout URL returned");
+        toast({
+          title: "Payment Error", 
+          description: "No checkout URL returned. Please try again.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error in payment process:', error);

@@ -49,6 +49,9 @@ serve(async (req) => {
       throw new Error(`Error fetching booking: ${bookingError?.message || "Booking not found"}`);
     }
 
+    console.log("Creating checkout for booking:", bookingId);
+    console.log("Booking details:", booking);
+
     // Create a Stripe customer or find existing one
     let customerId;
     const email = `${booking.users.phone}@example.com`; // Using phone as email for Stripe customer
@@ -72,7 +75,7 @@ serve(async (req) => {
       customerId = customer.id;
     }
     
-    // Create a Stripe checkout session
+    // Create a Stripe checkout session with branding options
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -94,8 +97,25 @@ serve(async (req) => {
       cancel_url: `${req.headers.get('origin')}/waiting?booking_id=${booking.id}&canceled=true`,
       metadata: {
         booking_id: booking.id,
-      }
+      },
+      // Branding options to match sweetyoncall.com
+      payment_intent_data: {
+        description: `Sweet Talk Call - ${booking.plans.key}`,
+      },
+      custom_text: {
+        submit: {
+          message: "We'll connect you with your sweet talker right after payment is complete.",
+        },
+      },
+      // Set custom branding
+      custom_branding: {
+        logo: "https://sweetyoncall.com/logo.png",
+        brand_color: "#ff6b6b",
+      },
     });
+    
+    console.log("Stripe session created:", session.id);
+    console.log("Checkout URL:", session.url);
     
     // Update booking with the Stripe session ID
     await supabaseClient

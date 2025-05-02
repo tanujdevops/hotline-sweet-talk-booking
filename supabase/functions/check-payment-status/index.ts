@@ -21,6 +21,8 @@ serve(async (req) => {
       throw new Error("Booking ID is required");
     }
     
+    console.log("Checking payment status for booking:", bookingId);
+    
     // Create a Supabase client with the service role key
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -49,6 +51,8 @@ serve(async (req) => {
       throw new Error(`Error fetching booking: ${bookingError?.message || "Booking not found"}`);
     }
 
+    console.log("Current booking status:", booking);
+
     // If no payment intent ID, return current status
     if (!booking.payment_intent_id) {
       return new Response(JSON.stringify({ 
@@ -61,6 +65,7 @@ serve(async (req) => {
     
     // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(booking.payment_intent_id);
+    console.log("Payment intent status:", paymentIntent.status);
     
     let paymentStatus = booking.payment_status;
     
@@ -77,6 +82,41 @@ serve(async (req) => {
           payment_amount: paymentIntent.amount,
         })
         .eq('id', bookingId);
+
+      console.log("Payment completed, booking updated to queued status");
+      
+      // Get booking details with user info
+      const { data: bookingWithUser } = await supabaseClient
+        .from('bookings')
+        .select('*, users(name, phone)')
+        .eq('id', bookingId)
+        .single();
+        
+      if (bookingWithUser && bookingWithUser.users) {
+        // Try to initiate VAPI call after payment
+        try {
+          console.log("Initiating VAPI call after payment completion");
+          
+          // First check concurrency
+          const { data: concurrencyData } = await supabaseClient.functions.invoke('check-vapi-concurrency', {
+            body: { bookingId }
+          });
+          
+          if (concurrencyData?.canMakeCall === true) {
+            // Initiate VAPI call if we're under concurrency limits
+            await supabaseClient.functions.invoke('initiate-vapi-call', {
+              body: { 
+                bookingId, 
+                phone: bookingWithUser.users.phone, 
+                name: bookingWithUser.users.name 
+              }
+            });
+          }
+        } catch (vapiError) {
+          console.error("Error initiating VAPI call after payment:", vapiError);
+          // We don't throw here as payment was still successful
+        }
+      }
     }
       
     return new Response(JSON.stringify({ 
