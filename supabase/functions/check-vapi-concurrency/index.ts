@@ -20,32 +20,62 @@ serve(async (req) => {
       throw new Error("Booking ID is required");
     }
     
-    // Create a Supabase client with the Supabase service role key
+    console.log(`Checking concurrency for booking ${bookingId}`);
+    
+    // Create a Supabase client with the service role key
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
     
-    // Check current active calls count
-    const { count, error: countError } = await supabaseClient
-      .from('active_calls')
-      .select('*', { count: 'exact', head: true });
+    // Get booking details to determine plan type
+    const { data: booking, error: bookingError } = await supabaseClient
+      .from('bookings')
+      .select(`
+        *,
+        plans!inner(key)
+      `)
+      .eq('id', bookingId)
+      .single();
       
-    if (countError) {
-      throw new Error(`Failed to check active calls: ${countError.message}`);
+    if (bookingError || !booking) {
+      throw new Error(`Failed to get booking details: ${bookingError?.message}`);
     }
     
-    // Define the maximum concurrent calls (VAPI limit)
-    const MAX_CONCURRENT_CALLS = 10;
+    const planType = booking.plans.key;
+    console.log(`Checking availability for plan type: ${planType}`);
     
-    // Determine if we can make a new call
-    const canMakeCall = count !== null && count < MAX_CONCURRENT_CALLS;
+    // Check if there's an available agent for this plan type
+    const { data: availableAgent, error: agentError } = await supabaseClient
+      .rpc('get_available_agent', { plan_type_param: planType });
+      
+    if (agentError) {
+      console.error("Error checking agent availability:", agentError);
+      throw new Error(`Failed to check agent availability: ${agentError.message}`);
+    }
     
-    // Log for debugging
-    console.log(`Active calls: ${count}, Can make call: ${canMakeCall}`);
+    const canMakeCall = availableAgent && availableAgent.length > 0;
+    
+    // Get queue position if call cannot be made immediately
+    let queuePosition = null;
+    if (!canMakeCall) {
+      const { count } = await supabaseClient
+        .from('call_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('plan_type', planType)
+        .eq('status', 'queued');
+        
+      queuePosition = (count || 0) + 1;
+    }
+    
+    console.log(`Can make call: ${canMakeCall}, Queue position: ${queuePosition}`);
     
     // Return the result
-    return new Response(JSON.stringify({ canMakeCall, activeCallCount: count }), {
+    return new Response(JSON.stringify({ 
+      canMakeCall,
+      queuePosition,
+      planType
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

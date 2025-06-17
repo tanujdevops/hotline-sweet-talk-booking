@@ -63,7 +63,7 @@ export function useBookingForm() {
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
       console.log("Form data being submitted:", { name, phone: fullPhoneNumber, pricingTier, message });
 
-      // First, check if the user exists
+      // Check if user exists or create new user
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select()
@@ -81,7 +81,6 @@ export function useBookingForm() {
         console.log("User already exists:", existingUser);
         userId = existingUser.id;
         
-        // Optionally update the name if it's different
         if (existingUser.name !== name) {
           const { error: updateError } = await supabase
             .from('users')
@@ -93,7 +92,6 @@ export function useBookingForm() {
           }
         }
       } else {
-        // Create a new user
         const { data: newUser, error: userError } = await supabase
           .from('users')
           .insert({ name, phone: fullPhoneNumber })
@@ -113,7 +111,7 @@ export function useBookingForm() {
         throw new Error('Failed to create or get user');
       }
 
-      // Get the plan data
+      // Get plan data
       const { data: planData, error: planError } = await supabase
         .from('plans')
         .select()
@@ -127,14 +125,14 @@ export function useBookingForm() {
 
       console.log("Plan data response:", planData);
 
-      // Create the booking
+      // Create booking
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert([
           {
             user_id: userId,
             plan_id: planData.id,
-            status: 'pending_payment', // Always start with pending payment for all plans
+            status: 'pending_payment',
             message
           }
         ])
@@ -161,65 +159,52 @@ export function useBookingForm() {
             .update({ status: 'pending' })
             .eq('id', bookingId);
 
-          // For free trial, directly initiate VAPI call
-          console.log("Checking VAPI concurrency...");
-          // First, check concurrency
+          // Check availability and initiate call or add to queue
+          console.log("Checking agent availability...");
           const { data: concurrencyData, error: concurrencyError } = await supabase.functions.invoke('check-vapi-concurrency', {
             body: { bookingId }
           });
 
           if (concurrencyError) {
-            console.error("Error checking VAPI concurrency:", concurrencyError);
-            throw new Error("Failed to check call availability");
+            console.error("Error checking agent availability:", concurrencyError);
+            throw new Error("Failed to check agent availability");
           }
 
-          console.log("Concurrency check response:", concurrencyData);
+          console.log("Availability check response:", concurrencyData);
+          
           if (concurrencyData?.canMakeCall === false) {
-            // Update booking status to queued
-            await supabase
-              .from('bookings')
-              .update({ status: 'queued' })
-              .eq('id', bookingId);
-              
-            console.log("Call queued due to concurrency limits");
+            console.log("No agents available, call will be queued");
             
             toast({
               title: "Booking Confirmed!",
-              description: "Your call has been placed in queue and will be initiated shortly.",
+              description: `Your call has been queued. You are #${concurrencyData.queuePosition || 'N/A'} in line.`,
             });
-            
-            navigate('/waiting', { 
-              state: { 
-                bookingId,
-                planKey: pricingTier,
-              }
+          } else {
+            // Try to initiate call immediately
+            console.log("Agent available, initiating call...");
+            const { data: initiateData, error: initiateError } = await supabase.functions.invoke('initiate-vapi-call', {
+              body: { bookingId, phone: fullPhoneNumber, name }
             });
+
+            if (initiateError) {
+              console.error("Error initiating call:", initiateError);
+              throw new Error("Failed to initiate call");
+            }
+
+            console.log("Call initiated:", initiateData);
             
-            return;
+            if (initiateData?.queued) {
+              toast({
+                title: "Booking Confirmed!",
+                description: "Your call has been queued and will be initiated shortly.",
+              });
+            } else {
+              toast({
+                title: "Booking Confirmed!",
+                description: "Your call is being initiated now.",
+              });
+            }
           }
-
-          // If we can make a call, initiate it
-          console.log("Initiating VAPI call...");
-          const { data: initiateData, error: initiateError } = await supabase.functions.invoke('initiate-vapi-call', {
-            body: { bookingId, phone: fullPhoneNumber, name }
-          });
-
-          if (initiateError) {
-            console.error("Error initiating VAPI call:", initiateError);
-            throw new Error("Failed to initiate call");
-          }
-
-          console.log("VAPI call initiated:", initiateData);
-          // Update booking status to calling
-          await supabase
-            .from('bookings')
-            .update({ status: 'calling' })
-            .eq('id', bookingId);
-            
-          toast({
-            title: "Booking Confirmed!",
-            description: "Your call will be initiated shortly.",
-          });
           
           navigate('/waiting', { 
             state: { 
@@ -228,15 +213,15 @@ export function useBookingForm() {
             }
           });
         } catch (error) {
-          console.error('Error in VAPI call process:', error);
+          console.error('Error in call process:', error);
           toast({
             title: "Call Initiation Failed",
-            description: "We couldn't initiate your call. Please try again or contact support.",
+            description: "We couldn't process your call. Please try again or contact support.",
             variant: "destructive",
           });
         }
       } else {
-        // For paid plans, redirect to Stripe checkout directly
+        // For paid plans, redirect to Stripe checkout
         try {
           console.log("Creating Stripe checkout for booking:", bookingId);
           const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
@@ -255,7 +240,6 @@ export function useBookingForm() {
 
           if (data && data.checkout_url) {
             console.log("Redirecting to Stripe checkout:", data.checkout_url);
-            // Redirect to Stripe Checkout directly
             window.location.href = data.checkout_url;
           } else {
             console.error("No checkout URL returned");

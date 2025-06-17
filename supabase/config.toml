@@ -7,6 +7,12 @@ verify_jwt = true
 [functions.initiate-vapi-call]
 verify_jwt = true
 
+[functions.process-call-queue]
+verify_jwt = true
+
+[functions.handle-vapi-webhook]
+verify_jwt = false
+
 [functions.create-stripe-checkout]
 verify_jwt = false
 

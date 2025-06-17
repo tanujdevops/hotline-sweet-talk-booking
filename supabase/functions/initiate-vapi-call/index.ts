@@ -20,58 +20,124 @@ serve(async (req) => {
       throw new Error("Booking ID, phone number, and name are required");
     }
     
-    // Create a Supabase client with the Supabase service role key
+    console.log(`Processing call initiation for booking ${bookingId}`);
+    
+    // Create a Supabase client with the service role key
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
     
-    // Get VAPI API key from environment
-    const VAPI_KEY = Deno.env.get("VAPI_API_KEY");
-    if (!VAPI_KEY) {
-      throw new Error("VAPI API key not configured");
-    }
-
-    // Get the free trial agent ID
-    const VAPI_PHONE_NUMBER_ID = Deno.env.get("VAPI_PHONE_NUMBER_ID");
-    if (!VAPI_PHONE_NUMBER_ID) {
-      throw new Error("VAPI phone number ID not configured");
+    // Get booking details to determine plan type
+    const { data: booking, error: bookingError } = await supabaseClient
+      .from('bookings')
+      .select(`
+        *,
+        plans!inner(key)
+      `)
+      .eq('id', bookingId)
+      .single();
+      
+    if (bookingError || !booking) {
+      throw new Error(`Failed to get booking details: ${bookingError?.message}`);
     }
     
-    // Make API request to VAPI to initiate the call
-    console.log(`Initiating VAPI call for booking ${bookingId} to ${phone}`);
+    const planType = booking.plans.key;
+    console.log(`Plan type for booking ${bookingId}: ${planType}`);
     
-    // Updated API request payload based on VAPI's current API requirements
-    // Removing agent_id, customer_number, and customer_name as they're causing errors
+    // Get available agent for this plan type
+    const { data: availableAgent, error: agentError } = await supabaseClient
+      .rpc('get_available_agent', { plan_type_param: planType });
+      
+    if (agentError) {
+      console.error("Error getting available agent:", agentError);
+      throw new Error(`Failed to get available agent: ${agentError.message}`);
+    }
+    
+    if (!availableAgent || availableAgent.length === 0) {
+      console.log(`No available agents for plan type ${planType}, queuing call`);
+      
+      // Add to queue
+      const { error: queueError } = await supabaseClient
+        .from('call_queue')
+        .insert([
+          {
+            booking_id: bookingId,
+            plan_type: planType,
+            priority: planType === 'free_trial' ? 2 : 1, // Lower priority for free trials
+            status: 'queued'
+          }
+        ]);
+        
+      if (queueError) {
+        console.error("Error adding to queue:", queueError);
+        throw new Error(`Failed to queue call: ${queueError.message}`);
+      }
+      
+      // Update booking status
+      await supabaseClient
+        .from('bookings')
+        .update({ status: 'queued' })
+        .eq('id', bookingId);
+        
+      return new Response(JSON.stringify({ 
+        success: true,
+        queued: true,
+        message: "Call queued successfully"
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    
+    const agent = availableAgent[0];
+    console.log(`Using agent ${agent.agent_id} from account ${agent.account_id}`);
+    
+    // Increment call counts
+    await supabaseClient.rpc('increment_call_count', {
+      agent_uuid: agent.vapi_agent_id,
+      account_uuid: agent.account_id
+    });
+    
+    // Make API request to VAPI
     const response = await fetch('https://api.vapi.ai/call', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${VAPI_KEY}`,
+        'Authorization': `Bearer ${agent.api_key}`,
       },
       body: JSON.stringify({
-        phone_number_id: VAPI_PHONE_NUMBER_ID, // Using phone_number_id instead of agent_id
-        to: phone, // Using 'to' instead of customer_number
-        caller_name: name, // Using caller_name instead of customer_name
-        // Add any other required parameters here based on VAPI's current API
+        assistant: agent.agent_id,
+        customer: {
+          number: phone,
+          name: name
+        },
+        phone_number_id: agent.phone_number_id,
       }),
     });
 
     const vapiData = await response.json();
     
     if (!response.ok) {
+      // Decrement call counts on error
+      await supabaseClient.rpc('decrement_call_count', {
+        agent_uuid: agent.vapi_agent_id,
+        account_uuid: agent.account_id
+      });
       throw new Error(`VAPI API error: ${vapiData.message || JSON.stringify(vapiData)}`);
     }
     
     console.log("VAPI response:", vapiData);
     
     // Record active call in database
-    const { data: activeCallData, error: activeCallError } = await supabaseClient
+    const { error: activeCallError } = await supabaseClient
       .from('active_calls')
       .insert([
         {
           booking_id: bookingId,
           vapi_call_id: vapiData.id || null,
+          vapi_agent_id: agent.vapi_agent_id,
+          vapi_account_id: agent.account_id
         }
       ]);
       
@@ -81,7 +147,7 @@ serve(async (req) => {
     }
     
     // Update booking status
-    const { error: bookingError } = await supabaseClient
+    const { error: bookingUpdateError } = await supabaseClient
       .from('bookings')
       .update({ 
         status: 'calling',
@@ -89,9 +155,8 @@ serve(async (req) => {
       })
       .eq('id', bookingId);
       
-    if (bookingError) {
-      console.error("Failed to update booking status:", bookingError);
-      // We'll continue despite this error
+    if (bookingUpdateError) {
+      console.error("Failed to update booking status:", bookingUpdateError);
     }
     
     // Record call event
@@ -107,13 +172,13 @@ serve(async (req) => {
       
     if (eventError) {
       console.error("Failed to record call event:", eventError);
-      // We'll continue despite this error
     }
     
     // Return success
     return new Response(JSON.stringify({ 
       success: true,
       call_id: vapiData.id,
+      agent_id: agent.agent_id,
       message: "Call initiated successfully"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

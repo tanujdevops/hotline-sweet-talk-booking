@@ -13,16 +13,22 @@ export type Database = {
         Row: {
           booking_id: string
           started_at: string
+          vapi_account_id: string | null
+          vapi_agent_id: string | null
           vapi_call_id: string | null
         }
         Insert: {
           booking_id: string
           started_at?: string
+          vapi_account_id?: string | null
+          vapi_agent_id?: string | null
           vapi_call_id?: string | null
         }
         Update: {
           booking_id?: string
           started_at?: string
+          vapi_account_id?: string | null
+          vapi_agent_id?: string | null
           vapi_call_id?: string | null
         }
         Relationships: [
@@ -31,6 +37,20 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: true
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "active_calls_vapi_account_id_fkey"
+            columns: ["vapi_account_id"]
+            isOneToOne: false
+            referencedRelation: "vapi_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "active_calls_vapi_agent_id_fkey"
+            columns: ["vapi_agent_id"]
+            isOneToOne: false
+            referencedRelation: "vapi_agents"
             referencedColumns: ["id"]
           },
         ]
@@ -114,6 +134,73 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "call_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_queue: {
+        Row: {
+          assigned_account_id: string | null
+          assigned_agent_id: string | null
+          booking_id: string
+          created_at: string
+          id: string
+          max_retries: number
+          plan_type: string
+          priority: number
+          retry_count: number
+          scheduled_for: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_account_id?: string | null
+          assigned_agent_id?: string | null
+          booking_id: string
+          created_at?: string
+          id?: string
+          max_retries?: number
+          plan_type: string
+          priority?: number
+          retry_count?: number
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_account_id?: string | null
+          assigned_agent_id?: string | null
+          booking_id?: string
+          created_at?: string
+          id?: string
+          max_retries?: number
+          plan_type?: string
+          priority?: number
+          retry_count?: number
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_queue_assigned_account_id_fkey"
+            columns: ["assigned_account_id"]
+            isOneToOne: false
+            referencedRelation: "vapi_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_queue_assigned_agent_id_fkey"
+            columns: ["assigned_agent_id"]
+            isOneToOne: false
+            referencedRelation: "vapi_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_queue_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
@@ -210,6 +297,89 @@ export type Database = {
         }
         Relationships: []
       }
+      vapi_accounts: {
+        Row: {
+          api_key: string
+          created_at: string
+          current_active_calls: number
+          id: string
+          is_active: boolean
+          max_concurrent_calls: number
+          name: string
+          phone_number_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          current_active_calls?: number
+          id?: string
+          is_active?: boolean
+          max_concurrent_calls?: number
+          name: string
+          phone_number_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          current_active_calls?: number
+          id?: string
+          is_active?: boolean
+          max_concurrent_calls?: number
+          name?: string
+          phone_number_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vapi_agents: {
+        Row: {
+          agent_id: string
+          agent_type: string
+          created_at: string
+          current_active_calls: number
+          id: string
+          is_active: boolean
+          max_concurrent_calls: number
+          priority: number
+          updated_at: string
+          vapi_account_id: string
+        }
+        Insert: {
+          agent_id: string
+          agent_type: string
+          created_at?: string
+          current_active_calls?: number
+          id?: string
+          is_active?: boolean
+          max_concurrent_calls?: number
+          priority?: number
+          updated_at?: string
+          vapi_account_id: string
+        }
+        Update: {
+          agent_id?: string
+          agent_type?: string
+          created_at?: string
+          current_active_calls?: number
+          id?: string
+          is_active?: boolean
+          max_concurrent_calls?: number
+          priority?: number
+          updated_at?: string
+          vapi_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vapi_agents_vapi_account_id_fkey"
+            columns: ["vapi_account_id"]
+            isOneToOne: false
+            referencedRelation: "vapi_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -219,9 +389,27 @@ export type Database = {
         Args: { client_ip: string }
         Returns: boolean
       }
+      decrement_call_count: {
+        Args: { agent_uuid: string; account_uuid: string }
+        Returns: undefined
+      }
       generate_booking_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_available_agent: {
+        Args: { plan_type_param: string }
+        Returns: {
+          agent_id: string
+          vapi_agent_id: string
+          account_id: string
+          api_key: string
+          phone_number_id: string
+        }[]
+      }
+      increment_call_count: {
+        Args: { agent_uuid: string; account_uuid: string }
+        Returns: undefined
       }
     }
     Enums: {

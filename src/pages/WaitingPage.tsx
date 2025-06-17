@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { PRICING_DETAILS } from '@/lib/pricing';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const statusMessages = {
@@ -24,20 +24,18 @@ export default function WaitingPage() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   
-  // Check URL parameters first, then location state
   const bookingId = searchParams.get('booking_id') || (location.state?.bookingId);
   const planKey = location.state?.planKey;
   
   const [bookingStatus, setBookingStatus] = useState<string>("pending");
   const [paymentStatus, setPaymentStatus] = useState<string>("pending");
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
   
-  // Check URL for success or canceled payment
   const paymentSuccess = searchParams.get('success') === 'true';
   const paymentCanceled = searchParams.get('canceled') === 'true';
 
-  // Redirect if no booking data
   if (!bookingId) {
     return <Navigate to="/" replace />;
   }
@@ -45,15 +43,12 @@ export default function WaitingPage() {
   const planDetails = planKey ? PRICING_DETAILS[planKey as keyof typeof PRICING_DETAILS] : null;
 
   useEffect(() => {
-    // Show toast messages for payment results
     if (paymentSuccess) {
       toast({
         title: "Payment Successful",
         description: "Your payment has been processed. Your call will be initiated soon.",
         variant: "default",
       });
-      
-      // Check payment status immediately when success=true is in URL
       checkPaymentStatus();
     } else if (paymentCanceled) {
       toast({
@@ -64,7 +59,6 @@ export default function WaitingPage() {
     }
   }, [paymentSuccess, paymentCanceled, toast]);
 
-  // Function to check payment status from Stripe
   const checkPaymentStatus = async () => {
     try {
       console.log("Checking payment status for booking:", bookingId);
@@ -81,7 +75,6 @@ export default function WaitingPage() {
       
       if (data && data.status === 'completed') {
         setPaymentStatus('completed');
-        // Refresh booking status to see updated status
         fetchBookingStatus();
       }
     } catch (error) {
@@ -89,7 +82,6 @@ export default function WaitingPage() {
     }
   };
 
-  // Function to fetch booking status
   const fetchBookingStatus = async () => {
     try {
       const { data, error } = await supabase
@@ -108,7 +100,11 @@ export default function WaitingPage() {
         setBookingStatus(data.status);
         setPaymentStatus(data.payment_status || 'pending');
         
-        // If payment is completed but status is still pending_payment, check payment status
+        // If queued, check queue position
+        if (data.status === 'queued') {
+          checkQueuePosition();
+        }
+        
         if (data.status === 'pending_payment' && data.payment_status !== 'completed') {
           checkPaymentStatus();
         }
@@ -120,11 +116,28 @@ export default function WaitingPage() {
     }
   };
 
+  const checkQueuePosition = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-vapi-concurrency', {
+        body: { bookingId }
+      });
+
+      if (error) {
+        console.error('Error checking queue position:', error);
+        return;
+      }
+
+      if (data && data.queuePosition) {
+        setQueuePosition(data.queuePosition);
+      }
+    } catch (error) {
+      console.error('Error checking queue position:', error);
+    }
+  };
+
   useEffect(() => {
-    // Fetch status immediately and then every 5 seconds
     fetchBookingStatus();
     const interval = setInterval(fetchBookingStatus, 5000);
-
     return () => clearInterval(interval);
   }, [bookingId]);
 
@@ -148,7 +161,6 @@ export default function WaitingPage() {
 
       if (data && data.checkout_url) {
         console.log("Redirecting to Stripe checkout:", data.checkout_url);
-        // Redirect to Stripe Checkout
         window.location.href = data.checkout_url;
       } else {
         console.error("No checkout URL returned");
@@ -176,11 +188,12 @@ export default function WaitingPage() {
       case 'completed':
         return 'bg-green-500/20 text-green-500';
       case 'pending':
-      case 'queued':
       case 'initiating':
         return 'bg-yellow-500/20 text-yellow-500';
-      case 'pending_payment':
+      case 'queued':
         return 'bg-blue-500/20 text-blue-500';
+      case 'pending_payment':
+        return 'bg-purple-500/20 text-purple-500';
       case 'cancelled':
       case 'failed':
         return 'bg-red-500/20 text-red-500';
@@ -214,12 +227,12 @@ export default function WaitingPage() {
               <div className="flex items-center gap-2">
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
+                ) : bookingStatus === 'calling' ? (
+                  <PhoneCall className="h-5 w-5 animate-pulse" />
+                ) : bookingStatus === 'queued' ? (
+                  <Clock className="h-5 w-5" />
                 ) : (
-                  bookingStatus === 'calling' ? (
-                    <PhoneCall className="h-5 w-5 animate-pulse" />
-                  ) : (
-                    <div className="h-3 w-3 rounded-full bg-current" />
-                  )
+                  <div className="h-3 w-3 rounded-full bg-current" />
                 )}
                 <p className="text-sm font-medium">
                   Status: {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1)}
@@ -228,6 +241,11 @@ export default function WaitingPage() {
               <p className="text-sm mt-2">
                 {statusMessages[bookingStatus as keyof typeof statusMessages] || "Processing your booking..."}
               </p>
+              {bookingStatus === 'queued' && queuePosition && (
+                <p className="text-sm mt-1 font-medium">
+                  Queue position: #{queuePosition}
+                </p>
+              )}
             </div>
             
             {bookingStatus === 'pending_payment' && (
