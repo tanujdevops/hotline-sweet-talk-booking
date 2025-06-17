@@ -52,7 +52,7 @@ const Testimonials = () => {
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-6">What Our <span className="text-hotline bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Clients</span> Say</h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Don't just take our word for it. Hear what our satisfied clients have to say about their sweet talk experiences.
+            Experience the satisfaction our AI companions deliver.
           </p>
           
           <div className="mt-4 text-center">
@@ -63,69 +63,33 @@ const Testimonials = () => {
                   <Star key={i} size={16} fill={i < 5 ? "#9b87f5" : "none"} className="text-hotline" />
                 ))}
               </div>
-              <span className="text-gray-400 text-sm">based on 10,000+ calls</span>
+              <span className="text-gray-400 text-sm">10,000+ satisfied clients</span>
             </div>
           </div>
         </div>
         
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <Testimonial 
-            quote="The quality of conversation was amazing. Such attention to detail and genuine interest in what I had to say. Will definitely call again!"
+            quote="The AI companion was incredibly engaging and made me feel genuinely heard. Perfect conversation quality!"
             name="Alex K."
-            position="Repeat Customer"
-            className="lg:translate-y-4"
-            rating={5}
-          />
-          
-          <Testimonial 
-            quote="I was nervous at first, but the talker made me feel so comfortable. Those 4 minutes felt like a genuine connection. Worth every penny."
-            name="Jamie T."
-            position="New Client"
-            rating={5}
-          />
-          
-          <Testimonial 
-            quote="The extended call option is definitely the way to go. Just when the conversation was getting good, I still had 2 minutes left. Perfect!"
-            name="Morgan P."
-            position="Weekly Caller"
-            className="lg:translate-y-4"
-            rating={5}
-          />
-          
-          <Testimonial 
-            quote="I've tried other services before, but the quality of talkers here is on another level. Professional, attentive, and worth coming back to."
-            name="Taylor B."
-            position="Monthly Subscriber"
-            rating={4}
-          />
-          
-          <Testimonial 
-            quote="The scheduling system is so convenient. I can book late at night for the next day and always get my preferred time slot."
-            name="Jordan M."
             position="Regular Client"
-            className="lg:translate-y-4"
             rating={5}
           />
           
           <Testimonial 
-            quote="I was skeptical about how much could be accomplished in just 2 minutes, but I was blown away. Can't wait for my next call!"
-            name="Riley S."
-            position="First-time Caller"
+            quote="Amazing experience! The AI understood exactly what I needed. Those 4 minutes felt like pure connection."
+            name="Jamie T."
+            position="Premium Member"
             rating={5}
           />
-        </div>
-        
-        <div className="mt-12 text-center">
-          <div className="inline-block overflow-hidden mx-auto whitespace-nowrap">
-            <div className="inline-flex animate-testimonial">
-              {["Sam", "Robin", "Casey", "Jordan", "Quinn", "Taylor", "Riley", "Alex", "Morgan"].map((name, i) => (
-                <div key={i} className="px-4 py-2 mx-2 bg-black/30 backdrop-blur-sm rounded-full text-sm flex items-center">
-                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                  <span>{name} just booked a call</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          
+          <Testimonial 
+            quote="Best AI conversation service I've tried. Professional, responsive, and available whenever I need it."
+            name="Morgan P."
+            position="VIP Client"
+            className="lg:translate-y-4"
+            rating={5}
+          />
         </div>
       </div>
     </section>
