@@ -11,6 +11,10 @@ import { Button } from "@/components/ui/button";
 
 export const faqData = [
   {
+    question: "Are your companions AI-powered?",
+    answer: "Yes! Our companions use advanced AI technology to provide consistent, personalized conversations. This means they're available 24/7, never have bad days, and are trained to focus entirely on your satisfaction and comfort."
+  },
+  {
     question: "How does the booking process work?",
     answer: "Simply fill out our booking form with your preferred date and call type. After you complete your payment, you'll receive a confirmation with details for your scheduled call."
   },
@@ -27,8 +31,8 @@ export const faqData = [
     answer: "Absolutely. We maintain strict confidentiality of all customer information. We never share, sell, or expose your personal details with anyone."
   },
   {
-    question: "Can I request a specific talker?",
-    answer: "Yes! In the special requests section of the booking form, you can specify preferences for your talker, including any particular qualities you're looking for."
+    question: "Can I request specific conversation topics?",
+    answer: "Yes! In the special requests section of the booking form, you can specify preferences for your conversation, including topics or particular qualities you're looking for in your AI companion."
   },
   {
     question: "What happens if I miss my scheduled call?",

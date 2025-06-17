@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { PhoneCall, ShieldCheck, Clock, Heart } from "lucide-react";
+import { PhoneCall, ShieldCheck, Clock, Heart, Zap } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Hero = () => {
@@ -24,10 +24,10 @@ const Hero = () => {
       <div className="container mx-auto relative z-10 flex justify-center">
         <div className={`max-w-xl md:max-w-3xl text-center animate-fade-in ${!isMobile ? 'px-8' : ''}`}>
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight text-white font-cormorant">
-            Experience a <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">Sensual Connection</span> That Leaves You Breathless
+            Experience <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">AI-Enhanced Intimacy</span> That Leaves You Breathless
           </h1>
           <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto font-montserrat">
-            Feel the warmth of an intimate conversation with our elite companions. Every whisper, every moment is crafted to awaken your senses and fulfill your deepest desires.
+            Connect with our advanced AI companions, perfectly trained to understand your desires. Every conversation is personalized, available 24/7, and designed to fulfill your deepest needs with consistency and care.
           </p>
           
           <div className="flex flex-wrap justify-center gap-3 md:gap-6 mb-8 md:mb-12">
@@ -36,12 +36,16 @@ const Hero = () => {
               <span className="text-sm md:text-base text-gray-200">100% Private & Discreet</span>
             </div>
             <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
+              <Zap size={16} className="text-hotline" />
+              <span className="text-sm md:text-base text-gray-200">AI-Powered Perfection</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
               <Clock size={16} className="text-hotline" />
-              <span className="text-sm md:text-base text-gray-200">Available Now</span>
+              <span className="text-sm md:text-base text-gray-200">Available 24/7</span>
             </div>
             <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
               <Heart size={16} className="text-hotline" />
-              <span className="text-sm md:text-base text-gray-200">5-Star Experience</span>
+              <span className="text-sm md:text-base text-gray-200">Personalized Experience</span>
             </div>
           </div>
           
@@ -50,24 +54,24 @@ const Hero = () => {
               onClick={() => scrollToSection('booking')}
               className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white px-6 py-5 text-base md:text-lg rounded-md flex items-center gap-2 transition-all duration-300 shadow-lg pulse-glow">
               <PhoneCall size={18} />
-              Start Your Free Trial Now
+              Start Your Free AI Trial Now
             </Button>
             <Button 
               variant="outline"
               onClick={() => scrollToSection('pricing')}
               className="border-hotline-pink text-hotline-pink hover:bg-hotline-pink/10 px-6 py-5 text-base md:text-lg rounded-md transition-all duration-300">
-              View Exclusive Packages
+              View AI Companion Packages
             </Button>
           </div>
           
           <div className="mt-6 flex flex-col md:flex-row items-center justify-center gap-4">
             <div className="text-sm text-gray-400 flex items-center gap-2">
               <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span>23 companions available now</span>
+              <span>AI companions online and ready</span>
             </div>
             <div className="text-sm text-gray-400 flex items-center gap-2">
               <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
-              <span>Only 3 prime-time slots remaining!</span>
+              <span>Limited premium slots available!</span>
             </div>
           </div>
         </div>
