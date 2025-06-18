@@ -99,7 +99,7 @@ serve(async (req) => {
       account_uuid: agent.account_id
     });
     
-    // Make API request to VAPI
+    // Make API request to VAPI with correct format
     const response = await fetch('https://api.vapi.ai/call', {
       method: 'POST',
       headers: {
@@ -107,18 +107,20 @@ serve(async (req) => {
         'Authorization': `Bearer ${agent.api_key}`,
       },
       body: JSON.stringify({
-        assistant: agent.agent_id,
+        assistant: {
+          id: agent.agent_id
+        },
         customer: {
           number: phone,
           name: name
-        },
-        phone_number_id: agent.phone_number_id,
+        }
       }),
     });
 
     const vapiData = await response.json();
     
     if (!response.ok) {
+      console.error("VAPI API error:", vapiData);
       // Decrement call counts on error
       await supabaseClient.rpc('decrement_call_count', {
         agent_uuid: agent.vapi_agent_id,

@@ -86,7 +86,7 @@ serve(async (req) => {
           account_uuid: agent.account_id
         });
         
-        // Make API request to VAPI
+        // Make API request to VAPI with correct format
         const response = await fetch('https://api.vapi.ai/call', {
           method: 'POST',
           headers: {
@@ -94,12 +94,13 @@ serve(async (req) => {
             'Authorization': `Bearer ${agent.api_key}`,
           },
           body: JSON.stringify({
-            assistant: agent.agent_id,
+            assistant: {
+              id: agent.agent_id
+            },
             customer: {
               number: queueItem.bookings.users.phone,
               name: queueItem.bookings.users.name
-            },
-            phone_number_id: agent.phone_number_id,
+            }
           }),
         });
 
