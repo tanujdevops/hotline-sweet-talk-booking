@@ -1,3 +1,6 @@
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS http;
 
 -- Create table for VAPI accounts
 CREATE TABLE public.vapi_accounts (
@@ -46,6 +49,10 @@ CREATE TABLE public.call_queue (
 ALTER TABLE public.active_calls 
 ADD COLUMN vapi_agent_id UUID REFERENCES public.vapi_agents(id),
 ADD COLUMN vapi_account_id UUID REFERENCES public.vapi_accounts(id);
+
+-- Add call_duration to bookings table
+ALTER TABLE public.bookings
+ADD COLUMN call_duration INTEGER NOT NULL DEFAULT 300; -- Default 5 minutes (300 seconds)
 
 -- Add indexes for performance
 CREATE INDEX idx_vapi_agents_type_active ON public.vapi_agents(agent_type, is_active);
@@ -121,6 +128,87 @@ BEGIN
 END;
 $$;
 
+-- Function to cleanup inactive call
+CREATE OR REPLACE FUNCTION public.cleanup_inactive_call(
+  p_booking_id UUID,
+  p_status TEXT,
+  p_error_message TEXT DEFAULT NULL
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_agent_id UUID;
+  v_account_id UUID;
+BEGIN
+  -- Get the agent and account IDs before deleting the active call
+  SELECT vapi_agent_id, vapi_account_id INTO v_agent_id, v_account_id
+  FROM public.active_calls
+  WHERE booking_id = p_booking_id;
+
+  -- Delete the active call
+  DELETE FROM public.active_calls
+  WHERE booking_id = p_booking_id;
+
+  -- Update the booking status
+  UPDATE public.bookings
+  SET status = p_status,
+      error_message = p_error_message,
+      updated_at = now()
+  WHERE id = p_booking_id;
+
+  -- Decrement call counts if we have agent and account IDs
+  IF v_agent_id IS NOT NULL AND v_account_id IS NOT NULL THEN
+    PERFORM public.decrement_call_count(v_agent_id, v_account_id);
+  END IF;
+END;
+$$;
+
+-- Function to check and update call durations
+CREATE OR REPLACE FUNCTION public.check_call_durations()
+RETURNS TABLE(
+  booking_id UUID,
+  status TEXT,
+  message TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_booking RECORD;
+  v_agent_id UUID;
+  v_account_id UUID;
+BEGIN
+  -- Find all active calls that have exceeded their duration
+  FOR v_booking IN (
+    SELECT 
+      ac.booking_id,
+      ac.vapi_agent_id,
+      ac.vapi_account_id,
+      b.call_duration,
+      EXTRACT(EPOCH FROM (now() - ac.started_at)) as elapsed_seconds
+    FROM public.active_calls ac
+    JOIN public.bookings b ON b.id = ac.booking_id
+    WHERE b.status = 'calling'
+  ) LOOP
+    -- If call has exceeded its duration
+    IF v_booking.elapsed_seconds >= v_booking.call_duration THEN
+      -- Cleanup the call
+      PERFORM public.cleanup_inactive_call(
+        v_booking.booking_id,
+        'completed',
+        'Call completed successfully'
+      );
+      
+      -- Return the result
+      booking_id := v_booking.booking_id;
+      status := 'completed';
+      message := 'Call completed successfully';
+      RETURN NEXT;
+    END IF;
+  END LOOP;
+END;
+$$;
+
 -- Trigger to automatically update timestamps
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -133,3 +221,70 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_vapi_accounts_updated_at BEFORE UPDATE ON public.vapi_accounts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_vapi_agents_updated_at BEFORE UPDATE ON public.vapi_agents FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_call_queue_updated_at BEFORE UPDATE ON public.call_queue FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Set up cron job to process call queue every minute
+SELECT cron.schedule(
+  'process-call-queue', -- job name
+  '* * * * *',         -- every minute
+  $$
+  SELECT net.http_post(
+    url := 'https://emtwxyywgszhboxpaunk.supabase.co/functions/v1/process-call-queue',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtdHd4eXl3Z3N6aGJveHBhdW5rIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDcyNDQ5NSwiZXhwIjoyMDYwMzAwNDk1fQ.usk0IgWMWID53_A_bE0D1DpHdIAL2plgjORLRzGi-EM'
+    )
+  ) AS request_id;
+  $$
+);
+
+-- Function to automatically add booking to call queue
+CREATE OR REPLACE FUNCTION public.add_booking_to_queue()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Only add to queue if status is 'pending' or 'queued'
+  IF NEW.status IN ('pending', 'queued') THEN
+    -- Get plan type from plans table
+    DECLARE
+      v_plan_type TEXT;
+      v_existing_queue_id UUID;
+    BEGIN
+      -- Check if booking is already in queue
+      SELECT id INTO v_existing_queue_id
+      FROM public.call_queue
+      WHERE booking_id = NEW.id
+      AND status IN ('queued', 'processing');
+
+      -- Only add to queue if not already there
+      IF v_existing_queue_id IS NULL THEN
+        SELECT key INTO v_plan_type
+        FROM public.plans
+        WHERE id = NEW.plan_id;
+
+        -- Insert into call queue
+        INSERT INTO public.call_queue (
+          booking_id,
+          plan_type,
+          priority,
+          status,
+          scheduled_for
+        ) VALUES (
+          NEW.id,
+          v_plan_type,
+          CASE WHEN v_plan_type = 'free-trial' THEN 2 ELSE 1 END, -- Lower priority for free trials
+          'queued',
+          now()
+        );
+      END IF;
+    END;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to automatically add bookings to queue
+DROP TRIGGER IF EXISTS add_booking_to_queue_trigger ON public.bookings;
+CREATE TRIGGER add_booking_to_queue_trigger
+  AFTER INSERT OR UPDATE OF status
+  ON public.bookings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.add_booking_to_queue();

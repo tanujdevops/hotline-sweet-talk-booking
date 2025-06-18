@@ -385,8 +385,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_free_trial_cooldown: {
-        Args: { client_ip: string }
+      check_free_trial_eligibility: {
+        Args: { user_id: string }
         Returns: boolean
       }
       decrement_call_count: {
@@ -424,6 +424,7 @@ export type Database = {
         | "queued"
         | "initiating"
         | "calling"
+        | "free_trial_ineligible"
       plan_key: "free_trial" | "standard" | "extended" | "premium"
     }
     CompositeTypes: {
@@ -551,6 +552,7 @@ export const Constants = {
         "queued",
         "initiating",
         "calling",
+        "free_trial_ineligible",
       ],
       plan_key: ["free_trial", "standard", "extended", "premium"],
     },

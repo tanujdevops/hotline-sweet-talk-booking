@@ -1,14 +1,107 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Custom error classes for better error handling
+class AppError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number = 500,
+    public code: string = 'INTERNAL_ERROR'
+  ) {
+    super(message);
+    this.name = 'AppError';
+  }
+}
+
+class DatabaseError extends AppError {
+  constructor(message: string) {
+    super(message, 500, 'DATABASE_ERROR');
+    this.name = 'DatabaseError';
+  }
+}
+
+class ValidationError extends AppError {
+  constructor(message: string) {
+    super(message, 400, 'VALIDATION_ERROR');
+    this.name = 'ValidationError';
+  }
+}
+
+class ConcurrencyError extends AppError {
+  constructor(message: string) {
+    super(message, 409, 'CONCURRENCY_ERROR');
+    this.name = 'ConcurrencyError';
+  }
+}
+
+// Helper function to handle errors consistently
+function handleError(error: unknown): Response {
+  console.error('Error:', error);
+
+  if (error instanceof AppError) {
+    return new Response(
+      JSON.stringify({
+        error: {
+          message: error.message,
+          code: error.code,
+          statusCode: error.statusCode
+        }
+      }),
+      {
+        status: error.statusCode,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  }
+
+  // Handle unknown errors
+  return new Response(
+    JSON.stringify({
+      error: {
+        message: 'An unexpected error occurred',
+        code: 'INTERNAL_ERROR',
+        statusCode: 500
+      }
+    }),
+    {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+}
+
+// Helper function to retry database operations
+async function retryOperation<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+      if (i < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-vapi-signature",
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,7 +110,6 @@ serve(async (req) => {
     const webhookData = await req.json();
     console.log("Received VAPI webhook:", JSON.stringify(webhookData, null, 2));
     
-    // Create a Supabase client with the service role key
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -52,7 +144,9 @@ serve(async (req) => {
         status: 200,
       });
     }
-    
+
+    console.log(`Found active call for booking ${activeCall.booking_id}`);
+
     // Record the event
     await supabaseClient
       .from('call_events')
@@ -64,33 +158,42 @@ serve(async (req) => {
         }
       ]);
     
-    // Handle call end events
-    if (eventType === 'call-ended' || eventType === 'call-failed') {
-      console.log(`Call ${callId} ended, cleaning up`);
+    // Handle status update events
+    if (eventType === 'status-update') {
+      const status = message.status;
+      console.log(`Processing status update: ${status} for call ${callId}`);
       
-      // Remove from active calls
-      await supabaseClient
-        .from('active_calls')
-        .delete()
-        .eq('vapi_call_id', callId);
-      
-      // Decrement call counts
-      if (activeCall.vapi_agent_id && activeCall.vapi_account_id) {
-        await supabaseClient.rpc('decrement_call_count', {
-          agent_uuid: activeCall.vapi_agent_id,
-          account_uuid: activeCall.vapi_account_id
+      if (status === 'ended') {
+        console.log(`Call ${callId} ended, updating status`);
+        
+        // Use transaction to handle call end
+        const { error: transactionError } = await supabaseClient.rpc('handle_call_end', {
+          p_booking_id: activeCall.booking_id,
+          p_call_id: callId,
+          p_agent_id: activeCall.vapi_agent_id,
+          p_account_id: activeCall.vapi_account_id,
+          p_ended_reason: message.endedReason
         });
+
+        if (transactionError) {
+          console.error("Error in call end transaction:", transactionError);
+          throw new Error("Failed to process call end");
+        }
+
+        console.log(`Successfully processed call end for booking ${activeCall.booking_id}`);
+
+        // Trigger queue processing
+        const { error: queueError } = await supabaseClient.functions.invoke('process-call-queue', {
+          method: 'POST',
+          body: { booking_id: activeCall.booking_id }
+        });
+
+        if (queueError) {
+          console.error("Error triggering queue processing:", queueError);
+        } else {
+          console.log("Successfully triggered queue processing");
+        }
       }
-      
-      // Update booking status
-      const finalStatus = eventType === 'call-ended' ? 'completed' : 'failed';
-      await supabaseClient
-        .from('bookings')
-        .update({ status: finalStatus })
-        .eq('id', activeCall.booking_id);
-      
-      // Trigger queue processing to handle waiting calls
-      await supabaseClient.functions.invoke('process-call-queue');
     }
     
     return new Response(JSON.stringify({ success: true }), {
@@ -99,8 +202,7 @@ serve(async (req) => {
     });
     
   } catch (error) {
-    console.error("Error handling VAPI webhook:", error);
-    
+    console.error("Error processing webhook:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

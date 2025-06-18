@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface AiCopyHintProps {
@@ -23,7 +22,7 @@ const AiCopyHint = ({
   // This component doesn't render anything visible but includes hidden metadata
   // for AI crawlers to better understand content
   return (
-    <>
+    <div className="ai-copy-hint">
       {description && (
         <div className="hidden" aria-hidden="true" data-ai-description={description}>
           {description}
@@ -58,17 +57,17 @@ const AiCopyHint = ({
         <div className="hidden" aria-hidden="true" data-ai-faqs>
           <dl>
             {faqs.map((faq, index) => (
-              <React.Fragment key={index}>
+              <div key={index} className="faq-item">
                 <dt data-ai-faq-question>{faq.question}</dt>
                 <dd data-ai-faq-answer>{faq.answer}</dd>
-              </React.Fragment>
+              </div>
             ))}
           </dl>
         </div>
       )}
       
       {children}
-    </>
+    </div>
   );
 };
 

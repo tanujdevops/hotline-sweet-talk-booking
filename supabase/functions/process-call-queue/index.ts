@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -29,7 +28,8 @@ serve(async (req) => {
         *,
         bookings!inner(
           id,
-          users!inner(name, phone),
+          status,
+          users!inner(id, name, phone),
           plans!inner(key, vapi_assistant_id)
         )
       `)
@@ -40,6 +40,7 @@ serve(async (req) => {
       .limit(50); // Process up to 50 calls at once
       
     if (queueError) {
+      console.error("Failed to get queued calls:", queueError);
       throw new Error(`Failed to get queued calls: ${queueError.message}`);
     }
     
@@ -59,6 +60,18 @@ serve(async (req) => {
     
     for (const queueItem of queuedCalls) {
       try {
+        console.log(`Processing queue item ${queueItem.id} for booking ${queueItem.booking_id}`);
+        
+        // Check if booking is still in a valid state
+        if (!['pending', 'queued'].includes(queueItem.bookings.status)) {
+          console.log(`Booking ${queueItem.booking_id} is in invalid state ${queueItem.bookings.status}, removing from queue`);
+          await supabaseClient
+            .from('call_queue')
+            .delete()
+            .eq('id', queueItem.id);
+          continue;
+        }
+
         // Check if agent is available for this plan type
         const { data: availableAgent, error: agentError } = await supabaseClient
           .rpc('get_available_agent', { plan_type_param: queueItem.plan_type });
@@ -71,6 +84,70 @@ serve(async (req) => {
         const agent = availableAgent[0];
         const assistantId = queueItem.bookings.plans.vapi_assistant_id;
         console.log(`Processing call for booking ${queueItem.booking_id} with agent ${agent.agent_id}, assistant ${assistantId}`);
+        
+        // Check if this is a free trial booking
+        if (queueItem.bookings.plans.key === 'free-trial') {
+          console.log(`Processing free trial for user ${queueItem.bookings.users.id}`);
+          
+          // Check free trial eligibility
+          const { data: eligibilityData, error: eligibilityError } = await supabaseClient
+            .rpc('check_free_trial_eligibility', {
+              user_id: queueItem.bookings.users.id
+            });
+
+          if (eligibilityError) {
+            console.error("Error checking eligibility:", eligibilityError);
+            throw new Error("Failed to check free trial eligibility");
+          }
+
+          console.log(`Free trial eligibility check result: ${eligibilityData}`);
+
+          if (!eligibilityData) {
+            console.log(`User ${queueItem.bookings.users.id} is not eligible for free trial`);
+            // Update queue item status to indicate ineligibility
+            await supabaseClient
+              .from('call_queue')
+              .update({ 
+                status: 'cancelled',
+                error: 'FREE_TRIAL_LIMIT_EXCEEDED',
+                error_details: 'User has already used their free trial in the last 24 hours'
+              })
+              .eq('id', queueItem.id);
+
+            // Also update the booking status
+            await supabaseClient
+              .from('bookings')
+              .update({ status: 'cancelled' })
+              .eq('id', queueItem.booking_id);
+            
+            continue; // Skip to next queue item
+          }
+
+          // Update last free trial timestamp
+          console.log(`Updating last free trial for user ${queueItem.bookings.users.id}`);
+          const { error: updateError } = await supabaseClient
+            .rpc('update_last_free_trial', {
+              user_id: queueItem.bookings.users.id
+            });
+
+          if (updateError) {
+            console.error('Error updating last free trial:', updateError);
+            throw new Error(`Failed to update last free trial: ${updateError.message}`);
+          }
+
+          // Verify the update
+          const { data: userData, error: userError } = await supabaseClient
+            .from('users')
+            .select('last_free_trial')
+            .eq('id', queueItem.bookings.users.id)
+            .single();
+
+          if (userError) {
+            console.error('Error verifying last free trial update:', userError);
+          } else {
+            console.log(`Updated last_free_trial to: ${userData.last_free_trial}`);
+          }
+        }
         
         // Mark queue item as processing
         await supabaseClient
@@ -88,6 +165,23 @@ serve(async (req) => {
           account_uuid: agent.account_id
         });
         
+        // Format phone number to E.164 format (e.g., +1234567890)
+        const formattedPhone = queueItem.bookings.users.phone.startsWith('+') ? 
+          queueItem.bookings.users.phone : 
+          `+${queueItem.bookings.users.phone}`;
+        console.log(`Formatted phone number: ${formattedPhone}`);
+        
+        // Prepare and log the request payload
+        const payload = {
+          assistantId: assistantId,
+          phoneNumberId: agent.phone_number_id,
+          customer: {
+            number: formattedPhone,
+            name: queueItem.bookings.users.name
+          }
+        };
+        console.log("VAPI Request Payload:", JSON.stringify(payload, null, 2));
+        
         // Make API request to VAPI using the assistant ID from the plan
         const response = await fetch('https://api.vapi.ai/call', {
           method: 'POST',
@@ -95,18 +189,14 @@ serve(async (req) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${agent.api_key}`,
           },
-          body: JSON.stringify({
-            assistantId: assistantId,
-            customer: {
-              number: queueItem.bookings.users.phone,
-              name: queueItem.bookings.users.name
-            }
-          }),
+          body: JSON.stringify(payload),
         });
 
         const vapiData = await response.json();
         
         if (!response.ok) {
+          console.error("VAPI API error:", vapiData);
+          console.error("Request payload that caused error:", JSON.stringify(payload, null, 2));
           throw new Error(`VAPI API error: ${vapiData.message || JSON.stringify(vapiData)}`);
         }
         
@@ -163,14 +253,18 @@ serve(async (req) => {
             .from('call_queue')
             .update({ 
               status: 'failed',
-              retry_count: newRetryCount
+              retry_count: newRetryCount,
+              error: error.message
             })
             .eq('id', queueItem.id);
             
           // Update booking status
           await supabaseClient
             .from('bookings')
-            .update({ status: 'failed' })
+            .update({ 
+              status: 'failed',
+              error_message: error.message
+            })
             .eq('id', queueItem.booking_id);
         } else {
           // Schedule for retry in 30 seconds
@@ -182,7 +276,8 @@ serve(async (req) => {
               retry_count: newRetryCount,
               scheduled_for: retryTime,
               assigned_agent_id: null,
-              assigned_account_id: null
+              assigned_account_id: null,
+              error: error.message
             })
             .eq('id', queueItem.id);
         }
@@ -208,9 +303,12 @@ serve(async (req) => {
     });
     
   } catch (error) {
-    console.error("Error processing call queue:", error);
+    console.error("Error processing queue:", error);
     
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      message: "Failed to process queue"
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

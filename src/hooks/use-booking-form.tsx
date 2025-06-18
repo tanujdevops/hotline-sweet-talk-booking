@@ -1,14 +1,14 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { PRICING_TIERS, type PricingTier } from "@/lib/pricing";
+import { PRICING_TIERS, PRICING_DETAILS, type PricingTier } from "@/lib/pricing";
 
 export function useBookingForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const validateForm = (
     name: string,
@@ -80,13 +80,13 @@ export function useBookingForm() {
       if (existingUser) {
         console.log("User already exists:", existingUser);
         userId = existingUser.id;
-        
+
         if (existingUser.name !== name) {
           const { error: updateError } = await supabase
             .from('users')
             .update({ name })
             .eq('id', userId);
-            
+          
           if (updateError) {
             console.error("Error updating user name:", updateError);
           }
@@ -101,7 +101,7 @@ export function useBookingForm() {
           console.error("Error creating user:", userError);
           throw userError;
         }
-        
+
         userId = newUser?.[0]?.id;
         console.log("New user created:", newUser);
       }
@@ -123,8 +123,6 @@ export function useBookingForm() {
         throw planError;
       }
 
-      console.log("Plan data response:", planData);
-
       // Create booking
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
@@ -133,7 +131,8 @@ export function useBookingForm() {
             user_id: userId,
             plan_id: planData.id,
             status: 'pending_payment',
-            message
+            message,
+            call_duration: PRICING_DETAILS[pricingTier].duration * 60 // Convert minutes to seconds
           }
         ])
         .select();
@@ -153,6 +152,35 @@ export function useBookingForm() {
       // Handle different flows for free trial vs paid plans
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
         try {
+          // Check free trial eligibility before proceeding
+          const { data: eligibilityData, error: eligibilityError } = await supabase
+            .rpc('check_free_trial_eligibility', {
+              user_id: userId
+            });
+
+          if (eligibilityError) {
+            console.error("Error checking eligibility:", eligibilityError);
+            throw new Error("Failed to check free trial eligibility");
+          }
+
+          if (!eligibilityData) {
+            // Update booking status to indicate ineligibility
+            await supabase
+              .from('bookings')
+              .update({ status: 'cancelled' })
+              .eq('id', bookingId);
+
+            toast({
+              title: "Free Trial Limit Reached",
+              description: "You have already used your free trial in the last 24 hours. Please purchase a plan to continue.",
+              variant: "destructive",
+            });
+            
+            // Navigate to pricing page
+            navigate('/pricing');
+            return;
+          }
+
           // Update booking status from pending_payment to pending since it's free
           await supabase
             .from('bookings')
@@ -171,10 +199,9 @@ export function useBookingForm() {
           }
 
           console.log("Availability check response:", concurrencyData);
-          
+
           if (concurrencyData?.canMakeCall === false) {
             console.log("No agents available, call will be queued");
-            
             toast({
               title: "Booking Confirmed!",
               description: `Your call has been queued. You are #${concurrencyData.queuePosition || 'N/A'} in line.`,
@@ -182,26 +209,62 @@ export function useBookingForm() {
           } else {
             // Try to initiate call immediately
             console.log("Agent available, initiating call...");
-            const { data: initiateData, error: initiateError } = await supabase.functions.invoke('initiate-vapi-call', {
-              body: { bookingId, phone: fullPhoneNumber, name }
-            });
-
-            if (initiateError) {
-              console.error("Error initiating call:", initiateError);
-              throw new Error("Failed to initiate call");
-            }
-
-            console.log("Call initiated:", initiateData);
-            
-            if (initiateData?.queued) {
-              toast({
-                title: "Booking Confirmed!",
-                description: "Your call has been queued and will be initiated shortly.",
+            try {
+              const { data: initiateData, error: initiateError } = await supabase.functions.invoke('initiate-vapi-call', {
+                body: { bookingId, phone: fullPhoneNumber, name }
               });
-            } else {
+
+              if (initiateError) {
+                console.error("Error initiating call:", initiateError);
+                
+                // Check if this is a free trial limit error
+                if (initiateError.message?.includes('FREE_TRIAL_LIMIT_EXCEEDED') || 
+                    initiateError.status === 403) {
+                    toast({
+                        title: "Free Trial Limit Reached",
+                        description: "You have already used your free trial in the last 24 hours. Please purchase a plan to continue.",
+                        variant: "destructive",
+                    });
+                    
+                    // Navigate to pricing page
+                    navigate('/pricing');
+                    return;
+                }
+                
+                throw new Error("Failed to initiate call");
+              }
+
+              console.log("Call initiated:", initiateData);
+              
+              if (initiateData?.status === 'error' && initiateData?.code === 'FREE_TRIAL_LIMIT_EXCEEDED') {
+                  toast({
+                      title: "Free Trial Limit Reached",
+                      description: initiateData.message || "You have already used your free trial in the last 24 hours. Please purchase a plan to continue.",
+                      variant: "destructive",
+                  });
+                  
+                  // Navigate to pricing page
+                  navigate('/pricing');
+                  return;
+              }
+
+              if (initiateData?.queued) {
+                  toast({
+                      title: "Booking Confirmed!",
+                      description: "Your call has been queued and will be initiated shortly.",
+                  });
+              } else {
+                  toast({
+                      title: "Booking Confirmed!",
+                      description: "Your call is being initiated now.",
+                  });
+              }
+            } catch (error) {
+              console.error("Error in call initiation:", error);
               toast({
-                title: "Booking Confirmed!",
-                description: "Your call is being initiated now.",
+                title: "Call Initiation Failed",
+                description: "We couldn't process your call. Please try again or contact support.",
+                variant: "destructive",
               });
             }
           }
