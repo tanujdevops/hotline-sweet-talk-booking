@@ -33,7 +33,7 @@ serve(async (req) => {
       .from('bookings')
       .select(`
         *,
-        plans!inner(key)
+        plans!inner(key, vapi_assistant_id)
       `)
       .eq('id', bookingId)
       .single();
@@ -43,7 +43,8 @@ serve(async (req) => {
     }
     
     const planType = booking.plans.key;
-    console.log(`Plan type for booking ${bookingId}: ${planType}`);
+    const assistantId = booking.plans.vapi_assistant_id;
+    console.log(`Plan type for booking ${bookingId}: ${planType}, Assistant ID: ${assistantId}`);
     
     // Get available agent for this plan type
     const { data: availableAgent, error: agentError } = await supabaseClient
@@ -99,7 +100,7 @@ serve(async (req) => {
       account_uuid: agent.account_id
     });
     
-    // Make API request to VAPI with correct format
+    // Make API request to VAPI using the assistant ID from the plan
     const response = await fetch('https://api.vapi.ai/call', {
       method: 'POST',
       headers: {
@@ -107,9 +108,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${agent.api_key}`,
       },
       body: JSON.stringify({
-        assistant: {
-          id: agent.agent_id
-        },
+        assistantId: assistantId,
         customer: {
           number: phone,
           name: name
@@ -180,7 +179,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true,
       call_id: vapiData.id,
-      agent_id: agent.agent_id,
+      assistant_id: assistantId,
       message: "Call initiated successfully"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

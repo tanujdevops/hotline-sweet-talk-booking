@@ -29,7 +29,8 @@ serve(async (req) => {
         *,
         bookings!inner(
           id,
-          users!inner(name, phone)
+          users!inner(name, phone),
+          plans!inner(key, vapi_assistant_id)
         )
       `)
       .eq('status', 'queued')
@@ -68,7 +69,8 @@ serve(async (req) => {
         }
         
         const agent = availableAgent[0];
-        console.log(`Processing call for booking ${queueItem.booking_id} with agent ${agent.agent_id}`);
+        const assistantId = queueItem.bookings.plans.vapi_assistant_id;
+        console.log(`Processing call for booking ${queueItem.booking_id} with agent ${agent.agent_id}, assistant ${assistantId}`);
         
         // Mark queue item as processing
         await supabaseClient
@@ -86,7 +88,7 @@ serve(async (req) => {
           account_uuid: agent.account_id
         });
         
-        // Make API request to VAPI with correct format
+        // Make API request to VAPI using the assistant ID from the plan
         const response = await fetch('https://api.vapi.ai/call', {
           method: 'POST',
           headers: {
@@ -94,9 +96,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${agent.api_key}`,
           },
           body: JSON.stringify({
-            assistant: {
-              id: agent.agent_id
-            },
+            assistantId: assistantId,
             customer: {
               number: queueItem.bookings.users.phone,
               name: queueItem.bookings.users.name
