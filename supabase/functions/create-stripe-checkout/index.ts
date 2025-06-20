@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.2.0?target=deno";
@@ -102,6 +101,9 @@ serve(async (req) => {
       // Branding options to match sweetyoncall.com - using supported parameters
       payment_intent_data: {
         description: `Sweet Talk Call - ${booking.plans.key}`,
+        metadata: {
+          booking_id: booking.id,
+        },
       },
       custom_text: {
         submit: {

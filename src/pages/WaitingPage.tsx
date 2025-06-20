@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useLocation, Navigate, useSearchParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -32,6 +31,7 @@ export default function WaitingPage() {
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   
   const paymentSuccess = searchParams.get('success') === 'true';
   const paymentCanceled = searchParams.get('canceled') === 'true';
@@ -49,6 +49,7 @@ export default function WaitingPage() {
         description: "Your payment has been processed. Your call will be initiated soon.",
         variant: "default",
       });
+      setPaymentError(null);
       checkPaymentStatus();
     } else if (paymentCanceled) {
       toast({
@@ -56,6 +57,7 @@ export default function WaitingPage() {
         description: "Your payment was not completed. You can try again.",
         variant: "destructive",
       });
+      setPaymentError("Your payment was not completed. You can try again using the button below.");
     }
   }, [paymentSuccess, paymentCanceled, toast]);
 
@@ -248,58 +250,55 @@ export default function WaitingPage() {
               )}
             </div>
             
-            {bookingStatus === 'pending_payment' && (
-              <div className="rounded-lg bg-secondary p-4 mt-6">
-                <div className="flex items-start space-x-2">
-                  {paymentStatus === 'completed' ? (
-                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                  ) : (
-                    <CreditCard className="h-5 w-5 text-blue-500 mt-0.5" />
+            <div className="rounded-lg bg-secondary p-4 mt-6">
+              <div className="flex items-start space-x-2">
+                {paymentStatus === 'completed' ? (
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                ) : (
+                  <CreditCard className="h-5 w-5 text-blue-500 mt-0.5" />
+                )}
+                <div>
+                  <p className="text-sm font-medium">
+                    {paymentStatus === 'completed' 
+                      ? 'Payment Complete' 
+                      : 'Payment Required'}
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {paymentStatus === 'completed'
+                      ? 'Your payment has been processed. Your call will be initiated soon.'
+                      : 'Please complete the payment to confirm your booking.'}
+                  </p>
+                  {paymentStatus !== 'completed' && (
+                    <Button 
+                      onClick={handlePayment} 
+                      disabled={processingPayment}
+                      className="w-full bg-hotline hover:bg-hotline-dark"
+                    >
+                      {processingPayment ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Proceed to Payment
+                        </>
+                      )}
+                    </Button>
                   )}
-                  <div>
-                    <p className="text-sm font-medium">
-                      {paymentStatus === 'completed' 
-                        ? 'Payment Complete' 
-                        : 'Payment Required'}
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {paymentStatus === 'completed'
-                        ? 'Your payment has been processed. Your call will be initiated soon.'
-                        : 'Please complete the payment to confirm your booking.'}
-                    </p>
-                    
-                    {paymentStatus !== 'completed' && (
-                      <Button 
-                        onClick={handlePayment} 
-                        disabled={processingPayment}
-                        className="w-full bg-hotline hover:bg-hotline-dark"
-                      >
-                        {processingPayment ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            Proceed to Payment
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
                 </div>
               </div>
-            )}
+            </div>
             
-            {paymentCanceled && (
+            {paymentError && (
               <div className="rounded-lg bg-rose-500/10 border border-rose-200 p-4 mt-2">
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-rose-700">Payment Canceled</p>
                     <p className="text-sm text-rose-600">
-                      Your payment was not completed. You can try again using the button above.
+                      {paymentError}
                     </p>
                   </div>
                 </div>
