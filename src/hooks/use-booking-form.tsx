@@ -170,12 +170,12 @@ export function useBookingForm() {
         // For paid plans, redirect to payment first
         console.log("Paid plan selected - creating payment session");
         
-        navigate(`/waiting?booking_id=${bookingId}`, { 
-          state: { 
-            bookingId,
-            planKey: pricingTier,
-          }
-        });
+        // navigate(`/waiting?booking_id=${bookingId}`, { 
+        //   state: { 
+        //     bookingId,
+        //     planKey: pricingTier,
+        //   }
+        // });
         
         // Create payment session
         try {
