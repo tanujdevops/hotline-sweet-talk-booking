@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useLocation, Navigate, useSearchParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -50,7 +51,10 @@ export default function WaitingPage() {
         variant: "default",
       });
       setPaymentError(null);
-      checkPaymentStatus();
+      // Force immediate status check after successful payment
+      setTimeout(() => {
+        fetchBookingStatus();
+      }, 1000);
     } else if (paymentCanceled) {
       toast({
         title: "Payment Canceled",
@@ -61,31 +65,9 @@ export default function WaitingPage() {
     }
   }, [paymentSuccess, paymentCanceled, toast]);
 
-  const checkPaymentStatus = async () => {
-    try {
-      console.log("Checking payment status for booking:", bookingId);
-      const { data, error } = await supabase.functions.invoke('check-payment-status', {
-        body: { bookingId }
-      });
-
-      if (error) {
-        console.error('Error checking payment status:', error);
-        return;
-      }
-
-      console.log("Payment status check response:", data);
-      
-      if (data && data.status === 'completed') {
-        setPaymentStatus('completed');
-        fetchBookingStatus();
-      }
-    } catch (error) {
-      console.error('Error checking payment status:', error);
-    }
-  };
-
   const fetchBookingStatus = async () => {
     try {
+      console.log("Fetching booking status for:", bookingId);
       const { data, error } = await supabase
         .from('bookings')
         .select('status, payment_status')
@@ -98,17 +80,13 @@ export default function WaitingPage() {
       }
 
       if (data) {
-        console.log("Booking status:", data);
+        console.log("Updated booking status:", data);
         setBookingStatus(data.status);
         setPaymentStatus(data.payment_status || 'pending');
         
         // If queued, check queue position
         if (data.status === 'queued') {
           checkQueuePosition();
-        }
-        
-        if (data.status === 'pending_payment' && data.payment_status !== 'completed') {
-          checkPaymentStatus();
         }
       }
     } catch (error) {
@@ -139,8 +117,40 @@ export default function WaitingPage() {
 
   useEffect(() => {
     fetchBookingStatus();
-    const interval = setInterval(fetchBookingStatus, 5000);
-    return () => clearInterval(interval);
+    
+    // Set up real-time subscription for booking status changes
+    const channel = supabase
+      .channel('booking_status_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: `id=eq.${bookingId}`
+        },
+        (payload) => {
+          console.log('Real-time booking update:', payload);
+          const newBooking = payload.new as any;
+          setBookingStatus(newBooking.status);
+          setPaymentStatus(newBooking.payment_status || 'pending');
+          
+          if (newBooking.status === 'queued') {
+            checkQueuePosition();
+          }
+        }
+      )
+      .subscribe();
+
+    // Set up polling as fallback
+    const interval = setInterval(() => {
+      fetchBookingStatus();
+    }, 5000);
+    
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [bookingId]);
 
   const handlePayment = async () => {
