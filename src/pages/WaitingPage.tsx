@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useLocation, Navigate, useSearchParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -16,6 +17,7 @@ const statusMessages = {
   completed: "Your call has been completed. Thank you for using our service!",
   cancelled: "This booking has been cancelled.",
   failed: "We encountered an issue with this booking. Please contact support.",
+  payment_failed: "Payment failed. Please try again.",
 };
 
 export default function WaitingPage() {
@@ -23,7 +25,8 @@ export default function WaitingPage() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   
-  const bookingId = searchParams.get('booking_id') || (location.state?.bookingId);
+  // Get booking ID from URL params first, then fallback to state
+  const bookingId = searchParams.get('booking_id') || location.state?.bookingId;
   const planKey = location.state?.planKey;
   
   const [bookingStatus, setBookingStatus] = useState<string>("pending");
@@ -36,6 +39,7 @@ export default function WaitingPage() {
   const paymentSuccess = searchParams.get('success') === 'true';
   const paymentCanceled = searchParams.get('canceled') === 'true';
 
+  // Redirect to home if no booking ID
   if (!bookingId) {
     return <Navigate to="/" replace />;
   }
@@ -50,7 +54,10 @@ export default function WaitingPage() {
         variant: "default",
       });
       setPaymentError(null);
-      checkPaymentStatus();
+      // Force immediate status check after successful payment
+      setTimeout(() => {
+        fetchBookingStatus();
+      }, 1000);
     } else if (paymentCanceled) {
       toast({
         title: "Payment Canceled",
@@ -61,31 +68,9 @@ export default function WaitingPage() {
     }
   }, [paymentSuccess, paymentCanceled, toast]);
 
-  const checkPaymentStatus = async () => {
-    try {
-      console.log("Checking payment status for booking:", bookingId);
-      const { data, error } = await supabase.functions.invoke('check-payment-status', {
-        body: { bookingId }
-      });
-
-      if (error) {
-        console.error('Error checking payment status:', error);
-        return;
-      }
-
-      console.log("Payment status check response:", data);
-      
-      if (data && data.status === 'completed') {
-        setPaymentStatus('completed');
-        fetchBookingStatus();
-      }
-    } catch (error) {
-      console.error('Error checking payment status:', error);
-    }
-  };
-
   const fetchBookingStatus = async () => {
     try {
+      console.log("Fetching booking status for:", bookingId);
       const { data, error } = await supabase
         .from('bookings')
         .select('status, payment_status')
@@ -98,17 +83,13 @@ export default function WaitingPage() {
       }
 
       if (data) {
-        console.log("Booking status:", data);
+        console.log("Updated booking status:", data);
         setBookingStatus(data.status);
         setPaymentStatus(data.payment_status || 'pending');
         
         // If queued, check queue position
         if (data.status === 'queued') {
           checkQueuePosition();
-        }
-        
-        if (data.status === 'pending_payment' && data.payment_status !== 'completed') {
-          checkPaymentStatus();
         }
       }
     } catch (error) {
@@ -138,9 +119,43 @@ export default function WaitingPage() {
   };
 
   useEffect(() => {
+    if (!bookingId) return;
+    
     fetchBookingStatus();
-    const interval = setInterval(fetchBookingStatus, 5000);
-    return () => clearInterval(interval);
+    
+    // Set up real-time subscription for booking status changes
+    const channel = supabase
+      .channel('booking_status_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: `id=eq.${bookingId}`
+        },
+        (payload) => {
+          console.log('Real-time booking update:', payload);
+          const newBooking = payload.new as any;
+          setBookingStatus(newBooking.status);
+          setPaymentStatus(newBooking.payment_status || 'pending');
+          
+          if (newBooking.status === 'queued') {
+            checkQueuePosition();
+          }
+        }
+      )
+      .subscribe();
+
+    // Set up polling as fallback
+    const interval = setInterval(() => {
+      fetchBookingStatus();
+    }, 5000);
+    
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [bookingId]);
 
   const handlePayment = async () => {
@@ -198,11 +213,14 @@ export default function WaitingPage() {
         return 'bg-purple-500/20 text-purple-500';
       case 'cancelled':
       case 'failed':
+      case 'payment_failed':
         return 'bg-red-500/20 text-red-500';
       default:
         return 'bg-gray-500/20 text-gray-500';
     }
   };
+
+  const shouldShowPaymentButton = bookingStatus === 'pending_payment' && paymentStatus !== 'completed';
 
   return (
     <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
@@ -237,7 +255,7 @@ export default function WaitingPage() {
                   <div className="h-3 w-3 rounded-full bg-current" />
                 )}
                 <p className="text-sm font-medium">
-                  Status: {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1)}
+                  Status: {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1).replace('_', ' ')}
                 </p>
               </div>
               <p className="text-sm mt-2">
@@ -250,25 +268,15 @@ export default function WaitingPage() {
               )}
             </div>
             
-            <div className="rounded-lg bg-secondary p-4 mt-6">
-              <div className="flex items-start space-x-2">
-                {paymentStatus === 'completed' ? (
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                ) : (
+            {shouldShowPaymentButton && (
+              <div className="rounded-lg bg-secondary p-4 mt-6">
+                <div className="flex items-start space-x-2">
                   <CreditCard className="h-5 w-5 text-blue-500 mt-0.5" />
-                )}
-                <div>
-                  <p className="text-sm font-medium">
-                    {paymentStatus === 'completed' 
-                      ? 'Payment Complete' 
-                      : 'Payment Required'}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {paymentStatus === 'completed'
-                      ? 'Your payment has been processed. Your call will be initiated soon.'
-                      : 'Please complete the payment to confirm your booking.'}
-                  </p>
-                  {paymentStatus !== 'completed' && (
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Payment Required</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Please complete the payment to confirm your booking.
+                    </p>
                     <Button 
                       onClick={handlePayment} 
                       disabled={processingPayment}
@@ -286,17 +294,31 @@ export default function WaitingPage() {
                         </>
                       )}
                     </Button>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+            
+            {paymentStatus === 'completed' && (
+              <div className="rounded-lg bg-green-500/10 border border-green-200 p-4 mt-2">
+                <div className="flex items-start space-x-2">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-green-700">Payment Complete</p>
+                    <p className="text-sm text-green-600">
+                      Your payment has been processed successfully.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {paymentError && (
               <div className="rounded-lg bg-rose-500/10 border border-rose-200 p-4 mt-2">
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-rose-700">Payment Canceled</p>
+                    <p className="text-sm font-medium text-rose-700">Payment Error</p>
                     <p className="text-sm text-rose-600">
                       {paymentError}
                     </p>

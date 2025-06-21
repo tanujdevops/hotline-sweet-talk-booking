@@ -1,3 +1,4 @@
+
 import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -33,9 +34,6 @@ const App = () => (
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/pricing" element={<Index />} />
-            <Route path="/bookcall" element={<Index />} />
-            <Route path="/faq" element={<Index />} />
             <Route path="/waiting" element={<WaitingPage />} />
             <Route path="/booking-confirmation" element={<BookingConfirmation />} />
             <Route path="*" element={<NotFound />} />

@@ -57,6 +57,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          call_duration: number
           created_at: string
           id: string
           message: string | null
@@ -69,6 +70,7 @@ export type Database = {
           vapi_call_id: string | null
         }
         Insert: {
+          call_duration?: number
           created_at?: string
           id?: string
           message?: string | null
@@ -81,6 +83,7 @@ export type Database = {
           vapi_call_id?: string | null
         }
         Update: {
+          call_duration?: number
           created_at?: string
           id?: string
           message?: string | null
@@ -133,13 +136,109 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "call_events_booking_id_fkey"
+            foreignKeyName: "call_events_new_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
         ]
+      }
+      call_events_default: {
+        Row: {
+          booking_id: string | null
+          details: Json | null
+          event_time: string
+          event_type: string
+          id: number
+        }
+        Insert: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type: string
+          id?: number
+        }
+        Update: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type?: string
+          id?: number
+        }
+        Relationships: []
+      }
+      call_events_y2025m04: {
+        Row: {
+          booking_id: string | null
+          details: Json | null
+          event_time: string
+          event_type: string
+          id: number
+        }
+        Insert: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type: string
+          id?: number
+        }
+        Update: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type?: string
+          id?: number
+        }
+        Relationships: []
+      }
+      call_events_y2025m05: {
+        Row: {
+          booking_id: string | null
+          details: Json | null
+          event_time: string
+          event_type: string
+          id: number
+        }
+        Insert: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type: string
+          id?: number
+        }
+        Update: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type?: string
+          id?: number
+        }
+        Relationships: []
+      }
+      call_events_y2025m06: {
+        Row: {
+          booking_id: string | null
+          details: Json | null
+          event_time: string
+          event_type: string
+          id: number
+        }
+        Insert: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type: string
+          id?: number
+        }
+        Update: {
+          booking_id?: string | null
+          details?: Json | null
+          event_time?: string
+          event_type?: string
+          id?: number
+        }
+        Relationships: []
       }
       call_queue: {
         Row: {
@@ -280,18 +379,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          last_free_trial: string | null
           name: string
           phone: string
         }
         Insert: {
           created_at?: string
           id?: string
+          last_free_trial?: string | null
           name: string
           phone: string
         }
         Update: {
           created_at?: string
           id?: string
+          last_free_trial?: string | null
           name?: string
           phone?: string
         }
@@ -385,12 +487,40 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bytea_to_text: {
+        Args: { data: string }
+        Returns: string
+      }
+      check_call_durations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          booking_id: string
+          status: string
+          message: string
+        }[]
+      }
+      check_free_trial_cooldown: {
+        Args: Record<PropertyKey, never> | { client_ip: string }
+        Returns: boolean
+      }
       check_free_trial_eligibility: {
         Args: { user_id: string }
         Returns: boolean
       }
+      cleanup_inactive_call: {
+        Args: {
+          p_booking_id: string
+          p_status: string
+          p_error_message?: string
+        }
+        Returns: undefined
+      }
       decrement_call_count: {
         Args: { agent_uuid: string; account_uuid: string }
+        Returns: undefined
+      }
+      free_agent: {
+        Args: { p_agent_id: string; p_account_id: string }
         Returns: undefined
       }
       generate_booking_id: {
@@ -407,9 +537,94 @@ export type Database = {
           phone_number_id: string
         }[]
       }
+      handle_call_end: {
+        Args: {
+          p_booking_id: string
+          p_call_id: string
+          p_agent_id: string
+          p_account_id: string
+          p_ended_reason: string
+        }
+        Returns: undefined
+      }
+      http: {
+        Args: { request: Database["public"]["CompositeTypes"]["http_request"] }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_delete: {
+        Args:
+          | { uri: string }
+          | { uri: string; content: string; content_type: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_get: {
+        Args: { uri: string } | { uri: string; data: Json }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_head: {
+        Args: { uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_header: {
+        Args: { field: string; value: string }
+        Returns: Database["public"]["CompositeTypes"]["http_header"]
+      }
+      http_list_curlopt: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          curlopt: string
+          value: string
+        }[]
+      }
+      http_patch: {
+        Args: { uri: string; content: string; content_type: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_post: {
+        Args:
+          | { uri: string; content: string; content_type: string }
+          | { uri: string; data: Json }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_put: {
+        Args: { uri: string; content: string; content_type: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_reset_curlopt: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      http_set_curlopt: {
+        Args: { curlopt: string; value: string }
+        Returns: boolean
+      }
       increment_call_count: {
         Args: { agent_uuid: string; account_uuid: string }
         Returns: undefined
+      }
+      log_queue_processing: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      safe_decrement_call_count: {
+        Args: { agent_uuid: string; account_uuid: string }
+        Returns: undefined
+      }
+      sync_booking_payment_status: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      text_to_bytea: {
+        Args: { data: string }
+        Returns: string
+      }
+      update_last_free_trial: {
+        Args: { user_id: string }
+        Returns: undefined
+      }
+      urlencode: {
+        Args: { data: Json } | { string: string } | { string: string }
+        Returns: string
       }
     }
     Enums: {
@@ -424,11 +639,26 @@ export type Database = {
         | "queued"
         | "initiating"
         | "calling"
-        | "free_trial_ineligible"
       plan_key: "free_trial" | "standard" | "extended" | "premium"
     }
     CompositeTypes: {
-      [_ in never]: never
+      http_header: {
+        field: string | null
+        value: string | null
+      }
+      http_request: {
+        method: unknown | null
+        uri: string | null
+        headers: Database["public"]["CompositeTypes"]["http_header"][] | null
+        content_type: string | null
+        content: string | null
+      }
+      http_response: {
+        status: number | null
+        content_type: string | null
+        headers: Database["public"]["CompositeTypes"]["http_header"][] | null
+        content: string | null
+      }
     }
   }
 }
@@ -552,7 +782,6 @@ export const Constants = {
         "queued",
         "initiating",
         "calling",
-        "free_trial_ineligible",
       ],
       plan_key: ["free_trial", "standard", "extended", "premium"],
     },
