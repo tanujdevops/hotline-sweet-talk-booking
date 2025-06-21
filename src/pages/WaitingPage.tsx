@@ -25,7 +25,8 @@ export default function WaitingPage() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   
-  const bookingId = searchParams.get('booking_id') || (location.state?.bookingId);
+  // Get booking ID from URL params first, then fallback to state
+  const bookingId = searchParams.get('booking_id') || location.state?.bookingId;
   const planKey = location.state?.planKey;
   
   const [bookingStatus, setBookingStatus] = useState<string>("pending");
@@ -38,6 +39,7 @@ export default function WaitingPage() {
   const paymentSuccess = searchParams.get('success') === 'true';
   const paymentCanceled = searchParams.get('canceled') === 'true';
 
+  // Redirect to home if no booking ID
   if (!bookingId) {
     return <Navigate to="/" replace />;
   }
@@ -117,6 +119,8 @@ export default function WaitingPage() {
   };
 
   useEffect(() => {
+    if (!bookingId) return;
+    
     fetchBookingStatus();
     
     // Set up real-time subscription for booking status changes

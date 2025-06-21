@@ -134,7 +134,8 @@ export function useBookingForm() {
             plan_id: planData.id,
             status: initialStatus,
             message,
-            call_duration: PRICING_DETAILS[pricingTier].duration * 60
+            call_duration: PRICING_DETAILS[pricingTier].duration * 60,
+            payment_status: pricingTier === PRICING_TIERS.FREE_TRIAL ? 'completed' : 'pending'
           }
         ])
         .select();
@@ -153,21 +154,30 @@ export function useBookingForm() {
 
       // Handle different flows
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
-        // For free trial, the booking trigger will handle queue addition
+        // For free trial, immediately go to waiting page and call will be processed
         toast({
           title: "Free Trial Booking Created!",
           description: "Your call is being processed...",
         });
         
-        navigate('/waiting', { 
+        navigate(`/waiting?booking_id=${bookingId}`, { 
           state: { 
             bookingId,
             planKey: pricingTier,
           }
         });
       } else {
-        // For paid plans, redirect to payment
-        console.log("Paid plan selected - redirecting to payment");
+        // For paid plans, redirect to payment first
+        console.log("Paid plan selected - creating payment session");
+        
+        navigate(`/waiting?booking_id=${bookingId}`, { 
+          state: { 
+            bookingId,
+            planKey: pricingTier,
+          }
+        });
+        
+        // Create payment session
         try {
           const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
             body: { bookingId }
@@ -185,16 +195,10 @@ export function useBookingForm() {
 
           if (data && data.checkout_url) {
             console.log("Redirecting to Stripe checkout:", data.checkout_url);
-            navigate('/waiting', { 
-              state: { 
-                bookingId,
-                planKey: pricingTier,
-              }
-            });
             // Small delay to ensure navigation happens first
             setTimeout(() => {
               window.location.href = data.checkout_url;
-            }, 100);
+            }, 500);
           } else {
             console.error("No checkout URL returned");
             toast({
