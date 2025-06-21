@@ -20,6 +20,7 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
 });
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -37,7 +38,7 @@ serve(async (req) => {
     }
     
     // Construct the event using the raw body string (not parsed JSON)
-    event = stripe.webhooks.constructEvent(rawBody, sig, STRIPE_WEBHOOK_SECRET);
+    event = await stripe.webhooks.constructEventAsync(rawBody, sig, STRIPE_WEBHOOK_SECRET);
     console.log("[Stripe Webhook Debug] Event constructed successfully:", event.type);
   } catch (err) {
     console.error("Webhook signature verification failed.", err);
