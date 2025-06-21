@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -123,14 +124,16 @@ export function useBookingForm() {
         throw planError;
       }
 
-      // Create booking
+      // Create booking with correct initial status based on plan type
+      const initialStatus = pricingTier === PRICING_TIERS.FREE_TRIAL ? 'pending' : 'pending_payment';
+      
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert([
           {
             user_id: userId,
             plan_id: planData.id,
-            status: 'pending_payment',
+            status: initialStatus,
             message,
             call_duration: PRICING_DETAILS[pricingTier].duration * 60 // Convert minutes to seconds
           }
@@ -181,14 +184,8 @@ export function useBookingForm() {
             return;
           }
 
-          // Update booking status from pending_payment to pending since it's free
-          await supabase
-            .from('bookings')
-            .update({ status: 'pending' })
-            .eq('id', bookingId);
-
-          // Check availability and initiate call or add to queue
-          console.log("Checking agent availability...");
+          // For free trial, try to initiate call immediately
+          console.log("Checking agent availability for free trial...");
           const { data: concurrencyData, error: concurrencyError } = await supabase.functions.invoke('check-vapi-concurrency', {
             body: { bookingId }
           });
@@ -202,6 +199,12 @@ export function useBookingForm() {
 
           if (concurrencyData?.canMakeCall === false) {
             console.log("No agents available, call will be queued");
+            // Update status to queued since no agents are available
+            await supabase
+              .from('bookings')
+              .update({ status: 'queued' })
+              .eq('id', bookingId);
+              
             toast({
               title: "Booking Confirmed!",
               description: `Your call has been queued. You are #${concurrencyData.queuePosition || 'N/A'} in line.`,
@@ -284,7 +287,8 @@ export function useBookingForm() {
           });
         }
       } else {
-        // For paid plans, redirect to Stripe checkout
+        // For paid plans, redirect to Stripe checkout - DO NOT initiate call
+        console.log("Paid plan selected - redirecting to payment, NO call initiation");
         try {
           console.log("Creating Stripe checkout for booking:", bookingId);
           const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
@@ -303,7 +307,17 @@ export function useBookingForm() {
 
           if (data && data.checkout_url) {
             console.log("Redirecting to Stripe checkout:", data.checkout_url);
-            window.location.href = data.checkout_url;
+            // Navigate to waiting page first, then redirect to Stripe
+            navigate('/waiting', { 
+              state: { 
+                bookingId,
+                planKey: pricingTier,
+              }
+            });
+            // Small delay to ensure navigation happens first
+            setTimeout(() => {
+              window.location.href = data.checkout_url;
+            }, 100);
           } else {
             console.error("No checkout URL returned");
             toast({

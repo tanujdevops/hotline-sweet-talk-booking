@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseError } from './errors';
 
@@ -55,4 +56,4 @@ export class CallManager {
       throw error;
     }
   }
-} 
+}
