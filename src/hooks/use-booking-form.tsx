@@ -170,13 +170,6 @@ export function useBookingForm() {
         // For paid plans, redirect to payment first
         console.log("Paid plan selected - creating payment session");
         
-        // navigate(`/waiting?booking_id=${bookingId}`, { 
-        //   state: { 
-        //     bookingId,
-        //     planKey: pricingTier,
-        //   }
-        // });
-        
         // Create payment session
         try {
           const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
@@ -195,10 +188,7 @@ export function useBookingForm() {
 
           if (data && data.checkout_url) {
             console.log("Redirecting to Stripe checkout:", data.checkout_url);
-            // Small delay to ensure navigation happens first
-            setTimeout(() => {
-              window.location.href = data.checkout_url;
-            }, 500);
+            window.location.href = data.checkout_url;
           } else {
             console.error("No checkout URL returned");
             toast({
