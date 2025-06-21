@@ -123,7 +123,7 @@ serve(async (req) => {
     }
 
     // Check if this is a free trial booking
-    if (bookingData.plans.key === 'free-trial') {
+    if (bookingData.plans.key === 'free_trial') {
         console.log(`Processing free trial for user ${bookingData.users.id}`);
         
         // Check free trial eligibility
@@ -249,10 +249,15 @@ serve(async (req) => {
     console.log(`Formatted phone number: ${formattedPhone}`);
     
     // Increment call counts
-    await supabaseClient.rpc('increment_call_count', {
-      agent_uuid: agent.vapi_agent_id,
+    const { data: incrementResult, error: incrementError } = await supabaseClient.rpc('increment_call_count', {
+      agent_uuid: agent.agent_id,
       account_uuid: agent.account_id
     });
+    
+    if (incrementError || !incrementResult) {
+      console.error('Failed to increment call counts:', incrementError);
+      throw new ConcurrencyError('Unable to reserve agent capacity');
+    }
     
     // Prepare and log the request payload
     const payload = {
@@ -300,7 +305,7 @@ serve(async (req) => {
         {
           booking_id: bookingId,
           vapi_call_id: vapiData.id || null,
-          vapi_agent_id: agent.vapi_agent_id,
+          vapi_agent_id: agent.agent_id,
           vapi_account_id: agent.account_id
         }
       ]);

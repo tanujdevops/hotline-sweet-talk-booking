@@ -25,18 +25,27 @@ serve(async (req) => {
   }
 
   let event;
+  let rawBody;
   try {
     const sig = req.headers.get("stripe-signature");
-    const body = await req.text();
-    console.log("[Stripe Webhook Debug] Raw body:", body);
+    rawBody = await req.text();
+    console.log("[Stripe Webhook Debug] Raw body length:", rawBody.length);
     console.log("[Stripe Webhook Debug] Stripe-Signature:", sig);
+    
     if (!sig) {
       throw new Error("Missing Stripe signature");
     }
-    event = await stripe.webhooks.constructEventAsync(body, sig, STRIPE_WEBHOOK_SECRET);
+    
+    // Construct the event using the raw body string (not parsed JSON)
+    event = stripe.webhooks.constructEvent(rawBody, sig, STRIPE_WEBHOOK_SECRET);
+    console.log("[Stripe Webhook Debug] Event constructed successfully:", event.type);
   } catch (err) {
     console.error("Webhook signature verification failed.", err);
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    console.error("Raw body sample:", rawBody?.substring(0, 200));
+    return new Response(`Webhook Error: ${err.message}`, { 
+      status: 400,
+      headers: corsHeaders 
+    });
   }
 
   // Create Supabase client

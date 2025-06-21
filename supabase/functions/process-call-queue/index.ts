@@ -86,7 +86,7 @@ serve(async (req) => {
         console.log(`Processing call for booking ${queueItem.booking_id} with agent ${agent.agent_id}, assistant ${assistantId}`);
         
         // Check if this is a free trial booking
-        if (queueItem.bookings.plans.key === 'free-trial') {
+        if (queueItem.bookings.plans.key === 'free_trial') {
           console.log(`Processing free trial for user ${queueItem.bookings.users.id}`);
           
           // Check free trial eligibility
@@ -154,16 +154,26 @@ serve(async (req) => {
           .from('call_queue')
           .update({ 
             status: 'processing',
-            assigned_agent_id: agent.vapi_agent_id,
+            assigned_agent_id: agent.agent_id,
             assigned_account_id: agent.account_id
           })
           .eq('id', queueItem.id);
         
         // Increment call counts
-        await supabaseClient.rpc('increment_call_count', {
-          agent_uuid: agent.vapi_agent_id,
+        const { data: incrementResult, error: incrementError } = await supabaseClient.rpc('increment_call_count', {
+          agent_uuid: agent.agent_id,
           account_uuid: agent.account_id
         });
+        
+        if (incrementError || !incrementResult) {
+          console.error('Failed to increment call counts:', incrementError);
+          // Update queue item status to failed
+          await supabaseClient
+            .from('call_queue')
+            .update({ status: 'failed' })
+            .eq('id', queueItem.id);
+          continue;
+        }
         
         // Format phone number to E.164 format (e.g., +1234567890)
         const formattedPhone = queueItem.bookings.users.phone.startsWith('+') ? 
