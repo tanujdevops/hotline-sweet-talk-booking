@@ -17,6 +17,7 @@ const statusMessages = {
   completed: "Your call has been completed. Thank you for using our service!",
   cancelled: "This booking has been cancelled.",
   failed: "We encountered an issue with this booking. Please contact support.",
+  payment_failed: "Payment failed. Please try again.",
 };
 
 export default function WaitingPage() {
@@ -208,11 +209,14 @@ export default function WaitingPage() {
         return 'bg-purple-500/20 text-purple-500';
       case 'cancelled':
       case 'failed':
+      case 'payment_failed':
         return 'bg-red-500/20 text-red-500';
       default:
         return 'bg-gray-500/20 text-gray-500';
     }
   };
+
+  const shouldShowPaymentButton = bookingStatus === 'pending_payment' && paymentStatus !== 'completed';
 
   return (
     <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
@@ -247,7 +251,7 @@ export default function WaitingPage() {
                   <div className="h-3 w-3 rounded-full bg-current" />
                 )}
                 <p className="text-sm font-medium">
-                  Status: {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1)}
+                  Status: {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1).replace('_', ' ')}
                 </p>
               </div>
               <p className="text-sm mt-2">
@@ -260,25 +264,15 @@ export default function WaitingPage() {
               )}
             </div>
             
-            <div className="rounded-lg bg-secondary p-4 mt-6">
-              <div className="flex items-start space-x-2">
-                {paymentStatus === 'completed' ? (
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                ) : (
+            {shouldShowPaymentButton && (
+              <div className="rounded-lg bg-secondary p-4 mt-6">
+                <div className="flex items-start space-x-2">
                   <CreditCard className="h-5 w-5 text-blue-500 mt-0.5" />
-                )}
-                <div>
-                  <p className="text-sm font-medium">
-                    {paymentStatus === 'completed' 
-                      ? 'Payment Complete' 
-                      : 'Payment Required'}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {paymentStatus === 'completed'
-                      ? 'Your payment has been processed. Your call will be initiated soon.'
-                      : 'Please complete the payment to confirm your booking.'}
-                  </p>
-                  {paymentStatus !== 'completed' && (
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Payment Required</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Please complete the payment to confirm your booking.
+                    </p>
                     <Button 
                       onClick={handlePayment} 
                       disabled={processingPayment}
@@ -296,17 +290,31 @@ export default function WaitingPage() {
                         </>
                       )}
                     </Button>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+            
+            {paymentStatus === 'completed' && (
+              <div className="rounded-lg bg-green-500/10 border border-green-200 p-4 mt-2">
+                <div className="flex items-start space-x-2">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-green-700">Payment Complete</p>
+                    <p className="text-sm text-green-600">
+                      Your payment has been processed successfully.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {paymentError && (
               <div className="rounded-lg bg-rose-500/10 border border-rose-200 p-4 mt-2">
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-rose-700">Payment Canceled</p>
+                    <p className="text-sm font-medium text-rose-700">Payment Error</p>
                     <p className="text-sm text-rose-600">
                       {paymentError}
                     </p>

@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -16,13 +15,12 @@ serve(async (req) => {
   try {
     console.log("Processing call queue...");
     
-    // Create a Supabase client with the service role key
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
     
-    // Get queued calls ordered by priority and creation time
+    // Get queued calls with proper prioritization
     const { data: queuedCalls, error: queueError } = await supabaseClient
       .from('call_queue')
       .select(`
@@ -38,7 +36,7 @@ serve(async (req) => {
       .lte('scheduled_for', new Date().toISOString())
       .order('priority')
       .order('created_at')
-      .limit(20); // Process up to 20 calls at once for better performance
+      .limit(10);
       
     if (queueError) {
       console.error("Failed to get queued calls:", queueError);
@@ -63,7 +61,7 @@ serve(async (req) => {
       try {
         console.log(`Processing queue item ${queueItem.id} for booking ${queueItem.booking_id}`);
         
-        // Check if booking is still in a valid state
+        // Validate booking status
         if (!['pending', 'queued'].includes(queueItem.bookings.status)) {
           console.log(`Booking ${queueItem.booking_id} is in invalid state ${queueItem.bookings.status}, removing from queue`);
           await supabaseClient
@@ -73,19 +71,6 @@ serve(async (req) => {
           continue;
         }
 
-        // Check if agent is available for this plan type using the optimized function
-        const { data: availableAgent, error: agentError } = await supabaseClient
-          .rpc('get_available_agent', { plan_type_param: queueItem.plan_type });
-          
-        if (agentError || !availableAgent || availableAgent.length === 0) {
-          console.log(`No available agent for plan type ${queueItem.plan_type}, skipping (will retry later)`);
-          continue;
-        }
-        
-        const agent = availableAgent[0];
-        const assistantId = queueItem.bookings.plans.vapi_assistant_id;
-        console.log(`Processing call for booking ${queueItem.booking_id} with agent ${agent.agent_id}, assistant ${assistantId}`);
-        
         // Handle free trial eligibility check
         if (queueItem.bookings.plans.key === 'free-trial') {
           console.log(`Processing free trial for user ${queueItem.bookings.users.id}`);
@@ -129,6 +114,18 @@ serve(async (req) => {
             throw new Error(`Failed to update last free trial: ${updateError.message}`);
           }
         }
+
+        // Get available agent with proper concurrency checking
+        const { data: availableAgent, error: agentError } = await supabaseClient
+          .rpc('get_available_agent', { plan_type_param: queueItem.plan_type });
+          
+        if (agentError || !availableAgent || availableAgent.length === 0) {
+          console.log(`No available agent for plan type ${queueItem.plan_type}, skipping`);
+          continue;
+        }
+        
+        const agent = availableAgent[0];
+        console.log(`Using agent ${agent.agent_id} from account ${agent.account_id}`);
         
         // Mark queue item as processing and reserve the agent
         await supabaseClient
@@ -140,29 +137,30 @@ serve(async (req) => {
           })
           .eq('id', queueItem.id);
         
-        // Increment call counts to reserve capacity
+        // Reserve capacity
         await supabaseClient.rpc('increment_call_count', {
           agent_uuid: agent.vapi_agent_id,
           account_uuid: agent.account_id
         });
         
-        // Format phone number to E.164 format
+        // Format phone number
         const formattedPhone = queueItem.bookings.users.phone.startsWith('+') ? 
           queueItem.bookings.users.phone : 
           `+${queueItem.bookings.users.phone}`;
         
         // Prepare VAPI request
         const payload = {
-          assistantId: assistantId,
+          assistantId: queueItem.bookings.plans.vapi_assistant_id,
           phoneNumberId: agent.phone_number_id,
           customer: {
             number: formattedPhone,
             name: queueItem.bookings.users.name
           }
         };
-        console.log("VAPI Request Payload:", JSON.stringify(payload, null, 2));
         
-        // Make API request to VAPI
+        console.log("VAPI Request:", JSON.stringify(payload, null, 2));
+        
+        // Make VAPI call
         const response = await fetch('https://api.vapi.ai/call', {
           method: 'POST',
           headers: {
@@ -178,6 +176,8 @@ serve(async (req) => {
           console.error("VAPI API error:", vapiData);
           throw new Error(`VAPI API error: ${vapiData.message || JSON.stringify(vapiData)}`);
         }
+        
+        console.log("VAPI response:", vapiData);
         
         // Record active call
         await supabaseClient
@@ -223,11 +223,9 @@ serve(async (req) => {
       } catch (error) {
         console.error(`Error processing queue item ${queueItem.id}:`, error);
         
-        // Handle failures with retry logic
         const newRetryCount = queueItem.retry_count + 1;
         
         if (newRetryCount >= queueItem.max_retries) {
-          // Mark as failed after max retries
           await supabaseClient
             .from('call_queue')
             .update({ 
@@ -245,7 +243,6 @@ serve(async (req) => {
             })
             .eq('id', queueItem.booking_id);
         } else {
-          // Schedule for retry in 30 seconds
           const retryTime = new Date(Date.now() + 30000).toISOString();
           await supabaseClient
             .from('call_queue')

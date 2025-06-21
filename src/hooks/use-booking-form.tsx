@@ -9,7 +9,6 @@ export function useBookingForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const validateForm = (
     name: string,
@@ -124,7 +123,7 @@ export function useBookingForm() {
         throw planError;
       }
 
-      // Create booking - the trigger will automatically add it to queue if needed
+      // Create booking with correct initial status
       const initialStatus = pricingTier === PRICING_TIERS.FREE_TRIAL ? 'pending' : 'pending_payment';
       
       const { data: bookingData, error: bookingError } = await supabase
@@ -135,7 +134,7 @@ export function useBookingForm() {
             plan_id: planData.id,
             status: initialStatus,
             message,
-            call_duration: PRICING_DETAILS[pricingTier].duration * 60 // Convert minutes to seconds
+            call_duration: PRICING_DETAILS[pricingTier].duration * 60
           }
         ])
         .select();
@@ -145,66 +144,29 @@ export function useBookingForm() {
         throw bookingError;
       }
 
-      console.log("Booking data response:", bookingData);
+      console.log("Booking created:", bookingData);
       const bookingId = bookingData?.[0]?.id;
 
       if (!bookingId) {
         throw new Error('Failed to create booking');
       }
 
-      // Handle different flows for free trial vs paid plans
+      // Handle different flows
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
-        // For free trial, check eligibility and let the queue system handle it
-        try {
-          const { data: eligibilityData, error: eligibilityError } = await supabase
-            .rpc('check_free_trial_eligibility', {
-              user_id: userId
-            });
-
-          if (eligibilityError) {
-            console.error("Error checking eligibility:", eligibilityError);
-            throw new Error("Failed to check free trial eligibility");
+        // For free trial, the booking trigger will handle queue addition
+        toast({
+          title: "Free Trial Booking Created!",
+          description: "Your call is being processed...",
+        });
+        
+        navigate('/waiting', { 
+          state: { 
+            bookingId,
+            planKey: pricingTier,
           }
-
-          if (!eligibilityData) {
-            // Update booking status to indicate ineligibility
-            await supabase
-              .from('bookings')
-              .update({ status: 'cancelled' })
-              .eq('id', bookingId);
-
-            toast({
-              title: "Free Trial Limit Reached",
-              description: "You have already used your free trial in the last 24 hours. Please purchase a plan to continue.",
-              variant: "destructive",
-            });
-            
-            navigate('/pricing');
-            return;
-          }
-
-          // Booking created with 'pending' status, queue trigger will handle it
-          toast({
-            title: "Booking Confirmed!",
-            description: "Your free trial call is being processed. Please wait...",
-          });
-          
-          navigate('/waiting', { 
-            state: { 
-              bookingId,
-              planKey: pricingTier,
-            }
-          });
-        } catch (error) {
-          console.error('Error in free trial process:', error);
-          toast({
-            title: "Booking Failed",
-            description: "We couldn't process your free trial. Please try again.",
-            variant: "destructive",
-          });
-        }
+        });
       } else {
-        // For paid plans, redirect to Stripe checkout
+        // For paid plans, redirect to payment
         console.log("Paid plan selected - redirecting to payment");
         try {
           const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
@@ -223,7 +185,6 @@ export function useBookingForm() {
 
           if (data && data.checkout_url) {
             console.log("Redirecting to Stripe checkout:", data.checkout_url);
-            // Navigate to waiting page first, then redirect to Stripe
             navigate('/waiting', { 
               state: { 
                 bookingId,

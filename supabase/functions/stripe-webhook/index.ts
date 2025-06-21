@@ -14,7 +14,6 @@ serve(async (req) => {
   }
 
   try {
-    // Get environment variables
     const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
     const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 
@@ -31,13 +30,11 @@ serve(async (req) => {
     const body = await req.text();
     
     console.log("[Stripe Webhook] Processing webhook...");
-    console.log("[Stripe Webhook] Signature:", sig);
 
     let event;
     
     if (STRIPE_WEBHOOK_SECRET && sig) {
       try {
-        // Verify webhook signature if secret is configured
         event = await stripe.webhooks.constructEventAsync(body, sig, STRIPE_WEBHOOK_SECRET);
         console.log("[Stripe Webhook] Signature verified successfully");
       } catch (err) {
@@ -45,7 +42,6 @@ serve(async (req) => {
         return new Response(`Webhook Error: ${err.message}`, { status: 400 });
       }
     } else {
-      // If no webhook secret is configured, parse the body directly
       console.log("[Stripe Webhook] No webhook secret configured, parsing body directly");
       try {
         event = JSON.parse(body);
@@ -57,20 +53,17 @@ serve(async (req) => {
 
     console.log("[Stripe Webhook] Event type:", event.type);
 
-    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Handle the event
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
         const bookingId = session.metadata?.booking_id;
         
         console.log("[Stripe Webhook] Processing checkout.session.completed");
-        console.log("[Stripe Webhook] Session ID:", session.id);
         console.log("[Stripe Webhook] Booking ID:", bookingId);
         
         if (!bookingId) {
@@ -78,12 +71,12 @@ serve(async (req) => {
           return new Response("No booking_id in metadata", { status: 400 });
         }
 
-        // Update booking status
+        // Update booking status to queued - this will trigger the queue processing
         const { error: updateError } = await supabaseClient
           .from("bookings")
           .update({
             payment_status: "completed",
-            status: "queued",
+            status: "queued", // This change will trigger the queue via the trigger
             payment_intent_id: session.payment_intent,
             payment_amount: session.amount_total || null,
           })
@@ -95,6 +88,19 @@ serve(async (req) => {
         }
 
         console.log(`[Stripe Webhook] Booking ${bookingId} marked as paid and queued`);
+
+        // Trigger queue processing immediately
+        try {
+          const { data: queueResult, error: queueError } = await supabaseClient.functions.invoke('process-call-queue');
+          if (queueError) {
+            console.error("[Stripe Webhook] Error triggering queue processing:", queueError);
+          } else {
+            console.log("[Stripe Webhook] Queue processing triggered:", queueResult);
+          }
+        } catch (queueProcessError) {
+          console.error("[Stripe Webhook] Exception triggering queue:", queueProcessError);
+        }
+
         break;
       }
 
@@ -103,7 +109,6 @@ serve(async (req) => {
         const bookingId = intent.metadata?.booking_id;
         
         console.log("[Stripe Webhook] Processing payment_intent.succeeded");
-        console.log("[Stripe Webhook] Payment Intent ID:", intent.id);
         console.log("[Stripe Webhook] Booking ID:", bookingId);
         
         if (bookingId) {
@@ -131,7 +136,6 @@ serve(async (req) => {
         const bookingId = intent.metadata?.booking_id;
         
         console.log("[Stripe Webhook] Processing payment_intent.payment_failed");
-        console.log("[Stripe Webhook] Payment Intent ID:", intent.id);
         console.log("[Stripe Webhook] Booking ID:", bookingId);
         
         if (bookingId) {
