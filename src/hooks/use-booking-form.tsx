@@ -124,7 +124,7 @@ export function useBookingForm() {
         throw planError;
       }
 
-      // Create booking with correct initial status based on plan type
+      // Create booking - the trigger will automatically add it to queue if needed
       const initialStatus = pricingTier === PRICING_TIERS.FREE_TRIAL ? 'pending' : 'pending_payment';
       
       const { data: bookingData, error: bookingError } = await supabase
@@ -154,8 +154,8 @@ export function useBookingForm() {
 
       // Handle different flows for free trial vs paid plans
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
+        // For free trial, check eligibility and let the queue system handle it
         try {
-          // Check free trial eligibility before proceeding
           const { data: eligibilityData, error: eligibilityError } = await supabase
             .rpc('check_free_trial_eligibility', {
               user_id: userId
@@ -179,98 +179,15 @@ export function useBookingForm() {
               variant: "destructive",
             });
             
-            // Navigate to pricing page
             navigate('/pricing');
             return;
           }
 
-          // For free trial, try to initiate call immediately
-          console.log("Checking agent availability for free trial...");
-          const { data: concurrencyData, error: concurrencyError } = await supabase.functions.invoke('check-vapi-concurrency', {
-            body: { bookingId }
+          // Booking created with 'pending' status, queue trigger will handle it
+          toast({
+            title: "Booking Confirmed!",
+            description: "Your free trial call is being processed. Please wait...",
           });
-
-          if (concurrencyError) {
-            console.error("Error checking agent availability:", concurrencyError);
-            throw new Error("Failed to check agent availability");
-          }
-
-          console.log("Availability check response:", concurrencyData);
-
-          if (concurrencyData?.canMakeCall === false) {
-            console.log("No agents available, call will be queued");
-            // Update status to queued since no agents are available
-            await supabase
-              .from('bookings')
-              .update({ status: 'queued' })
-              .eq('id', bookingId);
-              
-            toast({
-              title: "Booking Confirmed!",
-              description: `Your call has been queued. You are #${concurrencyData.queuePosition || 'N/A'} in line.`,
-            });
-          } else {
-            // Try to initiate call immediately
-            console.log("Agent available, initiating call...");
-            try {
-              const { data: initiateData, error: initiateError } = await supabase.functions.invoke('initiate-vapi-call', {
-                body: { bookingId, phone: fullPhoneNumber, name }
-              });
-
-              if (initiateError) {
-                console.error("Error initiating call:", initiateError);
-                
-                // Check if this is a free trial limit error
-                if (initiateError.message?.includes('FREE_TRIAL_LIMIT_EXCEEDED') || 
-                    initiateError.status === 403) {
-                    toast({
-                        title: "Free Trial Limit Reached",
-                        description: "You have already used your free trial in the last 24 hours. Please purchase a plan to continue.",
-                        variant: "destructive",
-                    });
-                    
-                    // Navigate to pricing page
-                    navigate('/pricing');
-                    return;
-                }
-                
-                throw new Error("Failed to initiate call");
-              }
-
-              console.log("Call initiated:", initiateData);
-              
-              if (initiateData?.status === 'error' && initiateData?.code === 'FREE_TRIAL_LIMIT_EXCEEDED') {
-                  toast({
-                      title: "Free Trial Limit Reached",
-                      description: initiateData.message || "You have already used your free trial in the last 24 hours. Please purchase a plan to continue.",
-                      variant: "destructive",
-                  });
-                  
-                  // Navigate to pricing page
-                  navigate('/pricing');
-                  return;
-              }
-
-              if (initiateData?.queued) {
-                  toast({
-                      title: "Booking Confirmed!",
-                      description: "Your call has been queued and will be initiated shortly.",
-                  });
-              } else {
-                  toast({
-                      title: "Booking Confirmed!",
-                      description: "Your call is being initiated now.",
-                  });
-              }
-            } catch (error) {
-              console.error("Error in call initiation:", error);
-              toast({
-                title: "Call Initiation Failed",
-                description: "We couldn't process your call. Please try again or contact support.",
-                variant: "destructive",
-              });
-            }
-          }
           
           navigate('/waiting', { 
             state: { 
@@ -279,18 +196,17 @@ export function useBookingForm() {
             }
           });
         } catch (error) {
-          console.error('Error in call process:', error);
+          console.error('Error in free trial process:', error);
           toast({
-            title: "Call Initiation Failed",
-            description: "We couldn't process your call. Please try again or contact support.",
+            title: "Booking Failed",
+            description: "We couldn't process your free trial. Please try again.",
             variant: "destructive",
           });
         }
       } else {
-        // For paid plans, redirect to Stripe checkout - DO NOT initiate call
-        console.log("Paid plan selected - redirecting to payment, NO call initiation");
+        // For paid plans, redirect to Stripe checkout
+        console.log("Paid plan selected - redirecting to payment");
         try {
-          console.log("Creating Stripe checkout for booking:", bookingId);
           const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
             body: { bookingId }
           });
