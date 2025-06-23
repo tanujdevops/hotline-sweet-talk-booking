@@ -112,7 +112,7 @@ export function useBookingForm() {
       }
 
       // Get plan data - map new pricing tiers to existing plan keys
-      const planKeyMap = {
+      const planKeyMap: Record<PricingTier, 'free_trial' | 'standard' | 'extended'> = {
         [PRICING_TIERS.FREE_TRIAL]: 'free_trial',
         [PRICING_TIERS.PREMIUM]: 'standard', // Map premium to standard in DB
         [PRICING_TIERS.UNLIMITED]: 'extended' // Map unlimited to extended in DB
