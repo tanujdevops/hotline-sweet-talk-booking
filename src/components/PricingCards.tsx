@@ -64,7 +64,7 @@ const PricingCards = () => {
             </Button>
           </Card>
 
-          {/* Premium Plan */}
+          {/* Essential Plan */}
           <Card className="relative bg-card rounded-xl p-6 md:p-8 border-2 border-hotline transition-all duration-300 card-hover glass-effect md:scale-105 md:translate-y-[-1rem] z-10">
             <div className="absolute -top-4 right-4 bg-hotline-gradient text-white px-3 py-1 rounded-full text-xs md:text-sm font-medium shadow-lg flex items-center gap-1 md:gap-2">
               <Star size={14} className="text-white" />
@@ -73,7 +73,7 @@ const PricingCards = () => {
             
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h3 className="text-xl md:text-2xl font-bold">{PRICING_DETAILS[PRICING_TIERS.PREMIUM].label}</h3>
+                <h3 className="text-xl md:text-2xl font-bold">{PRICING_DETAILS[PRICING_TIERS.ESSENTIAL].label}</h3>
                 <p className="text-muted-foreground mt-1 text-sm md:text-base">Perfect passion</p>
               </div>
               <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1 rounded-full">
@@ -83,8 +83,8 @@ const PricingCards = () => {
             </div>
             
             <div className="mb-6">
-              <p className="text-3xl md:text-4xl font-bold">${PRICING_DETAILS[PRICING_TIERS.PREMIUM].price.toFixed(2)}</p>
-              <p className="text-muted-foreground text-sm md:text-base">{PRICING_DETAILS[PRICING_TIERS.PREMIUM].description}</p>
+              <p className="text-3xl md:text-4xl font-bold">${PRICING_DETAILS[PRICING_TIERS.ESSENTIAL].price.toFixed(2)}</p>
+              <p className="text-muted-foreground text-sm md:text-base">{PRICING_DETAILS[PRICING_TIERS.ESSENTIAL].description}</p>
             </div>
             
             <ul className="space-y-3 mb-6 md:mb-8">
@@ -98,7 +98,7 @@ const PricingCards = () => {
               </li>
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span className="text-sm md:text-base">Just ${(PRICING_DETAILS[PRICING_TIERS.PREMIUM].price / 3).toFixed(2)}/minute</span>
+                <span className="text-sm md:text-base">Just ${(PRICING_DETAILS[PRICING_TIERS.ESSENTIAL].price / 3).toFixed(2)}/minute</span>
               </li>
             </ul>
             
@@ -116,11 +116,11 @@ const PricingCards = () => {
             </div>
           </Card>
 
-          {/* Unlimited Plan */}
+          {/* Deluxe Plan */}
           <Card className="relative bg-card rounded-xl p-6 md:p-8 border border-border hover:border-hotline transition-all duration-300 card-hover glass-effect">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h3 className="text-xl md:text-2xl font-bold">{PRICING_DETAILS[PRICING_TIERS.UNLIMITED].label}</h3>
+                <h3 className="text-xl md:text-2xl font-bold">{PRICING_DETAILS[PRICING_TIERS.DELUXE].label}</h3>
                 <p className="text-muted-foreground mt-1 text-sm md:text-base">Ultimate pleasure</p>
               </div>
               <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1 rounded-full">
@@ -130,8 +130,8 @@ const PricingCards = () => {
             </div>
             
             <div className="mb-6">
-              <p className="text-3xl md:text-4xl font-bold">${PRICING_DETAILS[PRICING_TIERS.UNLIMITED].price.toFixed(2)}</p>
-              <p className="text-muted-foreground text-sm md:text-base">{PRICING_DETAILS[PRICING_TIERS.UNLIMITED].description}</p>
+              <p className="text-3xl md:text-4xl font-bold">${PRICING_DETAILS[PRICING_TIERS.DELUXE].price.toFixed(2)}</p>
+              <p className="text-muted-foreground text-sm md:text-base">{PRICING_DETAILS[PRICING_TIERS.DELUXE].description}</p>
             </div>
             
             <ul className="space-y-3 mb-6 md:mb-8">
@@ -145,7 +145,7 @@ const PricingCards = () => {
               </li>
               <li className="flex items-start gap-2">
                 <Check size={18} className="text-hotline mt-1 flex-shrink-0" />
-                <span className="text-sm md:text-base">${(PRICING_DETAILS[PRICING_TIERS.UNLIMITED].price / 7).toFixed(2)}/minute value</span>
+                <span className="text-sm md:text-base">${(PRICING_DETAILS[PRICING_TIERS.DELUXE].price / 7).toFixed(2)}/minute value</span>
               </li>
             </ul>
             
