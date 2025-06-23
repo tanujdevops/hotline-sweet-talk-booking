@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ const BookingForm = () => {
   const [countryCode, setCountryCode] = useState("+1");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [message, setMessage] = useState("");
-  const [pricingTier, setPricingTier] = useState<PricingTier>(PRICING_TIERS.PREMIUM);
+  const [pricingTier, setPricingTier] = useState<PricingTier>(PRICING_TIERS.ESSENTIAL);
 
   const { isSubmitting, handleSubmit } = useBookingForm();
 
