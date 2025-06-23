@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { PRICING_TIERS, PRICING_DETAILS, type PricingTier } from "@/lib/pricing";
 import { useBookingForm } from "@/hooks/use-booking-form";
-import { PhoneCall, CreditCard } from "lucide-react";
+import { PhoneCall, CreditCard, Zap } from "lucide-react";
 
 const BookingForm = () => {
   const isMobile = useIsMobile();
@@ -16,7 +16,7 @@ const BookingForm = () => {
   const [countryCode, setCountryCode] = useState("+1");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [message, setMessage] = useState("");
-  const [pricingTier, setPricingTier] = useState<PricingTier>(PRICING_TIERS.STANDARD);
+  const [pricingTier, setPricingTier] = useState<PricingTier>(PRICING_TIERS.PREMIUM);
 
   const { isSubmitting, handleSubmit } = useBookingForm();
 
@@ -37,9 +37,14 @@ const BookingForm = () => {
         <div className="grid md:grid-cols-2 gap-6 md:gap-12 items-start">
           <div className="md:sticky md:top-24">
             <h2 className="text-2xl md:text-4xl font-bold mb-4">Book Your <span className="text-hotline">Sweet Talk</span> Session</h2>
-            <p className="text-base md:text-lg text-gray-300 mb-6">
-              Fill out the form and get ready for a pleasurable conversation!
+            <p className="text-base md:text-lg text-gray-300 mb-4">
+              Fill out the form and get ready for an instant, pleasurable conversation!
             </p>
+            
+            <div className="flex items-center gap-2 mb-6 p-3 bg-hotline/10 rounded-lg border border-hotline/20">
+              <Zap className="text-hotline animate-pulse" size={20} />
+              <span className="text-hotline font-medium">Your call starts immediately after booking!</span>
+            </div>
             
             <div className="space-y-4 hidden md:block">
               <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-lg">
@@ -66,15 +71,11 @@ const BookingForm = () => {
               
               <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-lg">
                 <div className="rounded-full bg-hotline p-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                    <rect width="18" height="18" x="3" y="3" rx="2" />
-                    <path d="M8 12h8" />
-                    <path d="M12 8v8" />
-                  </svg>
+                  <Zap size={24} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold">Cancel Anytime</h3>
-                  <p className="text-muted-foreground text-sm">No contracts or commitments</p>
+                  <h3 className="font-bold">Instant Connection</h3>
+                  <p className="text-muted-foreground text-sm">No waiting - your call starts now</p>
                 </div>
               </div>
             </div>
@@ -116,7 +117,10 @@ const BookingForm = () => {
                       <div className="flex items-start gap-2">
                         <RadioGroupItem value={tier} id={tier} />
                         <div>
-                          <p className="font-medium">{details.label}</p>
+                          <p className="font-medium flex items-center gap-2">
+                            {details.label}
+                            <Zap size={14} className="text-hotline" />
+                          </p>
                           <p className="text-sm text-muted-foreground">{details.description}</p>
                         </div>
                       </div>
@@ -144,11 +148,14 @@ const BookingForm = () => {
                 {isSubmitting ? (
                   "Processing..."
                 ) : pricingTier === PRICING_TIERS.FREE_TRIAL ? (
-                  "Start Your Free Trial"
+                  <>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Connect Instantly - Free
+                  </>
                 ) : (
                   <>
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Book Now
+                    Connect Instantly
                   </>
                 )}
               </Button>

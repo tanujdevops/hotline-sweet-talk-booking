@@ -59,6 +59,7 @@ export type Database = {
         Row: {
           call_duration: number
           created_at: string
+          error_message: string | null
           id: string
           message: string | null
           payment_amount: number | null
@@ -72,6 +73,7 @@ export type Database = {
         Insert: {
           call_duration?: number
           created_at?: string
+          error_message?: string | null
           id?: string
           message?: string | null
           payment_amount?: number | null
@@ -85,6 +87,7 @@ export type Database = {
         Update: {
           call_duration?: number
           created_at?: string
+          error_message?: string | null
           id?: string
           message?: string | null
           payment_amount?: number | null
@@ -515,6 +518,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      cleanup_stale_calls: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       decrement_call_count: {
         Args: { agent_uuid: string; account_uuid: string }
         Returns: undefined
@@ -600,7 +607,7 @@ export type Database = {
       }
       increment_call_count: {
         Args: { agent_uuid: string; account_uuid: string }
-        Returns: undefined
+        Returns: boolean
       }
       log_queue_processing: {
         Args: Record<PropertyKey, never>

@@ -1,8 +1,8 @@
 
 export const PRICING_TIERS = {
   FREE_TRIAL: 'free_trial',
-  STANDARD: 'standard',
-  EXTENDED: 'extended'
+  PREMIUM: 'premium',
+  UNLIMITED: 'unlimited'
 } as const;
 
 export type PricingTier = typeof PRICING_TIERS[keyof typeof PRICING_TIERS];
@@ -14,16 +14,16 @@ export const PRICING_DETAILS = {
     label: 'Free Trial',
     description: 'A quick taste of the experience, completely free.'
   },
-  [PRICING_TIERS.STANDARD]: {
+  [PRICING_TIERS.PREMIUM]: {
     duration: 3,
-    price: 2.99,
-    label: 'Standard',
+    price: 2.49,
+    label: 'Premium',
     description: 'The perfect balance for a satisfying session.'
   },
-  [PRICING_TIERS.EXTENDED]: {
+  [PRICING_TIERS.UNLIMITED]: {
     duration: 7,
-    price: 6.49,
-    label: 'Extended',
+    price: 4.99,
+    label: 'Unlimited',
     description: 'Indulge longer for a deeper connection.'
   }
 } as const;

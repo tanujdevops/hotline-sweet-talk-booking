@@ -111,11 +111,19 @@ export function useBookingForm() {
         throw new Error('Failed to create or get user');
       }
 
-      // Get plan data
+      // Get plan data - map new pricing tiers to existing plan keys
+      const planKeyMap = {
+        [PRICING_TIERS.FREE_TRIAL]: 'free_trial',
+        [PRICING_TIERS.PREMIUM]: 'standard', // Map premium to standard in DB
+        [PRICING_TIERS.UNLIMITED]: 'extended' // Map unlimited to extended in DB
+      };
+
+      const dbPlanKey = planKeyMap[pricingTier];
+
       const { data: planData, error: planError } = await supabase
         .from('plans')
         .select()
-        .eq('key', pricingTier)
+        .eq('key', dbPlanKey)
         .single();
 
       if (planError) {
@@ -157,13 +165,13 @@ export function useBookingForm() {
         // For free trial, immediately go to waiting page and call will be processed
         toast({
           title: "Free Trial Booking Created!",
-          description: "Your call is being processed...",
+          description: "Your call is connecting instantly...",
         });
         
         navigate(`/waiting?booking_id=${bookingId}`, { 
           state: { 
             bookingId,
-            planKey: pricingTier,
+            planKey: dbPlanKey,
           }
         });
       } else {

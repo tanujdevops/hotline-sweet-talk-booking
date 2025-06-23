@@ -27,7 +27,7 @@ const Hero = () => {
             Experience <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">AI-Enhanced Intimacy</span> That Leaves You Breathless
           </h1>
           <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto font-montserrat">
-            Connect with our advanced AI companions, perfectly trained to understand your desires. Every conversation is personalized, available 24/7, and designed to fulfill your deepest needs with consistency and care.
+            Connect instantly with our advanced AI companions who understand your desires perfectly and are available 24/7.
           </p>
           
           <div className="flex flex-wrap justify-center gap-3 md:gap-6 mb-8 md:mb-12">
@@ -37,7 +37,7 @@ const Hero = () => {
             </div>
             <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
               <Zap size={16} className="text-hotline" />
-              <span className="text-sm md:text-base text-gray-200">AI-Powered Perfection</span>
+              <span className="text-sm md:text-base text-gray-200">Instant Connection</span>
             </div>
             <div className="flex items-center gap-2 px-3 md:px-4 py-2 bg-black/30 backdrop-blur-sm rounded-full">
               <Clock size={16} className="text-hotline" />
@@ -54,24 +54,24 @@ const Hero = () => {
               onClick={() => scrollToSection('booking')}
               className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white px-6 py-5 text-base md:text-lg rounded-md flex items-center gap-2 transition-all duration-300 shadow-lg pulse-glow">
               <PhoneCall size={18} />
-              Start Your Free AI Trial Now
+              Connect Instantly - Free Trial
             </Button>
             <Button 
               variant="outline"
               onClick={() => scrollToSection('pricing')}
               className="border-hotline-pink text-hotline-pink hover:bg-hotline-pink/10 px-6 py-5 text-base md:text-lg rounded-md transition-all duration-300">
-              View AI Companion Packages
+              View Instant Call Packages
             </Button>
           </div>
           
           <div className="mt-6 flex flex-col md:flex-row items-center justify-center gap-4">
             <div className="text-sm text-gray-400 flex items-center gap-2">
               <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span>AI companions online and ready</span>
+              <span>AI companions online - connect now!</span>
             </div>
             <div className="text-sm text-gray-400 flex items-center gap-2">
-              <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
-              <span>Limited premium slots available!</span>
+              <Zap size={14} className="text-hotline animate-pulse" />
+              <span>Your call starts immediately!</span>
             </div>
           </div>
         </div>
