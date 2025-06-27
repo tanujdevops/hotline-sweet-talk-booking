@@ -12,6 +12,7 @@ import { PhoneCall, CreditCard, Zap } from "lucide-react";
 const BookingForm = () => {
   const isMobile = useIsMobile();
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("+1");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [message, setMessage] = useState("");
@@ -23,6 +24,7 @@ const BookingForm = () => {
     e.preventDefault();
     handleSubmit({
       name,
+      email,
       countryCode,
       phoneNumber,
       message,
@@ -87,6 +89,15 @@ const BookingForm = () => {
                   placeholder="Your Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  required
+                  className="bg-secondary/50 border-muted"
+                />
+                
+                <Input 
+                  type="email"
+                  placeholder="Your Email Address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   className="bg-secondary/50 border-muted"
                 />

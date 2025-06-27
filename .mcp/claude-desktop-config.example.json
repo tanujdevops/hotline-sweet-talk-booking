@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--read-only",
+        "--project-ref=your-project-ref"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "your-supabase-access-token"
+      }
+    },
+    "stripe": {
+      "command": "npx", 
+      "args": [
+        "-y",
+        "@stripe/mcp",
+        "--tools=all",
+        "--api-key=your-stripe-api-key"
+      ],
+      "env": {}
+    },
+    "vapi": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@vapi-ai/mcp-server"
+      ],
+      "env": {
+        "VAPI_TOKEN": "your-vapi-token"
+      }
+    }
+  }
+}

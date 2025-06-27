@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, getClientIdentifier } from "../_shared/rate-limiter.ts";
 
 // Custom error classes for better error handling
 class AppError extends Error {
@@ -97,8 +98,10 @@ async function retryOperation<T>(
 }
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("CORS_ORIGIN") || "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-vapi-signature",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 serve(async (req) => {
@@ -106,9 +109,77 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Rate limiting for webhook endpoint (100 requests per minute)
+  const clientId = getClientIdentifier(req);
+  const rateLimit = checkRateLimit(clientId, {
+    maxRequests: 100,
+    windowMs: 60 * 1000 // 1 minute
+  });
+
+  if (!rateLimit.allowed) {
+    console.warn(`Rate limit exceeded for client: ${clientId}`);
+    return new Response("Rate limit exceeded", {
+      status: 429,
+      headers: {
+        ...corsHeaders,
+        "Retry-After": Math.ceil((rateLimit.resetTime - Date.now()) / 1000).toString(),
+        "X-RateLimit-Limit": "100",
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": rateLimit.resetTime.toString()
+      }
+    });
+  }
+
+  let webhookData;
+  let rawBody;
+  
   try {
-    const webhookData = await req.json();
-    console.log("Received VAPI webhook:", JSON.stringify(webhookData, null, 2));
+    // Get the raw body for signature validation
+    rawBody = await req.text();
+    
+    // Get VAPI webhook secret from environment
+    const VAPI_WEBHOOK_SECRET = Deno.env.get("VAPI_WEBHOOK_SECRET");
+    
+    if (VAPI_WEBHOOK_SECRET) {
+      // Get signature from headers
+      const signature = req.headers.get("x-vapi-signature");
+      
+      if (!signature) {
+        console.error("Missing VAPI webhook signature");
+        return new Response("Missing webhook signature", { 
+          status: 401,
+          headers: corsHeaders 
+        });
+      }
+      
+      // Validate signature (VAPI typically uses HMAC-SHA256)
+      const crypto = await import("node:crypto");
+      const expectedSignature = crypto
+        .createHmac("sha256", VAPI_WEBHOOK_SECRET)
+        .update(rawBody)
+        .digest("hex");
+      
+      // Compare signatures securely
+      const providedSignature = signature.replace("sha256=", "");
+      if (!crypto.timingSafeEqual(
+        Buffer.from(expectedSignature, "hex"),
+        Buffer.from(providedSignature, "hex")
+      )) {
+        console.error("Invalid VAPI webhook signature");
+        return new Response("Invalid webhook signature", { 
+          status: 401,
+          headers: corsHeaders 
+        });
+      }
+    } else {
+      console.warn("VAPI_WEBHOOK_SECRET not configured - webhook signature validation disabled");
+    }
+    
+    // Parse the webhook data
+    webhookData = JSON.parse(rawBody);
+    
+    // Log webhook received (without sensitive data)
+    console.log(`Received VAPI webhook: ${webhookData.message?.type || 'unknown'} event`);
     
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -128,7 +199,7 @@ serve(async (req) => {
     const callId = message.call.id;
     const eventType = message.type;
     
-    console.log(`Processing ${eventType} event for call ${callId}`);
+    // Processing webhook event
     
     // Find the active call
     const { data: activeCall, error: activeCallError } = await supabaseClient
@@ -138,14 +209,14 @@ serve(async (req) => {
       .single();
     
     if (activeCallError || !activeCall) {
-      console.log(`No active call found for VAPI call ${callId}`);
+      console.log("No active call found for webhook event");
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    console.log(`Found active call for booking ${activeCall.booking_id}`);
+    // Found active call for processing
 
     // Record the event
     await supabaseClient
@@ -161,10 +232,10 @@ serve(async (req) => {
     // Handle status update events
     if (eventType === 'status-update') {
       const status = message.status;
-      console.log(`Processing status update: ${status} for call ${callId}`);
+      // Processing status update event
       
       if (status === 'ended') {
-        console.log(`Call ${callId} ended, updating status`);
+        // Call ended, updating status
         
         // Use transaction to handle call end
         const { error: transactionError } = await supabaseClient.rpc('handle_call_end', {
@@ -180,7 +251,7 @@ serve(async (req) => {
           throw new Error("Failed to process call end");
         }
 
-        console.log(`Successfully processed call end for booking ${activeCall.booking_id}`);
+        // Successfully processed call end
 
         // Trigger queue processing
         const { error: queueError } = await supabaseClient.functions.invoke('process-call-queue', {

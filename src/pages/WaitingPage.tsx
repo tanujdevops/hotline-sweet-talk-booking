@@ -70,7 +70,7 @@ export default function WaitingPage() {
 
   const fetchBookingStatus = async () => {
     try {
-      console.log("Fetching booking status for:", bookingId);
+      // Fetching booking status
       const { data, error } = await supabase
         .from('bookings')
         .select('status, payment_status')
@@ -83,7 +83,7 @@ export default function WaitingPage() {
       }
 
       if (data) {
-        console.log("Updated booking status:", data);
+        // Booking status updated
         setBookingStatus(data.status);
         setPaymentStatus(data.payment_status || 'pending');
         
@@ -161,7 +161,7 @@ export default function WaitingPage() {
   const handlePayment = async () => {
     setProcessingPayment(true);
     try {
-      console.log("Initiating payment for booking:", bookingId);
+      // Initiating payment process
       const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
         body: { bookingId }
       });
@@ -177,7 +177,7 @@ export default function WaitingPage() {
       }
 
       if (data && data.checkout_url) {
-        console.log("Redirecting to Stripe checkout:", data.checkout_url);
+        // Redirecting to payment checkout
         window.location.href = data.checkout_url;
       } else {
         console.error("No checkout URL returned");

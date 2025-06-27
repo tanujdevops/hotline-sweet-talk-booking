@@ -3,8 +3,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.2.0?target=deno";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("CORS_ORIGIN") || "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 // Stripe secret key and webhook secret from environment
@@ -64,26 +66,71 @@ serve(async (req) => {
         if (!bookingId) {
           throw new Error("No booking_id in session metadata");
         }
+        
         // Mark payment as completed and queue the booking
-        await supabaseClient.from("bookings").update({
+        const { error: updateError } = await supabaseClient.from("bookings").update({
           payment_status: "completed",
           status: "queued",
           payment_intent_id: session.payment_intent,
           payment_amount: session.amount_total || null,
         }).eq("id", bookingId);
+        
+        if (updateError) {
+          console.error(`Error updating booking ${bookingId}:`, updateError);
+          throw updateError;
+        }
+        
         console.log(`Booking ${bookingId} marked as paid and queued.`);
+        
+        // Immediately try to process this booking
+        try {
+          const { error: processError } = await supabaseClient.functions.invoke('initiate-vapi-call', {
+            body: { bookingId }
+          });
+          
+          if (processError) {
+            console.error(`Error initiating call for booking ${bookingId}:`, processError);
+            // Don't throw here - the booking is still valid, we can retry later
+          } else {
+            console.log(`Successfully initiated call for booking ${bookingId}`);
+          }
+        } catch (initiateError) {
+          console.error(`Failed to initiate call for booking ${bookingId}:`, initiateError);
+          // Don't throw - the payment was successful, we can retry the call later
+        }
         break;
       }
       case "payment_intent.succeeded": {
         const intent = event.data.object;
         const bookingId = intent.metadata?.booking_id;
         if (bookingId) {
-          await supabaseClient.from("bookings").update({
+          const { error: updateError } = await supabaseClient.from("bookings").update({
             payment_status: "completed",
             status: "queued",
             payment_amount: intent.amount || null,
           }).eq("id", bookingId);
+          
+          if (updateError) {
+            console.error(`Error updating booking ${bookingId}:`, updateError);
+            throw updateError;
+          }
+          
           console.log(`Booking ${bookingId} marked as paid and queued (from payment_intent).`);
+          
+          // Immediately try to process this booking
+          try {
+            const { error: processError } = await supabaseClient.functions.invoke('initiate-vapi-call', {
+              body: { bookingId }
+            });
+            
+            if (processError) {
+              console.error(`Error initiating call for booking ${bookingId}:`, processError);
+            } else {
+              console.log(`Successfully initiated call for booking ${bookingId}`);
+            }
+          } catch (initiateError) {
+            console.error(`Failed to initiate call for booking ${bookingId}:`, initiateError);
+          }
         }
         break;
       }

@@ -3,8 +3,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.2.0?target=deno";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("CORS_ORIGIN") || "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 serve(async (req) => {
@@ -40,7 +42,7 @@ serve(async (req) => {
     // Fetch booking details
     const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
-      .select('*, plans(key, price_cents), users(name, phone)')
+      .select('*, plans(key, price_cents), users(name, phone, email)')
       .eq('id', bookingId)
       .single();
       
@@ -49,11 +51,15 @@ serve(async (req) => {
     }
 
     console.log("Creating checkout for booking:", bookingId);
-    console.log("Booking details:", booking);
+
+    // Validate that user has a real email address
+    if (!booking.users.email || !booking.users.email.trim()) {
+      throw new Error("User must have a valid email address for payment processing");
+    }
 
     // Create a Stripe customer or find existing one
     let customerId;
-    const email = `${booking.users.phone}@example.com`; // Using phone as email for Stripe customer
+    const email = booking.users.email;
     
     // Try to find existing customer with this email
     const customers = await stripe.customers.list({ email, limit: 1 });

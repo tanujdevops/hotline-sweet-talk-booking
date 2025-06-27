@@ -12,28 +12,118 @@ export function useBookingForm() {
 
   const validateForm = (
     name: string,
+    email: string,
     phoneNumber: string,
     message: string
   ) => {
-    if (!name.trim()) {
+    // Name validation
+    const trimmedName = name.trim();
+    if (!trimmedName) {
       toast({
         title: "Please enter your name",
         variant: "destructive",
       });
       return false;
     }
-
-    if (!phoneNumber.trim() || phoneNumber.length < 7) {
+    
+    if (trimmedName.length < 2 || trimmedName.length > 100) {
       toast({
-        title: "Please enter a valid phone number",
+        title: "Name must be between 2 and 100 characters",
         variant: "destructive",
       });
       return false;
     }
 
-    if (!message.trim()) {
+    // Basic name pattern validation (letters, spaces, common punctuation)
+    if (!/^[a-zA-Z\s\-'.]+$/.test(trimmedName)) {
       toast({
-        title: "Please provide some details",
+        title: "Name contains invalid characters",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Email validation
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast({
+        title: "Please enter your email address",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Email format validation
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      toast({
+        title: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Email length validation
+    if (trimmedEmail.length > 254) {
+      toast({
+        title: "Email address is too long",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Phone number validation
+    const trimmedPhone = phoneNumber.trim();
+    if (!trimmedPhone) {
+      toast({
+        title: "Please enter your phone number",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Phone number format validation (digits, spaces, hyphens, parentheses, plus)
+    if (!/^[\d\s\-\(\)\+]+$/.test(trimmedPhone)) {
+      toast({
+        title: "Phone number contains invalid characters",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Phone number length validation (7-15 digits for international numbers)
+    const digitsOnly = trimmedPhone.replace(/\D/g, '');
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      toast({
+        title: "Please enter a valid phone number (7-15 digits)",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Message validation
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) {
+      toast({
+        title: "Please provide some details about your call",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (trimmedMessage.length < 10 || trimmedMessage.length > 500) {
+      toast({
+        title: "Message must be between 10 and 500 characters",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Basic content filtering - reject if mostly special characters
+    const letterCount = (trimmedMessage.match(/[a-zA-Z]/g) || []).length;
+    if (letterCount < trimmedMessage.length * 0.3) {
+      toast({
+        title: "Please provide a meaningful description",
         variant: "destructive",
       });
       return false;
@@ -44,71 +134,48 @@ export function useBookingForm() {
 
   const handleSubmit = async ({
     name,
+    email,
     countryCode,
     phoneNumber,
     message,
     pricingTier
   }: {
     name: string;
+    email: string;
     countryCode: string;
     phoneNumber: string;
     message: string;
     pricingTier: PricingTier;
   }) => {
-    if (!validateForm(name, phoneNumber, message)) return;
+    if (!validateForm(name, email, phoneNumber, message)) return;
 
     setIsSubmitting(true);
     
     try {
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
-      console.log("Form data being submitted:", { name, phone: fullPhoneNumber, pricingTier, message });
+      // Form validation passed, proceeding with submission
 
-      // Check if user exists or create new user
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('users')
-        .select()
-        .eq('phone', fullPhoneNumber)
-        .maybeSingle();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error("Error fetching user:", fetchError);
-        throw fetchError;
-      }
-
+      // Atomically create or update user to prevent race conditions
       let userId;
-
-      if (existingUser) {
-        console.log("User already exists:", existingUser);
-        userId = existingUser.id;
-
-        if (existingUser.name !== name) {
-          const { error: updateError } = await supabase
-            .from('users')
-            .update({ name })
-            .eq('id', userId);
-          
-          if (updateError) {
-            console.error("Error updating user name:", updateError);
-          }
+      
+      try {
+        const { data: userResult, error: userError } = await supabase
+          .rpc('upsert_user', {
+            p_name: name,
+            p_email: email,
+            p_phone: fullPhoneNumber
+          });
+        
+        if (userError || !userResult) {
+          console.error("Error upserting user:", userError);
+          throw userError || new Error('Failed to create or update user');
         }
-      } else {
-        const { data: newUser, error: userError } = await supabase
-          .from('users')
-          .insert({ name, phone: fullPhoneNumber })
-          .select();
-
-        if (userError) {
-          console.error("Error creating user:", userError);
-          throw userError;
-        }
-
-        userId = newUser?.[0]?.id;
-        console.log("New user created:", newUser);
-      }
-
-      if (!userId) {
-        console.error("Failed to get user ID");
-        throw new Error('Failed to create or get user');
+        
+        userId = userResult;
+        // User created or updated successfully
+      } catch (userError) {
+        console.error("Error in user upsert:", userError);
+        throw new Error('Failed to process user information');
       }
 
       // Get plan data - map new pricing tiers to existing plan keys
@@ -153,7 +220,7 @@ export function useBookingForm() {
         throw bookingError;
       }
 
-      console.log("Booking created:", bookingData);
+      // Booking created successfully
       const bookingId = bookingData?.[0]?.id;
 
       if (!bookingId) {
@@ -176,7 +243,7 @@ export function useBookingForm() {
         });
       } else {
         // For paid plans, redirect to payment first
-        console.log("Paid plan selected - creating payment session");
+        // Paid plan selected - creating payment session
         
         // Create payment session
         try {
