@@ -184,50 +184,49 @@ serve(async (req) => {
     const customerName = bookingData.users.name;
     console.log(`Plan type for booking ${bookingId}: ${bookingData.plans.key}, Assistant ID: ${assistantId}`);
     
-    // Use the test_agent_availability_safe function to avoid API key ambiguity
+    // Use the test_agent_availability_safe function to check availability
     try {
       const { data: agentAvailability, error: availabilityError } = await supabaseClient
         .rpc('test_agent_availability_safe');
         
       if (availabilityError) {
         console.error('Error checking agent availability:', availabilityError);
-        throw new ValidationError('Failed to check agent availability');
-      }
-      
-      // Find the entry for our plan type
-      const planEntry = agentAvailability?.find(entry => entry.plan_type === bookingData.plans.key);
-      const hasAvailableAgent = planEntry && planEntry.agent_count > 0;
-      
-      if (!hasAvailableAgent) {
-        console.log(`No available agents for plan type ${bookingData.plans.key}, queuing call`);
+      } else {
+        // Find the entry for our plan type
+        const planEntry = agentAvailability?.find(entry => entry.plan_type === bookingData.plans.key);
+        const hasAvailableAgent = planEntry && planEntry.agent_count > 0;
         
-        // Add to queue
-        const { error: queueError } = await supabaseClient
-          .from('call_queue')
-          .insert(
-            {
-              booking_id: bookingId,
-              plan_type: bookingData.plans.key,
-              priority: bookingData.plans.key === 'free_trial' ? 2 : 1, // Lower priority for free trials
+        if (!hasAvailableAgent) {
+          console.log(`No available agents for plan type ${bookingData.plans.key}, queuing call`);
+          
+          // Add to queue
+          const { error: queueError } = await supabaseClient
+            .from('call_queue')
+            .insert(
+              {
+                booking_id: bookingId,
+                plan_type: bookingData.plans.key,
+                priority: bookingData.plans.key === 'free_trial' ? 2 : 1, // Lower priority for free trials
+                status: 'queued'
+              }
+            );
+          
+          if (queueError) {
+            console.error('Error adding to queue:', queueError);
+            throw new ValidationError('Failed to queue call');
+          }
+          
+          return new Response(
+            JSON.stringify({ 
+              message: 'No agents available. Call has been queued.',
               status: 'queued'
+            }),
+            { 
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 200 
             }
           );
-        
-        if (queueError) {
-          console.error('Error adding to queue:', queueError);
-          throw new ValidationError('Failed to queue call');
         }
-        
-        return new Response(
-          JSON.stringify({ 
-            message: 'No agents available. Call has been queued.',
-            status: 'queued'
-          }),
-          { 
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200 
-          }
-        );
       }
     } catch (error) {
       console.error("Error checking agent availability:", error);
@@ -243,13 +242,12 @@ serve(async (req) => {
         vapi_account_id,
         vapi_accounts!inner(
           id,
-          api_key,
-          phone_number_id,
-          vault_secret_name
+          phone_number_id
         )
       `)
       .eq('agent_type', bookingData.plans.key)
       .eq('is_active', true)
+      .lt('current_active_calls', 'max_concurrent_calls')
       .order('priority', { ascending: true })
       .order('current_active_calls', { ascending: true })
       .limit(1);
@@ -262,27 +260,21 @@ serve(async (req) => {
     const agent = availableAgents[0];
     console.log(`Using agent ${agent.agent_id} from account ${agent.vapi_account_id}`);
     
-    // Get API key - try to use vault if available
+    // Get API key directly using RPC call to avoid ambiguity
     let apiKey;
-    if (agent.vapi_accounts.vault_secret_name) {
-      try {
-        const { data: keyData, error: keyError } = await supabaseClient
-          .rpc('get_vapi_api_key', { account_uuid: agent.vapi_accounts.id });
-          
-        if (keyError) {
-          console.error("Error getting API key from vault:", keyError);
-          // Fallback to plain text key
-          apiKey = agent.vapi_accounts.api_key;
-        } else {
-          apiKey = keyData;
-        }
-      } catch (e) {
-        console.error("Exception getting API key from vault:", e);
-        // Fallback to plain text key
-        apiKey = agent.vapi_accounts.api_key;
+    try {
+      const { data: keyData, error: keyError } = await supabaseClient
+        .rpc('get_vapi_api_key', { account_uuid: agent.vapi_accounts.id });
+        
+      if (keyError) {
+        console.error("Error getting API key from vault:", keyError);
+        throw new ValidationError('Failed to get valid API key');
       }
-    } else {
-      apiKey = agent.vapi_accounts.api_key;
+      
+      apiKey = keyData;
+    } catch (e) {
+      console.error("Error getting API key from vault:", e);
+      throw new ValidationError('Failed to get valid API key');
     }
     
     if (!apiKey || apiKey === '[ENCRYPTED]') {
