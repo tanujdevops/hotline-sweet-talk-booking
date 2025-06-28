@@ -35,43 +35,29 @@ class ConcurrencyError extends AppError {
 }
 
 // Helper function to handle errors consistently
-function handleError(error: unknown): Response {
+function handleError(error: unknown): { error: any, status: number } {
   console.error('Error:', error);
 
   if (error instanceof AppError) {
-    return new Response(
-      JSON.stringify({
-        error: {
-          message: error.message,
-          code: error.code,
-          statusCode: error.statusCode
-        }
-      }),
-      {
-        status: error.statusCode,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    return {
+      error: {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode
+      },
+      status: error.statusCode
+    };
   }
 
   // Handle unknown errors
-  return new Response(
-    JSON.stringify({
-      error: {
-        message: 'An unexpected error occurred',
-        code: 'INTERNAL_ERROR',
-        statusCode: 500
-      }
-    }),
-    {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    }
-  );
+  return {
+    error: {
+      message: 'An unexpected error occurred',
+      code: 'INTERNAL_ERROR',
+      statusCode: 500
+    },
+    status: 500
+  };
 }
 
 const corsHeaders = {
@@ -199,48 +185,53 @@ serve(async (req) => {
     console.log(`Plan type for booking ${bookingId}: ${bookingData.plans.key}, Assistant ID: ${assistantId}`);
     
     // Use the test_agent_availability_safe function to avoid API key ambiguity
-    const { data: agentAvailability, error: availabilityError } = await supabaseClient
-      .rpc('test_agent_availability_safe');
-      
-    if (availabilityError) {
-      console.error('Error checking agent availability:', availabilityError);
-      throw new ValidationError('Failed to check agent availability');
-    }
-    
-    // Find the entry for our plan type
-    const planEntry = agentAvailability?.find(entry => entry.plan_type === bookingData.plans.key);
-    const hasAvailableAgent = planEntry && planEntry.agent_count > 0;
-    
-    if (!hasAvailableAgent) {
-      console.log(`No available agents for plan type ${bookingData.plans.key}, queuing call`);
-      
-      // Add to queue
-      const { error: queueError } = await supabaseClient
-        .from('call_queue')
-        .insert(
-          {
-            booking_id: bookingId,
-            plan_type: bookingData.plans.key,
-            priority: bookingData.plans.key === 'free_trial' ? 2 : 1, // Lower priority for free trials
-            status: 'queued'
-          }
-        );
-      
-      if (queueError) {
-        console.error('Error adding to queue:', queueError);
-        throw new ValidationError('Failed to queue call');
+    try {
+      const { data: agentAvailability, error: availabilityError } = await supabaseClient
+        .rpc('test_agent_availability_safe');
+        
+      if (availabilityError) {
+        console.error('Error checking agent availability:', availabilityError);
+        throw new ValidationError('Failed to check agent availability');
       }
       
-      return new Response(
-        JSON.stringify({ 
-          message: 'No agents available. Call has been queued.',
-          status: 'queued'
-        }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200 
+      // Find the entry for our plan type
+      const planEntry = agentAvailability?.find(entry => entry.plan_type === bookingData.plans.key);
+      const hasAvailableAgent = planEntry && planEntry.agent_count > 0;
+      
+      if (!hasAvailableAgent) {
+        console.log(`No available agents for plan type ${bookingData.plans.key}, queuing call`);
+        
+        // Add to queue
+        const { error: queueError } = await supabaseClient
+          .from('call_queue')
+          .insert(
+            {
+              booking_id: bookingId,
+              plan_type: bookingData.plans.key,
+              priority: bookingData.plans.key === 'free_trial' ? 2 : 1, // Lower priority for free trials
+              status: 'queued'
+            }
+          );
+        
+        if (queueError) {
+          console.error('Error adding to queue:', queueError);
+          throw new ValidationError('Failed to queue call');
         }
-      );
+        
+        return new Response(
+          JSON.stringify({ 
+            message: 'No agents available. Call has been queued.',
+            status: 'queued'
+          }),
+          { 
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200 
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Error checking agent availability:", error);
+      // Continue with direct query approach
     }
     
     // Get available agent using direct SQL to avoid the API key ambiguity
@@ -259,7 +250,6 @@ serve(async (req) => {
       `)
       .eq('agent_type', bookingData.plans.key)
       .eq('is_active', true)
-      .lt('current_active_calls', 'max_concurrent_calls')
       .order('priority', { ascending: true })
       .order('current_active_calls', { ascending: true })
       .limit(1);
