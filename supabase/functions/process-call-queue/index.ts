@@ -29,7 +29,7 @@ serve(async (req) => {
         bookings!inner(
           id,
           status,
-          users!inner(id, name, phone),
+          users!inner(id, name, phone, email),
           plans!inner(key, vapi_assistant_id)
         )
       `)
