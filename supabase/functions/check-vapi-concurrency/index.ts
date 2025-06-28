@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -46,39 +45,78 @@ serve(async (req) => {
     console.log(`Checking availability for plan type: ${planType}`);
     
     // Check if there's an available agent for this plan type
-    const { data: availableAgent, error: agentError } = await supabaseClient
-      .rpc('get_available_agent', { plan_type_param: planType });
-      
-    if (agentError) {
-      console.error("Error checking agent availability:", agentError);
-      throw new Error(`Failed to check agent availability: ${agentError.message}`);
-    }
-    
-    const canMakeCall = availableAgent && availableAgent.length > 0;
-    
-    // Get queue position if call cannot be made immediately
-    let queuePosition = null;
-    if (!canMakeCall) {
-      const { count } = await supabaseClient
-        .from('call_queue')
-        .select('*', { count: 'exact', head: true })
-        .eq('plan_type', planType)
-        .eq('status', 'queued');
+    // Use the RPC function instead of direct SQL to avoid column ambiguity
+    try {
+      const { data: availableAgent, error: agentError } = await supabaseClient
+        .rpc('test_agent_availability_safe');
         
-      queuePosition = (count || 0) + 1;
+      if (agentError) {
+        console.error("Error checking agent availability:", agentError);
+        throw new Error(`Failed to check agent availability: ${agentError.message}`);
+      }
+      
+      // Find the entry for our plan type
+      const planEntry = availableAgent?.find(entry => entry.plan_type === planType);
+      const canMakeCall = planEntry && planEntry.agent_count > 0;
+      
+      // Get queue position if call cannot be made immediately
+      let queuePosition = null;
+      if (!canMakeCall) {
+        const { count } = await supabaseClient
+          .from('call_queue')
+          .select('*', { count: 'exact', head: true })
+          .eq('plan_type', planType)
+          .eq('status', 'queued');
+          
+        queuePosition = (count || 0) + 1;
+      }
+      
+      console.log(`Can make call: ${canMakeCall}, Queue position: ${queuePosition}`);
+      
+      // Return the result
+      return new Response(JSON.stringify({ 
+        canMakeCall,
+        queuePosition,
+        planType
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    } catch (error) {
+      console.error("Error checking agent availability:", error);
+      
+      // Fallback to a simpler check that doesn't use the problematic function
+      const { data: agentCount } = await supabaseClient
+        .from('vapi_agents')
+        .select('id', { count: 'exact' })
+        .eq('agent_type', planType)
+        .eq('is_active', true)
+        .lt('current_active_calls', 'max_concurrent_calls');
+        
+      const canMakeCall = (agentCount || 0) > 0;
+      
+      // Get queue position if call cannot be made immediately
+      let queuePosition = null;
+      if (!canMakeCall) {
+        const { count } = await supabaseClient
+          .from('call_queue')
+          .select('*', { count: 'exact', head: true })
+          .eq('plan_type', planType)
+          .eq('status', 'queued');
+          
+        queuePosition = (count || 0) + 1;
+      }
+      
+      return new Response(JSON.stringify({ 
+        canMakeCall,
+        queuePosition,
+        planType,
+        fallback: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
-    
-    console.log(`Can make call: ${canMakeCall}, Queue position: ${queuePosition}`);
-    
-    // Return the result
-    return new Response(JSON.stringify({ 
-      canMakeCall,
-      queuePosition,
-      planType
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
   } catch (error) {
     console.error("Error checking VAPI concurrency:", error);
     

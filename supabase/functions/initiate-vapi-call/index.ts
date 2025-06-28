@@ -198,16 +198,20 @@ serve(async (req) => {
     const customerName = bookingData.users.name;
     console.log(`Plan type for booking ${bookingId}: ${bookingData.plans.key}, Assistant ID: ${assistantId}`);
     
-    // Get available agent for this plan type
-    const { data: availableAgent, error: agentError } = await supabaseClient
-      .rpc('get_available_agent', { plan_type_param: bookingData.plans.key });
+    // Use the test_agent_availability_safe function to avoid API key ambiguity
+    const { data: agentAvailability, error: availabilityError } = await supabaseClient
+      .rpc('test_agent_availability_safe');
       
-    if (agentError) {
-      console.error('Error getting available agent:', agentError);
-      throw new ValidationError('Failed to get available agent');
+    if (availabilityError) {
+      console.error('Error checking agent availability:', availabilityError);
+      throw new ValidationError('Failed to check agent availability');
     }
     
-    if (!availableAgent || availableAgent.length === 0) {
+    // Find the entry for our plan type
+    const planEntry = agentAvailability?.find(entry => entry.plan_type === bookingData.plans.key);
+    const hasAvailableAgent = planEntry && planEntry.agent_count > 0;
+    
+    if (!hasAvailableAgent) {
       console.log(`No available agents for plan type ${bookingData.plans.key}, queuing call`);
       
       // Add to queue
@@ -239,9 +243,63 @@ serve(async (req) => {
       );
     }
     
-    const agent = availableAgent[0];
-    console.log(`Using agent ${agent.agent_id} from account ${agent.account_id}`);
-    console.log(`Phone number ID: ${agent.phone_number_id}`);
+    // Get available agent using direct SQL to avoid the API key ambiguity
+    const { data: availableAgents, error: agentError } = await supabaseClient
+      .from('vapi_agents')
+      .select(`
+        id,
+        agent_id,
+        vapi_account_id,
+        vapi_accounts!inner(
+          id,
+          api_key,
+          phone_number_id,
+          vault_secret_name
+        )
+      `)
+      .eq('agent_type', bookingData.plans.key)
+      .eq('is_active', true)
+      .lt('current_active_calls', 'max_concurrent_calls')
+      .order('priority', { ascending: true })
+      .order('current_active_calls', { ascending: true })
+      .limit(1);
+      
+    if (agentError || !availableAgents || availableAgents.length === 0) {
+      console.error("Error getting available agent:", agentError);
+      throw new ValidationError('Failed to get available agent');
+    }
+    
+    const agent = availableAgents[0];
+    console.log(`Using agent ${agent.agent_id} from account ${agent.vapi_account_id}`);
+    
+    // Get API key - try to use vault if available
+    let apiKey;
+    if (agent.vapi_accounts.vault_secret_name) {
+      try {
+        const { data: keyData, error: keyError } = await supabaseClient
+          .rpc('get_vapi_api_key', { account_uuid: agent.vapi_accounts.id });
+          
+        if (keyError) {
+          console.error("Error getting API key from vault:", keyError);
+          // Fallback to plain text key
+          apiKey = agent.vapi_accounts.api_key;
+        } else {
+          apiKey = keyData;
+        }
+      } catch (e) {
+        console.error("Exception getting API key from vault:", e);
+        // Fallback to plain text key
+        apiKey = agent.vapi_accounts.api_key;
+      }
+    } else {
+      apiKey = agent.vapi_accounts.api_key;
+    }
+    
+    if (!apiKey || apiKey === '[ENCRYPTED]') {
+      throw new ValidationError('Failed to get valid API key');
+    }
+    
+    console.log(`Phone number ID: ${agent.vapi_accounts.phone_number_id}`);
     console.log(`Customer phone number: ${phone}`);
     
     // Format phone number to E.164 format (e.g., +1234567890)
@@ -250,8 +308,8 @@ serve(async (req) => {
     
     // Increment call counts
     const { data: incrementResult, error: incrementError } = await supabaseClient.rpc('increment_call_count', {
-      agent_uuid: agent.agent_id,
-      account_uuid: agent.account_id
+      agent_uuid: agent.id,
+      account_uuid: agent.vapi_accounts.id
     });
     
     if (incrementError || !incrementResult) {
@@ -262,7 +320,7 @@ serve(async (req) => {
     // Prepare and log the request payload
     const payload = {
       assistantId: assistantId,
-      phoneNumberId: agent.phone_number_id,
+      phoneNumberId: agent.vapi_accounts.phone_number_id,
       customer: {
         number: formattedPhone,
         name: customerName
@@ -275,7 +333,7 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${agent.api_key}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify(payload),
     });
@@ -305,8 +363,8 @@ serve(async (req) => {
         {
           booking_id: bookingId,
           vapi_call_id: vapiData.id || null,
-          vapi_agent_id: agent.agent_id,
-          vapi_account_id: agent.account_id
+          vapi_agent_id: agent.id,
+          vapi_account_id: agent.vapi_accounts.id
         }
       ]);
       
