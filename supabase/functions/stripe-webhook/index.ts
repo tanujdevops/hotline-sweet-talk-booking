@@ -82,10 +82,26 @@ serve(async (req) => {
         
         console.log(`Booking ${bookingId} marked as paid and queued.`);
         
-        // Immediately try to process this booking
+        // Immediately try to process this booking with proper user data
         try {
+          // Get booking details with user info
+          const { data: bookingWithUser, error: fetchError } = await supabaseClient
+            .from('bookings')
+            .select('*, users(name, phone, email)')
+            .eq('id', bookingId)
+            .single();
+            
+          if (fetchError || !bookingWithUser || !bookingWithUser.users) {
+            console.error(`Error fetching booking details for ${bookingId}:`, fetchError);
+            throw new Error("Failed to fetch booking details");
+          }
+          
           const { error: processError } = await supabaseClient.functions.invoke('initiate-vapi-call', {
-            body: { bookingId }
+            body: { 
+              bookingId: bookingId,
+              phone: bookingWithUser.users.phone,
+              name: bookingWithUser.users.name
+            }
           });
           
           if (processError) {
@@ -117,10 +133,26 @@ serve(async (req) => {
           
           console.log(`Booking ${bookingId} marked as paid and queued (from payment_intent).`);
           
-          // Immediately try to process this booking
+          // Immediately try to process this booking with proper user data
           try {
+            // Get booking details with user info
+            const { data: bookingWithUser, error: fetchError } = await supabaseClient
+              .from('bookings')
+              .select('*, users(name, phone, email)')
+              .eq('id', bookingId)
+              .single();
+              
+            if (fetchError || !bookingWithUser || !bookingWithUser.users) {
+              console.error(`Error fetching booking details for ${bookingId}:`, fetchError);
+              throw new Error("Failed to fetch booking details");
+            }
+            
             const { error: processError } = await supabaseClient.functions.invoke('initiate-vapi-call', {
-              body: { bookingId }
+              body: { 
+                bookingId: bookingId,
+                phone: bookingWithUser.users.phone,
+                name: bookingWithUser.users.name
+              }
             });
             
             if (processError) {

@@ -119,11 +119,12 @@ serve(async (req) => {
 
         const agent = availableAgent[0];
         
-        // Try to initiate the call
+        // Try to initiate the call with proper parameters
         const { error: callError } = await supabaseClient.functions.invoke('initiate-vapi-call', {
           body: { 
             bookingId: queueItem.booking_id,
-            queueItemId: queueItem.id 
+            phone: queueItem.bookings.users.phone,
+            name: queueItem.bookings.users.name
           }
         });
 

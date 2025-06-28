@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.2.0?target=deno";
@@ -86,14 +85,14 @@ serve(async (req) => {
       console.log("Payment completed, booking updated to queued status");
       
       // Get booking details with user info
-      const { data: bookingWithUser } = await supabaseClient
+      const { data: bookingWithUser, error: fetchError } = await supabaseClient
         .from('bookings')
-        .select('*, users(name, phone)')
+        .select('*, users(name, phone, email)')
         .eq('id', bookingId)
         .single();
         
       if (bookingWithUser && bookingWithUser.users) {
-        // Try to initiate VAPI call after payment
+        // Try to initiate VAPI call after payment with proper parameters
         try {
           console.log("Initiating VAPI call after payment completion");
           
@@ -106,9 +105,9 @@ serve(async (req) => {
             // Initiate VAPI call if we're under concurrency limits
             await supabaseClient.functions.invoke('initiate-vapi-call', {
               body: { 
-                bookingId, 
-                phone: bookingWithUser.users.phone, 
-                name: bookingWithUser.users.name 
+                bookingId: bookingId,
+                phone: bookingWithUser.users.phone,
+                name: bookingWithUser.users.name
               }
             });
           }
