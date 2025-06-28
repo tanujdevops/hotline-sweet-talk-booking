@@ -45,18 +45,18 @@ serve(async (req) => {
     console.log(`Checking availability for plan type: ${planType}`);
     
     // Check if there's an available agent for this plan type
-    // Use the RPC function instead of direct SQL to avoid column ambiguity
+    // Use the test_agent_availability_safe function instead of direct SQL
     try {
-      const { data: availableAgent, error: agentError } = await supabaseClient
+      const { data: agentAvailability, error: availabilityError } = await supabaseClient
         .rpc('test_agent_availability_safe');
         
-      if (agentError) {
-        console.error("Error checking agent availability:", agentError);
-        throw new Error(`Failed to check agent availability: ${agentError.message}`);
+      if (availabilityError) {
+        console.error("Error checking agent availability:", availabilityError);
+        throw new Error(`Failed to check agent availability: ${availabilityError.message}`);
       }
       
       // Find the entry for our plan type
-      const planEntry = availableAgent?.find(entry => entry.plan_type === planType);
+      const planEntry = agentAvailability?.find(entry => entry.plan_type === planType);
       const canMakeCall = planEntry && planEntry.agent_count > 0;
       
       // Get queue position if call cannot be made immediately
