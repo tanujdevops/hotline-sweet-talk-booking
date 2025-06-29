@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { PRICING_DETAILS } from '@/lib/pricing';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock, Copy } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
@@ -232,8 +232,8 @@ export default function WaitingPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Booking ID</p>
               <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Booking ID:</span>
                 <span className="font-mono font-medium">{bookingId.slice(0, 6)}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -245,7 +245,7 @@ export default function WaitingPage() {
                       }}
                       aria-label="Copy Booking ID"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16h8M8 12h8m-8-4h8M4 6h16M4 18h16" /></svg>
+                      <Copy className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
