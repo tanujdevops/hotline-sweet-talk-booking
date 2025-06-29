@@ -234,22 +234,22 @@ export default function WaitingPage() {
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Booking ID</p>
               <div className="flex items-center gap-2">
-                <span className="font-mono font-medium">{bookingId.slice(0, 8)}...</span>
+                <span className="font-mono font-medium">{bookingId.slice(0, 6)}...</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => {
-                        navigator.clipboard.writeText(bookingId);
+                        navigator.clipboard.writeText(bookingId.slice(0, 6));
                       }}
-                      aria-label="Copy full Booking ID"
+                      aria-label="Copy Booking ID"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16h8M8 12h8m-8-4h8M4 6h16M4 18h16" /></svg>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <span>Copy full Booking ID</span>
+                    <span>Copy Booking ID</span>
                   </TooltipContent>
                 </Tooltip>
               </div>
