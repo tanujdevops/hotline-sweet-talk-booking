@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from 'react';
-import { useLocation, Navigate, useSearchParams } from 'react-router-dom';
+import { useLocation, Navigate, useSearchParams, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PRICING_DETAILS } from '@/lib/pricing';
@@ -328,6 +327,15 @@ export default function WaitingPage() {
             )}
           </CardContent>
         </Card>
+        {/* Return to Home Button */}
+        <div className="flex justify-center mt-8">
+          <Link to="/">
+            <Button className="bg-hotline hover:bg-hotline-dark flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7m-9 2v6m0 0h4m-4 0a2 2 0 01-2-2v-4a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2z" /></svg>
+              Return Home
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
