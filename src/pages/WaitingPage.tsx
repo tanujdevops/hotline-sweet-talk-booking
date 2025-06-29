@@ -6,6 +6,7 @@ import { PRICING_DETAILS } from '@/lib/pricing';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const statusMessages = {
   pending: "Your booking has been received and is being processed.",
@@ -232,7 +233,26 @@ export default function WaitingPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Booking ID</p>
-              <p className="font-mono font-medium">{bookingId}</p>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-medium">{bookingId.slice(0, 8)}...</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        navigator.clipboard.writeText(bookingId);
+                      }}
+                      aria-label="Copy full Booking ID"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16h8M8 12h8m-8-4h8M4 6h16M4 18h16" /></svg>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <span>Copy full Booking ID</span>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
             
             {planDetails && (
