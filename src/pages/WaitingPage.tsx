@@ -234,7 +234,7 @@ export default function WaitingPage() {
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Booking ID</p>
               <div className="flex items-center gap-2">
-                <span className="font-mono font-medium">{bookingId.slice(0, 6)}...</span>
+                <span className="font-mono font-medium">{bookingId.slice(0, 6)}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
