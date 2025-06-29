@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -197,6 +196,33 @@ export function useBookingForm() {
         console.error("Plan fetch error:", planError);
         throw planError;
       }
+
+      // --- FREE TRIAL ELIGIBILITY CHECK BEFORE BOOKING CREATION ---
+      if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
+        const { data: eligibilityData, error: eligibilityError } = await supabase.rpc('check_free_trial_eligibility', {
+          user_id: userId
+        });
+        if (eligibilityError) {
+          console.error("Error checking free trial eligibility:", eligibilityError);
+          toast({
+            title: "Error",
+            description: "Could not check free trial eligibility. Please try again.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        if (!eligibilityData) {
+          toast({
+            title: "Free Trial Unavailable",
+            description: "You have already used your free trial. Please purchase a plan to continue.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      // --- END FREE TRIAL ELIGIBILITY CHECK ---
 
       // Create booking with correct initial status
       const initialStatus = pricingTier === PRICING_TIERS.FREE_TRIAL ? 'pending' : 'pending_payment';
