@@ -43,6 +43,13 @@ export type Database = {
             foreignKeyName: "active_calls_vapi_account_id_fkey"
             columns: ["vapi_account_id"]
             isOneToOne: false
+            referencedRelation: "vapi_account_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "active_calls_vapi_account_id_fkey"
+            columns: ["vapi_account_id"]
+            isOneToOne: false
             referencedRelation: "vapi_accounts"
             referencedColumns: ["id"]
           },
@@ -121,6 +128,7 @@ export type Database = {
           details: Json | null
           event_time: string
           event_type: string
+          events: Json | null
           id: number
         }
         Insert: {
@@ -128,6 +136,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type: string
+          events?: Json | null
           id?: number
         }
         Update: {
@@ -135,6 +144,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type?: string
+          events?: Json | null
           id?: number
         }
         Relationships: [
@@ -153,6 +163,7 @@ export type Database = {
           details: Json | null
           event_time: string
           event_type: string
+          events: Json | null
           id: number
         }
         Insert: {
@@ -160,6 +171,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type: string
+          events?: Json | null
           id?: number
         }
         Update: {
@@ -167,6 +179,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type?: string
+          events?: Json | null
           id?: number
         }
         Relationships: []
@@ -177,6 +190,7 @@ export type Database = {
           details: Json | null
           event_time: string
           event_type: string
+          events: Json | null
           id: number
         }
         Insert: {
@@ -184,6 +198,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type: string
+          events?: Json | null
           id?: number
         }
         Update: {
@@ -191,6 +206,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type?: string
+          events?: Json | null
           id?: number
         }
         Relationships: []
@@ -201,6 +217,7 @@ export type Database = {
           details: Json | null
           event_time: string
           event_type: string
+          events: Json | null
           id: number
         }
         Insert: {
@@ -208,6 +225,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type: string
+          events?: Json | null
           id?: number
         }
         Update: {
@@ -215,6 +233,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type?: string
+          events?: Json | null
           id?: number
         }
         Relationships: []
@@ -225,6 +244,7 @@ export type Database = {
           details: Json | null
           event_time: string
           event_type: string
+          events: Json | null
           id: number
         }
         Insert: {
@@ -232,6 +252,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type: string
+          events?: Json | null
           id?: number
         }
         Update: {
@@ -239,6 +260,7 @@ export type Database = {
           details?: Json | null
           event_time?: string
           event_type?: string
+          events?: Json | null
           id?: number
         }
         Relationships: []
@@ -287,6 +309,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "call_queue_assigned_account_id_fkey"
+            columns: ["assigned_account_id"]
+            isOneToOne: false
+            referencedRelation: "vapi_account_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "call_queue_assigned_account_id_fkey"
             columns: ["assigned_account_id"]
@@ -381,6 +410,7 @@ export type Database = {
       users: {
         Row: {
           created_at: string
+          email: string | null
           id: string
           last_free_trial: string | null
           name: string
@@ -388,6 +418,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           id?: string
           last_free_trial?: string | null
           name: string
@@ -395,6 +426,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           id?: string
           last_free_trial?: string | null
           name?: string
@@ -413,6 +445,7 @@ export type Database = {
           name: string
           phone_number_id: string | null
           updated_at: string
+          vault_secret_name: string | null
         }
         Insert: {
           api_key: string
@@ -424,6 +457,7 @@ export type Database = {
           name: string
           phone_number_id?: string | null
           updated_at?: string
+          vault_secret_name?: string | null
         }
         Update: {
           api_key?: string
@@ -435,6 +469,43 @@ export type Database = {
           name?: string
           phone_number_id?: string | null
           updated_at?: string
+          vault_secret_name?: string | null
+        }
+        Relationships: []
+      }
+      vapi_accounts_backup: {
+        Row: {
+          api_key: string | null
+          created_at: string | null
+          current_active_calls: number | null
+          id: string | null
+          is_active: boolean | null
+          max_concurrent_calls: number | null
+          name: string | null
+          phone_number_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string | null
+          current_active_calls?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          max_concurrent_calls?: number | null
+          name?: string | null
+          phone_number_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string | null
+          current_active_calls?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          max_concurrent_calls?: number | null
+          name?: string | null
+          phone_number_id?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -480,6 +551,13 @@ export type Database = {
             foreignKeyName: "vapi_agents_vapi_account_id_fkey"
             columns: ["vapi_account_id"]
             isOneToOne: false
+            referencedRelation: "vapi_account_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vapi_agents_vapi_account_id_fkey"
+            columns: ["vapi_account_id"]
+            isOneToOne: false
             referencedRelation: "vapi_accounts"
             referencedColumns: ["id"]
           },
@@ -487,9 +565,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vapi_account_status: {
+        Row: {
+          created_at: string | null
+          current_active_calls: number | null
+          id: string | null
+          is_active: boolean | null
+          key_status: string | null
+          max_concurrent_calls: number | null
+          name: string | null
+          phone_number_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_active_calls?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          key_status?: never
+          max_concurrent_calls?: number | null
+          name?: string | null
+          phone_number_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_active_calls?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          key_status?: never
+          max_concurrent_calls?: number | null
+          name?: string | null
+          phone_number_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      add_vapi_agents_to_account: {
+        Args: {
+          p_account_id: string
+          p_free_trial_agent_id: string
+          p_standard_agent_id: string
+          p_extended_agent_id: string
+          p_priority?: number
+        }
+        Returns: undefined
+      }
       bytea_to_text: {
         Args: { data: string }
         Returns: string
@@ -522,9 +645,44 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_stale_queue: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      create_booking_with_user: {
+        Args: {
+          p_user_name: string
+          p_user_email: string
+          p_user_phone: string
+          p_plan_id: number
+          p_message: string
+          p_call_duration?: number
+        }
+        Returns: {
+          booking_id: string
+          user_id: string
+        }[]
+      }
+      create_or_update_vault_secret: {
+        Args: { secret_name: string; secret_value: string }
+        Returns: undefined
+      }
+      create_vapi_vault_account: {
+        Args: {
+          p_name: string
+          p_api_key: string
+          p_phone_number_id: string
+          p_max_calls?: number
+        }
+        Returns: string
+      }
       decrement_call_count: {
         Args: { agent_uuid: string; account_uuid: string }
         Returns: undefined
+      }
+      ensure_user_has_email: {
+        Args: { user_uuid: string }
+        Returns: boolean
       }
       free_agent: {
         Args: { p_agent_id: string; p_account_id: string }
@@ -543,6 +701,20 @@ export type Database = {
           api_key: string
           phone_number_id: string
         }[]
+      }
+      get_available_agent_direct: {
+        Args: { plan_type_param: string }
+        Returns: {
+          agent_id: string
+          vapi_agent_id: string
+          account_id: string
+          api_key: string
+          phone_number_id: string
+        }[]
+      }
+      get_vapi_api_key: {
+        Args: { account_uuid: string }
+        Returns: string
       }
       handle_call_end: {
         Args: {
@@ -613,6 +785,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      migrate_api_keys_to_vault: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      process_queue_cron: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       safe_decrement_call_count: {
         Args: { agent_uuid: string; account_uuid: string }
         Returns: undefined
@@ -621,6 +801,59 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      test_agent_availability: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          plan_type: string
+          status: string
+          agent_count: number
+          total_capacity: number
+        }[]
+      }
+      test_agent_availability_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          plan_type: string
+          status: string
+          agent_count: number
+          capacity: number
+          usage: number
+        }[]
+      }
+      test_agent_availability_view: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          plan_type: string
+          status: string
+          agent_count: number
+          capacity: number
+          usage: number
+        }[]
+      }
+      test_vapi_setup: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          component: string
+          status: string
+          details: string
+        }[]
+      }
+      test_vapi_setup_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          component: string
+          status: string
+          details: string
+        }[]
+      }
+      test_vapi_vault_setup: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          test_name: string
+          status: string
+          details: string
+        }[]
+      }
       text_to_bytea: {
         Args: { data: string }
         Returns: string
@@ -628,6 +861,10 @@ export type Database = {
       update_last_free_trial: {
         Args: { user_id: string }
         Returns: undefined
+      }
+      upsert_user: {
+        Args: { p_name: string; p_email: string; p_phone: string }
+        Returns: string
       }
       urlencode: {
         Args: { data: Json } | { string: string } | { string: string }
