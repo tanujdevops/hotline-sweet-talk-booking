@@ -184,19 +184,22 @@ serve(async (req) => {
     const customerName = bookingData.users.name;
     console.log(`Plan type for booking ${bookingId}: ${bookingData.plans.key}, Assistant ID: ${assistantId}`);
     
-    // Get available agent for this plan type using the RPC function
-    const { data: availableAgent, error: agentError } = await supabaseClient.rpc('get_available_agent', {
-      plan_type_param: bookingData.plans.key
-    });
-    
-    if (agentError) {
-      console.error('Error getting available agent:', agentError);
-      throw new ValidationError('Failed to get available agent');
+    // Fetch the single active VAPI account
+    const { data: account, error: accountError } = await supabaseClient
+      .from('vapi_accounts')
+      .select('id, current_active_calls, max_concurrent_calls, api_key, phone_number_id')
+      .eq('is_active', true)
+      .limit(1)
+      .single();
+
+    if (accountError || !account) {
+      throw new ValidationError(`Failed to get VAPI account: ${accountError?.message}`);
     }
-    
-    if (!availableAgent || availableAgent.length === 0) {
-      console.log(`No available agents for plan type ${bookingData.plans.key}, queuing call`);
-      
+
+    const canMakeCall = account.current_active_calls < account.max_concurrent_calls;
+
+    if (!canMakeCall) {
+      console.log(`Account concurrency limit reached, queuing call for booking ${bookingId}`);
       // Add to queue
       const { error: queueError } = await supabaseClient
         .from('call_queue')
@@ -213,30 +216,28 @@ serve(async (req) => {
       }
       
       return new Response(
-        JSON.stringify({ 
-          message: 'No agents available. Call has been queued.',
-          status: 'queued'
+        JSON.stringify({
+          status: 'queued',
+          message: 'All agents are busy. Your call has been queued.'
         }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200 
+        {
+          status: 202,
+          headers: corsHeaders,
         }
       );
     }
     
-    const agent = availableAgent[0];
-    console.log(`Using agent ${agent.agent_id} from account ${agent.account_id}`);
-    console.log(`Phone number ID: ${agent.phone_number_id}`);
-    console.log(`Customer phone number: ${phone}`);
-    
+    // Proceed with call initiation using account.api_key, account.phone_number_id, etc.
+    // ... existing call initiation logic ...
+
     // Format phone number to E.164 format (e.g., +1234567890)
     const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
     console.log(`Formatted phone number: ${formattedPhone}`);
     
     // Increment call counts
     const { data: incrementResult, error: incrementError } = await supabaseClient.rpc('increment_call_count', {
-      agent_uuid: agent.vapi_agent_id,
-      account_uuid: agent.account_id
+      agent_uuid: account.vapi_agent_id,
+      account_uuid: account.id
     });
     
     if (incrementError || !incrementResult) {
@@ -247,7 +248,7 @@ serve(async (req) => {
     // Prepare and log the request payload
     const payload = {
       assistantId: assistantId,
-      phoneNumberId: agent.phone_number_id,
+      phoneNumberId: account.phone_number_id,
       customer: {
         number: formattedPhone,
         name: customerName
@@ -255,12 +256,29 @@ serve(async (req) => {
     };
     console.log("VAPI Request Payload:", JSON.stringify(payload, null, 2));
     
+    // Idempotency: Check if call already initiated for this booking
+    const { data: existingActiveCall, error: existingActiveCallError } = await supabaseClient
+      .from('active_calls')
+      .select('booking_id')
+      .eq('booking_id', bookingId)
+      .single();
+    if (existingActiveCall) {
+      console.log(`Call already initiated for booking ${bookingId}, skipping duplicate initiation.`);
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: "Call already initiated for this booking."
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    
     // Make API request to VAPI using the assistant ID from the plan
     const response = await fetch('https://api.vapi.ai/call', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${agent.api_key}`
+        'Authorization': `Bearer ${account.api_key}`
       },
       body: JSON.stringify(payload)
     });
@@ -290,8 +308,8 @@ serve(async (req) => {
         {
           booking_id: bookingId,
           vapi_call_id: vapiData.id || null,
-          vapi_agent_id: agent.vapi_agent_id,
-          vapi_account_id: agent.account_id
+          vapi_agent_id: account.vapi_agent_id,
+          vapi_account_id: account.id
         }
       ]);
       

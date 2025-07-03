@@ -149,10 +149,34 @@ export function useBookingForm() {
     if (!validateForm(name, email, phoneNumber, message)) return;
 
     setIsSubmitting(true);
-    
+
     try {
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
-      // Form validation passed, proceeding with submission
+      // --- CONCURRENCY PRE-CHECK (account-level only) ---
+      const concurrencyRes = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-vapi-concurrency`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({}) // No planType needed
+        }
+      );
+      const concurrencyData = await concurrencyRes.json();
+      if (!concurrencyData.canMakeCall) {
+        toast({
+          title: 'All agents are currently busy',
+          description: concurrencyData.queuePosition
+            ? `You are #${concurrencyData.queuePosition} in the queue. Please try again later.`
+            : 'Please try again in a few minutes.',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      // --- END CONCURRENCY PRE-CHECK ---
 
       // Atomically create or update user to prevent race conditions
       let userId;
@@ -180,12 +204,10 @@ export function useBookingForm() {
       // Get plan data - map new pricing tiers to existing plan keys
       const planKeyMap: Record<PricingTier, 'free_trial' | 'standard' | 'extended'> = {
         [PRICING_TIERS.FREE_TRIAL]: 'free_trial',
-        [PRICING_TIERS.ESSENTIAL]: 'standard', // Map essential to standard in DB
-        [PRICING_TIERS.DELUXE]: 'extended' // Map deluxe to extended in DB
+        [PRICING_TIERS.ESSENTIAL]: 'standard',
+        [PRICING_TIERS.DELUXE]: 'extended'
       };
-
       const dbPlanKey = planKeyMap[pricingTier];
-
       const { data: planData, error: planError } = await supabase
         .from('plans')
         .select()
