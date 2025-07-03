@@ -153,22 +153,13 @@ export function useBookingForm() {
     try {
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
       // --- CONCURRENCY PRE-CHECK (account-level only) ---
-      const concurrencyRes = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-vapi-concurrency`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({}) // No planType needed
-        }
-      );
-      const concurrencyData = await concurrencyRes.json();
-      if (!concurrencyData.canMakeCall) {
+      const { data: concurrencyData, error: concurrencyError } = await supabase.functions.invoke('check-vapi-concurrency', {
+        body: {}
+      });
+      if (concurrencyError || !concurrencyData?.canMakeCall) {
         toast({
           title: 'All agents are currently busy',
-          description: concurrencyData.queuePosition
+          description: concurrencyData?.queuePosition
             ? `You are #${concurrencyData.queuePosition} in the queue. Please try again later.`
             : 'Please try again in a few minutes.',
           variant: 'destructive',
