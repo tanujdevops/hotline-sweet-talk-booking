@@ -255,11 +255,42 @@ export function useBookingForm() {
 
       // Handle different flows
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
-        // For free trial, immediately go to waiting page and call will be processed
+        // For free trial, initiate call immediately
         toast({
           title: "Free Trial Booking Created!",
           description: "Your call is connecting instantly...",
         });
+        
+        try {
+          // Call the initiate-vapi-call function directly for free trials
+          const { data: callData, error: callError } = await supabase.functions.invoke('initiate-vapi-call', {
+            body: { 
+              bookingId: bookingId,
+              phone: fullPhoneNumber,
+              name: name
+            }
+          });
+
+          if (callError) {
+            console.error('Error initiating free trial call:', callError);
+            toast({
+              title: "Call Initiation Failed",
+              description: "Unable to start your free trial call. Please try again.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          console.log('Free trial call initiated:', callData);
+        } catch (error) {
+          console.error('Error in free trial call initiation:', error);
+          toast({
+            title: "Call Initiation Failed", 
+            description: "Unable to start your free trial call. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
         
         navigate(`/waiting?booking_id=${bookingId}`, { 
           state: { 
