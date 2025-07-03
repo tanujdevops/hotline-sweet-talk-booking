@@ -180,7 +180,8 @@ serve(async (req)=>{
       {
         booking_id: activeCall.booking_id,
         event_type: eventType,
-        details: webhookData
+        details: webhookData,
+        events: [webhookData.message || webhookData]
       }
     ]);
     // Handle status update events
