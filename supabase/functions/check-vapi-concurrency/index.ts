@@ -1,47 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
-};
-
-interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: any;
-  };
-}
-
-function createErrorResponse(code: string, message: string, details?: any, status = 500): Response {
-  const response: ApiResponse = {
-    success: false,
-    error: { code, message, details }
-  };
-  return new Response(JSON.stringify(response), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-    status,
-  });
-}
-
-function createSuccessResponse<T>(data: T): Response {
-  const response: ApiResponse<T> = {
-    success: true,
-    data
-  };
-  return new Response(JSON.stringify(response), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-    status: 200,
-  });
-}
+import { createErrorResponse, createSuccessResponse, handleCors, parseRequestBody } from "../_shared/response.ts";
+import { validateInput, ValidationError } from "../_shared/validation.ts";
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
   try {
     // Validate request method
@@ -50,17 +14,21 @@ serve(async (req) => {
     }
 
     // Parse and validate request body
-    let planType = null;
+    const body = await parseRequestBody(req);
+    
     try {
-      const body = await req.json();
-      planType = body?.planType || null;
-      
-      // Validate planType if provided
-      if (planType && !['free_trial', 'standard', 'extended'].includes(planType)) {
-        return createErrorResponse("INVALID_PLAN_TYPE", "Invalid plan type provided", { planType }, 400);
+      validateInput(body, {
+        planType: { 
+          required: false, 
+          type: 'string', 
+          allowedValues: ['free_trial', 'standard', 'extended'] 
+        }
+      });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        return createErrorResponse("VALIDATION_ERROR", error.message, null, 400);
       }
-    } catch (e) {
-      return createErrorResponse("INVALID_JSON", "Invalid JSON in request body", null, 400);
+      throw error;
     }
 
     // Create Supabase client with service role key
@@ -113,7 +81,7 @@ serve(async (req) => {
     return createSuccessResponse({
       canMakeCall,
       queuePosition,
-      planType,
+      planType: body.planType,
       currentCalls: account.current_active_calls,
       maxCalls: account.max_concurrent_calls
     });
