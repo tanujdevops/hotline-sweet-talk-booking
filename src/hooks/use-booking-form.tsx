@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PRICING_TIERS, PRICING_DETAILS, type PricingTier } from "@/lib/pricing";
+import { CallManager } from "@/lib/call-manager";
 
 export function useBookingForm() {
   const { toast } = useToast();
@@ -153,15 +154,33 @@ export function useBookingForm() {
     try {
       const fullPhoneNumber = `${countryCode}${phoneNumber}`;
       // --- CONCURRENCY PRE-CHECK (account-level only) ---
-      const { data: concurrencyData, error: concurrencyError } = await supabase.functions.invoke('check-vapi-concurrency', {
-        body: {}
-      });
-      if (concurrencyError || !concurrencyData?.canMakeCall) {
+      try {
+        // Map frontend pricing tier to database plan key for concurrency check
+        const planKeyMap: Record<PricingTier, 'free_trial' | 'standard' | 'extended'> = {
+          [PRICING_TIERS.FREE_TRIAL]: 'free_trial',
+          [PRICING_TIERS.ESSENTIAL]: 'standard',
+          [PRICING_TIERS.DELUXE]: 'extended'
+        };
+        const dbPlanKey = planKeyMap[pricingTier];
+        
+        const concurrencyData = await CallManager.checkVapiConcurrency(dbPlanKey);
+        
+        if (!concurrencyData.canMakeCall) {
+          toast({
+            title: 'All agents are currently busy',
+            description: concurrencyData.queuePosition
+              ? `You are #${concurrencyData.queuePosition} in the queue. Please try again later.`
+              : 'Please try again in a few minutes.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking VAPI concurrency:', error);
         toast({
-          title: 'All agents are currently busy',
-          description: concurrencyData?.queuePosition
-            ? `You are #${concurrencyData.queuePosition} in the queue. Please try again later.`
-            : 'Please try again in a few minutes.',
+          title: 'Service Check Failed',
+          description: error instanceof Error ? error.message : 'Unable to verify service availability. Please try again.',
           variant: 'destructive',
         });
         setIsSubmitting(false);
@@ -276,30 +295,13 @@ export function useBookingForm() {
         
         try {
           // Call the initiate-vapi-call function directly for free trials
-          const { data: callData, error: callError } = await supabase.functions.invoke('initiate-vapi-call', {
-            body: { 
-              bookingId: bookingId,
-              phone: fullPhoneNumber,
-              name: name
-            }
-          });
-
-          if (callError) {
-            console.error('Error initiating free trial call:', callError);
-            toast({
-              title: "Call Initiation Failed",
-              description: "Unable to start your free trial call. Please try again.",
-              variant: "destructive",
-            });
-            return;
-          }
-
+          const callData = await CallManager.initiateVapiCall(bookingId);
           console.log('Free trial call initiated:', callData);
         } catch (error) {
           console.error('Error in free trial call initiation:', error);
           toast({
             title: "Call Initiation Failed", 
-            description: "Unable to start your free trial call. Please try again.",
+            description: error instanceof Error ? error.message : "Unable to start your free trial call. Please try again.",
             variant: "destructive",
           });
           return;

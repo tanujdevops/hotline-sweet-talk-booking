@@ -1,8 +1,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { DatabaseError } from './errors';
+import { callEdgeFunction, ApiError, handleApiError } from '@/lib/api-client';
 
 export type CallStatus = 'failed' | 'cancelled' | 'completed';
+
+export interface VapiConcurrencyResponse {
+  canMakeCall: boolean;
+  queuePosition?: number;
+  planType?: string;
+  currentCalls?: number;
+  maxCalls?: number;
+}
 
 export interface StaleCall {
   booking_id: string;
@@ -53,6 +62,28 @@ export class CallManager {
       }
     } catch (error) {
       console.error('Error checking for stale calls:', error);
+      throw error;
+    }
+  }
+
+  static async checkVapiConcurrency(planType: string): Promise<VapiConcurrencyResponse> {
+    try {
+      return await callEdgeFunction<VapiConcurrencyResponse>('check-vapi-concurrency', { planType });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw new Error(handleApiError(error));
+      }
+      throw error;
+    }
+  }
+
+  static async initiateVapiCall(bookingId: string): Promise<any> {
+    try {
+      return await callEdgeFunction('initiate-vapi-call', { bookingId });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw new Error(handleApiError(error));
+      }
       throw error;
     }
   }
