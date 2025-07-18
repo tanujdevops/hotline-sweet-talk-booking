@@ -1,73 +1,137 @@
-# Welcome to your Lovable project
+# SweetyOnCall – Production-Ready AI Call Booking Platform
 
-## Project info
+## Overview
+SweetyOnCall is a modern, production-grade AI-powered phone call booking system. It connects users with AI companions for private, real-time conversations. The system is built for reliability, security, and scalability, with a React/Vite frontend deployed on Vercel and a robust Supabase backend (PostgreSQL, Edge Functions, Vault, Realtime, pg_cron). Payments are processed via Stripe, and AI calls are handled by VAPI.
 
-**URL**: https://lovable.dev/projects/3a7b8d20-eda4-4780-a8c3-a26e52b0f5a7
+---
 
-## How can I edit this code?
+## Table of Contents
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Frontend](#frontend)
+- [Backend](#backend)
+- [External Integrations](#external-integrations)
+- [Security](#security)
+- [Environment Variables](#environment-variables)
+- [Local Development](#local-development)
+- [Production Deployment](#production-deployment)
+- [Monitoring & Maintenance](#monitoring--maintenance)
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## Architecture
+- **Frontend**: React 18 + TypeScript + Vite, hosted on Vercel
+- **Backend**: Supabase (PostgreSQL, Edge Functions, Vault, Realtime, pg_cron)
+- **Payments**: Stripe (Checkout, Webhooks)
+- **AI Calls**: VAPI (Voice AI Platform, webhooks, concurrency management)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3a7b8d20-eda4-4780-a8c3-a26e52b0f5a7) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech Stack
+- **Frontend**: React 18, TypeScript, Vite, shadcn/ui, Tailwind CSS, React Query, React Router, React Hook Form, Zod, Sonner
+- **Backend**: Supabase (PostgreSQL, Edge Functions, Vault, Realtime, pg_cron)
+- **Payments**: Stripe
+- **AI Calls**: VAPI
+- **Deployment**: Vercel (frontend), Supabase (backend)
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Frontend
+- **SPA** with React Router (Home, Waiting, Booking Confirmation, 404)
+- **BookingForm**: Name, phone, email, plan selection, validation
+- **PricingCards**: Interactive plan selection
+- **Testimonials, FAQ, Hero, Navbar, Footer, SEO, JsonLd**
+- **UI**: shadcn/ui, Tailwind CSS, custom theme, responsive, accessible
+- **State**: React Query for server state, React Hook Form + Zod for validation
+- **Realtime**: Booking status updates via Supabase Realtime
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## Backend (Supabase)
+- **Database**: PostgreSQL with RLS, Vault for API key encryption
+- **Core Tables**: users, plans, bookings, payments, vapi_accounts, vapi_agents, call_queue, call_events
+- **Edge Functions**: 
+  - `check-vapi-concurrency`
+  - `initiate-vapi-call`
+  - `process-call-queue`
+  - `handle-vapi-webhook`
+  - `create-stripe-checkout`
+  - `stripe-webhook`
+  - `check-payment-status`
+  - `check-call-durations`
+- **RPC Functions**: upsert_user, check_free_trial_eligibility, update_last_free_trial, increment_call_count, safe_decrement_call_count, get_available_agent, handle_call_end, cleanup_inactive_call
+- **Cron Jobs**: Queue processing (every minute), cleanup (hourly), call duration monitoring
+- **Realtime**: Live booking status updates
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## External Integrations
+- **Stripe**: Payment processing, webhooks, customer management
+- **VAPI**: AI voice calls, webhook event handling, concurrency/capacity management
+- **Supabase Vault**: Secure API key storage
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## Security
+- **JWT Authentication** (Supabase)
+- **RLS**: Row-level security on all tables
+- **API Key Encryption**: Supabase Vault
+- **Webhook Signature Validation**: Stripe & VAPI
+- **CORS**: Strict production domain restrictions
+- **Rate Limiting**: Webhooks (100 req/min)
+- **Input Validation**: Zod, React Hook Form, backend checks
+- **No PII Logging**
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Environment Variables
+### Frontend (Vercel)
+- `VITE_SUPABASE_URL` – Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` – Supabase anon key
 
-**Use GitHub Codespaces**
+### Backend (Supabase Edge Functions)
+- `SUPABASE_URL` – Project URL
+- `SUPABASE_SERVICE_ROLE_KEY` – Service role key
+- `STRIPE_SECRET_KEY` – Stripe secret key
+- `STRIPE_WEBHOOK_SECRET` – Stripe webhook secret
+- `VAPI_TOKEN` – VAPI API key
+- `VAPI_WEBHOOK_SECRET` – VAPI webhook secret
+- `CORS_ORIGIN` – Allowed frontend origin
+- `CRON_SECRET` – Secret for cron jobs
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Local Development
+1. Clone the repo
+2. Install dependencies: `npm install`
+3. Copy `.env.example` to `.env` and fill in required variables
+4. Start dev server: `npm run dev`
+5. Edge functions: Use Supabase CLI for local testing
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Production Deployment
+- **Frontend**: Deploy to Vercel, set all environment variables in Vercel dashboard
+- **Backend**: Supabase project, apply all migrations in `supabase/migrations/`
+- **Stripe**: Configure live keys, webhooks
+- **VAPI**: Configure production API key, webhook
+- **Cron Jobs**: Ensure `pg_cron` is enabled and scheduled
+- **Monitoring**: Set up Vercel, Supabase, Stripe, and VAPI dashboards
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/3a7b8d20-eda4-4780-a8c3-a26e52b0f5a7) and click on Share -> Publish.
+## Monitoring & Maintenance
+- Monitor payment success, call connection, queue times, and system uptime
+- Rotate API keys monthly
+- Review error logs and analytics weekly
+- Update dependencies and run security audits monthly
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## Support
+- Stripe, VAPI, Supabase, Vercel dashboards for support and monitoring
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## License
+Proprietary. All rights reserved. 
