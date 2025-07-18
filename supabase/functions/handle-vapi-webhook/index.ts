@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { checkRateLimit, getClientIdentifier } from "../_shared/rate-limiter.ts";
 // Custom error classes for better error handling
 class AppError extends Error {
   statusCode;
@@ -88,25 +87,6 @@ serve(async (req)=>{
       headers: corsHeaders
     });
   }
-  // Rate limiting for webhook endpoint (100 requests per minute)
-  const clientId = getClientIdentifier(req);
-  const rateLimit = checkRateLimit(clientId, {
-    maxRequests: 100,
-    windowMs: 60 * 1000 // 1 minute
-  });
-  if (!rateLimit.allowed) {
-    console.warn(`Rate limit exceeded for client: ${clientId}`);
-    return new Response("Rate limit exceeded", {
-      status: 429,
-      headers: {
-        ...corsHeaders,
-        "Retry-After": Math.ceil((rateLimit.resetTime - Date.now()) / 1000).toString(),
-        "X-RateLimit-Limit": "100",
-        "X-RateLimit-Remaining": "0",
-        "X-RateLimit-Reset": rateLimit.resetTime.toString()
-      }
-    });
-  }
   let webhookData;
   let rawBody;
   try {
@@ -114,7 +94,6 @@ serve(async (req)=>{
     rawBody = await req.text();
     // Get VAPI webhook secret from environment
     const VAPI_WEBHOOK_SECRET = Deno.env.get("VAPI_WEBHOOK_SECRET");
-    
     // Only validate signature if secret is configured and not empty
     if (VAPI_WEBHOOK_SECRET && VAPI_WEBHOOK_SECRET.trim() !== "") {
       // Get signature from headers
@@ -126,7 +105,6 @@ serve(async (req)=>{
           headers: corsHeaders
         });
       }
-      
       try {
         // Validate signature (VAPI typically uses HMAC-SHA256)
         const crypto = await import("node:crypto");
@@ -193,7 +171,9 @@ serve(async (req)=>{
         booking_id: activeCall.booking_id,
         event_type: eventType,
         details: webhookData,
-        events: [webhookData.message || webhookData]
+        events: [
+          webhookData.message || webhookData
+        ]
       }
     ]);
     // Handle status update events
@@ -203,6 +183,14 @@ serve(async (req)=>{
       if (status === 'ended') {
         // Call ended, updating status
         // Use transaction to handle call end
+        // Add logging for all parameters before calling handle_call_end
+        console.log('Calling handle_call_end with:', {
+          p_booking_id: activeCall.booking_id,
+          p_call_id: callId,
+          p_agent_id: activeCall.vapi_agent_id,
+          p_account_id: activeCall.vapi_account_id,
+          p_ended_reason: message.endedReason
+        });
         const { error: transactionError } = await supabaseClient.rpc('handle_call_end', {
           p_booking_id: activeCall.booking_id,
           p_call_id: callId,
