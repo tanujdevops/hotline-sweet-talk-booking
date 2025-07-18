@@ -618,6 +618,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      auto_cleanup_orphaned_calls: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       bytea_to_text: {
         Args: { data: string }
         Returns: string
@@ -686,6 +690,14 @@ export type Database = {
           | { account_uuid: string }
           | { agent_uuid: string; account_uuid: string }
         Returns: undefined
+      }
+      detect_orphaned_calls: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          booking_id: string
+          minutes_stuck: number
+          booking_status: string
+        }[]
       }
       ensure_user_has_email: {
         Args: { user_uuid: string }
