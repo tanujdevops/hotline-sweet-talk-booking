@@ -114,30 +114,42 @@ serve(async (req)=>{
     rawBody = await req.text();
     // Get VAPI webhook secret from environment
     const VAPI_WEBHOOK_SECRET = Deno.env.get("VAPI_WEBHOOK_SECRET");
-    if (VAPI_WEBHOOK_SECRET) {
+    
+    // Only validate signature if secret is configured and not empty
+    if (VAPI_WEBHOOK_SECRET && VAPI_WEBHOOK_SECRET.trim() !== "") {
       // Get signature from headers
       const signature = req.headers.get("x-vapi-signature");
       if (!signature) {
-        console.error("Missing VAPI webhook signature");
+        console.error("Missing VAPI webhook signature - secret is configured but signature header is missing");
         return new Response("Missing webhook signature", {
           status: 401,
           headers: corsHeaders
         });
       }
-      // Validate signature (VAPI typically uses HMAC-SHA256)
-      const crypto = await import("node:crypto");
-      const expectedSignature = crypto.createHmac("sha256", VAPI_WEBHOOK_SECRET).update(rawBody).digest("hex");
-      // Compare signatures securely
-      const providedSignature = signature.replace("sha256=", "");
-      if (!crypto.timingSafeEqual(Buffer.from(expectedSignature, "hex"), Buffer.from(providedSignature, "hex"))) {
-        console.error("Invalid VAPI webhook signature");
-        return new Response("Invalid webhook signature", {
+      
+      try {
+        // Validate signature (VAPI typically uses HMAC-SHA256)
+        const crypto = await import("node:crypto");
+        const expectedSignature = crypto.createHmac("sha256", VAPI_WEBHOOK_SECRET).update(rawBody).digest("hex");
+        // Compare signatures securely
+        const providedSignature = signature.replace("sha256=", "");
+        if (!crypto.timingSafeEqual(Buffer.from(expectedSignature, "hex"), Buffer.from(providedSignature, "hex"))) {
+          console.error("Invalid VAPI webhook signature");
+          return new Response("Invalid webhook signature", {
+            status: 401,
+            headers: corsHeaders
+          });
+        }
+        console.log("VAPI webhook signature validated successfully");
+      } catch (signatureError) {
+        console.error("Error validating webhook signature:", signatureError);
+        return new Response("Signature validation error", {
           status: 401,
           headers: corsHeaders
         });
       }
     } else {
-      console.warn("VAPI_WEBHOOK_SECRET not configured - webhook signature validation disabled");
+      console.log("VAPI webhook signature validation disabled - processing webhook without signature validation");
     }
     // Parse the webhook data
     webhookData = JSON.parse(rawBody);
