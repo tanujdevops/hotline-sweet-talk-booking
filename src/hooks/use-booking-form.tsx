@@ -231,9 +231,14 @@ export function useBookingForm() {
 
       // --- FREE TRIAL ELIGIBILITY CHECK BEFORE BOOKING CREATION ---
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
+        console.log('Checking free trial eligibility for user:', userId);
+        
         const { data: eligibilityData, error: eligibilityError } = await supabase.rpc('check_free_trial_eligibility', {
           user_id: userId
         });
+        
+        console.log('Free trial eligibility result:', { eligibilityData, eligibilityError });
+        
         if (eligibilityError) {
           console.error("Error checking free trial eligibility:", eligibilityError);
           toast({
@@ -244,15 +249,19 @@ export function useBookingForm() {
           setIsSubmitting(false);
           return;
         }
+        
         if (!eligibilityData) {
+          console.log('User is not eligible for free trial');
           toast({
             title: "Free Trial Unavailable",
-            description: "You have already used your free trial. Please purchase a plan to continue.",
+            description: "You can only use one free trial every 24 hours. Please try again later or choose a paid plan.",
             variant: "destructive",
           });
           setIsSubmitting(false);
           return;
         }
+        
+        console.log('User is eligible for free trial, proceeding...');
       }
       // --- END FREE TRIAL ELIGIBILITY CHECK ---
 
@@ -287,6 +296,22 @@ export function useBookingForm() {
 
       // Handle different flows
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
+        console.log('Processing free trial booking:', bookingId);
+        
+        // Update user's last_free_trial timestamp
+        console.log('Updating last_free_trial timestamp for user:', userId);
+        const { error: updateError } = await supabase.rpc('update_last_free_trial', {
+          user_id: userId
+        });
+
+        if (updateError) {
+          console.error('Error updating last_free_trial:', updateError);
+          // Don't fail the entire process for this, just log it
+          console.warn('Continuing despite last_free_trial update error');
+        } else {
+          console.log('Successfully updated last_free_trial timestamp');
+        }
+        
         // For free trial, initiate call immediately
         toast({
           title: "Free Trial Booking Created!",
@@ -294,9 +319,15 @@ export function useBookingForm() {
         });
         
         try {
+          console.log('Initiating free trial call with params:', { 
+            bookingId, 
+            phone: fullPhoneNumber, 
+            name 
+          });
+          
           // Call the initiate-vapi-call function directly for free trials
           const callData = await CallManager.initiateVapiCall(bookingId, fullPhoneNumber, name);
-          console.log('Free trial call initiated:', callData);
+          console.log('Free trial call initiated successfully:', callData);
         } catch (error) {
           console.error('Error in free trial call initiation:', error);
           toast({
@@ -304,9 +335,11 @@ export function useBookingForm() {
             description: error instanceof Error ? error.message : "Unable to start your free trial call. Please try again.",
             variant: "destructive",
           });
+          setIsSubmitting(false);
           return;
         }
         
+        console.log('Navigating to waiting page...');
         navigate(`/waiting?booking_id=${bookingId}`, { 
           state: { 
             bookingId,
