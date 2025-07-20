@@ -295,7 +295,7 @@ export function useBookingForm() {
         
         try {
           // Call the initiate-vapi-call function directly for free trials
-          const callData = await CallManager.initiateVapiCall(bookingId);
+          const callData = await CallManager.initiateVapiCall(bookingId, fullPhoneNumber, name);
           console.log('Free trial call initiated:', callData);
         } catch (error) {
           console.error('Error in free trial call initiation:', error);

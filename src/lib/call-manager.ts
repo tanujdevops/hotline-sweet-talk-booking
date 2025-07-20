@@ -77,9 +77,13 @@ export class CallManager {
     }
   }
 
-  static async initiateVapiCall(bookingId: string): Promise<any> {
+  static async initiateVapiCall(bookingId: string, phone: string, name: string): Promise<any> {
     try {
-      return await callEdgeFunction('initiate-vapi-call', { bookingId });
+      return await callEdgeFunction('initiate-vapi-call', { 
+        bookingId, 
+        phone, 
+        name 
+      });
     } catch (error) {
       if (error instanceof ApiError) {
         throw new Error(handleApiError(error));
