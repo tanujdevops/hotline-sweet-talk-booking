@@ -267,7 +267,35 @@ export function useBookingForm() {
 
       // Create booking with correct initial status
       const initialStatus = pricingTier === PRICING_TIERS.FREE_TRIAL ? 'pending' : 'pending_payment';
-      
+
+      console.log('Creating booking with data:', {
+        user_id: userId,
+        plan_id: planData.id,
+        message,
+        call_duration: PRICING_DETAILS[pricingTier].duration * 60,
+        payment_status: pricingTier === PRICING_TIERS.FREE_TRIAL ? 'completed' : 'pending',
+        status: initialStatus
+      });
+
+      // Check current session before booking creation
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      console.log('Current session before booking:', { 
+        hasSession: !!sessionData.session, 
+        userId: sessionData.session?.user?.id,
+        sessionError 
+      });
+
+      if (!sessionData.session) {
+        console.error('No active session found');
+        toast({
+          title: "Authentication Error",
+          description: "Please refresh the page and try again.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert([
@@ -282,16 +310,41 @@ export function useBookingForm() {
         ])
         .select();
 
+      console.log('Booking insert result:', { bookingData, bookingError });
+
       if (bookingError) {
         console.error("Booking insert error:", bookingError);
-        throw bookingError;
+        let errorMessage = "Failed to create booking. Please try again.";
+        
+        if (bookingError.code === 'PGRST301' || bookingError.message?.includes('401')) {
+          errorMessage = "Authentication failed. Please refresh the page and try again.";
+        } else if (bookingError.message?.includes('JWT') || bookingError.message?.includes('expired')) {
+          errorMessage = "Session expired. Please refresh the page and try again.";
+        } else if (bookingError.message?.includes('policy') || bookingError.message?.includes('RLS')) {
+          errorMessage = "Permission denied. Please check your account status.";
+        }
+        
+        toast({
+          title: "Booking Creation Failed", 
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
       }
 
       // Booking created successfully
       const bookingId = bookingData?.[0]?.id;
 
       if (!bookingId) {
-        throw new Error('Failed to create booking');
+        console.error('No booking ID returned from insert');
+        toast({
+          title: "Booking Creation Failed",
+          description: "Failed to create booking. Please try again.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
       }
 
       // Handle different flows
