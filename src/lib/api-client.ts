@@ -28,7 +28,7 @@ export async function callEdgeFunction<T = any>(
 ): Promise<T> {
   try {
     const { data, error } = await supabase.functions.invoke(functionName, {
-      body: body,
+      body: body ? JSON.stringify(body) : undefined,
       headers: {
         'Content-Type': 'application/json',
       },
