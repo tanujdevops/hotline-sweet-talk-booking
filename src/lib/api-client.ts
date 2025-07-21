@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -27,28 +30,41 @@ export async function callEdgeFunction<T = any>(
   body?: any
 ): Promise<T> {
   try {
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      body: body ? JSON.stringify(body) : undefined,
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new ApiError('CONFIG_ERROR', 'Supabase client is not configured.');
+    }
+
+    const functionUrl = `${supabaseUrl}/functions/v1/${functionName}`;
+
+    const response = await fetch(functionUrl, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+        'apikey': supabaseAnonKey,
       },
+      body: JSON.stringify(body || {}),
     });
 
-    if (error) {
-      console.error(`Edge function ${functionName} error:`, error);
-      throw new ApiError('EDGE_FUNCTION_ERROR', error.message, error);
-    }
+    const data = await response.json();
 
+    if (!response.ok) {
+      console.error(`Edge function ${functionName} error:`, data);
+      const errorMessage = data?.message || data?.error || 'Edge function returned an error.';
+      const errorCode = data?.code || 'EDGE_FUNCTION_ERROR';
+      throw new ApiError(errorCode, errorMessage, data);
+    }
+    
     // Handle standardized API response format
     if (data && typeof data === 'object' && 'success' in data) {
-      const response = data as ApiResponse<T>;
-      if (!response.success && response.error) {
-        throw new ApiError(response.error.code, response.error.message, response.error.details);
+      const apiResponse = data as ApiResponse<T>;
+      if (!apiResponse.success && apiResponse.error) {
+        throw new ApiError(apiResponse.error.code, apiResponse.error.message, apiResponse.error.details);
       }
-      return response.data as T;
+      return apiResponse.data as T;
     }
 
-    // Fallback for legacy responses
+    // Fallback for direct data responses
     return data as T;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -56,6 +72,10 @@ export async function callEdgeFunction<T = any>(
     }
     
     console.error(`Unexpected error calling ${functionName}:`, error);
+    // Handle JSON parsing errors specifically
+    if (error instanceof SyntaxError) {
+      throw new ApiError('INVALID_RESPONSE', 'Failed to parse server response.', error);
+    }
     throw new ApiError('NETWORK_ERROR', 'Failed to call edge function', error);
   }
 }
