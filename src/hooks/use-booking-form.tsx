@@ -277,25 +277,6 @@ export function useBookingForm() {
         status: initialStatus
       });
 
-      // Check current session before booking creation
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      console.log('Current session before booking:', { 
-        hasSession: !!sessionData.session, 
-        userId: sessionData.session?.user?.id,
-        sessionError 
-      });
-
-      if (!sessionData.session) {
-        console.error('No active session found');
-        toast({
-          title: "Authentication Error",
-          description: "Please refresh the page and try again.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .insert([
