@@ -330,9 +330,30 @@ export function useBookingForm() {
           console.log('Free trial call initiated successfully:', callData);
         } catch (error) {
           console.error('Error in free trial call initiation:', error);
+          
+          // Extract error message from the error object
+          let errorMessage = "Unable to start your free trial call. Please try again.";
+          let errorTitle = "Call Initiation Failed";
+          
+          if (error instanceof Error) {
+            errorMessage = error.message;
+            
+            // Handle specific error cases
+            if (error.message.includes('Free trial not available') || error.message.includes('cooldown')) {
+              errorTitle = "Free Trial Unavailable";
+              errorMessage = "You can only use one free trial every 24 hours. Please try again later or choose a paid plan.";
+            } else if (error.message.includes('VAPI API error')) {
+              errorTitle = "Service Temporarily Unavailable";
+              errorMessage = "Our calling service is temporarily unavailable. Please try again in a few minutes.";
+            } else if (error.message.includes('concurrency')) {
+              errorTitle = "All Agents Busy";
+              errorMessage = "All our agents are currently busy. Your call has been queued and will start soon.";
+            }
+          }
+          
           toast({
-            title: "Call Initiation Failed", 
-            description: error instanceof Error ? error.message : "Unable to start your free trial call. Please try again.",
+            title: errorTitle,
+            description: errorMessage,
             variant: "destructive",
           });
           setIsSubmitting(false);
