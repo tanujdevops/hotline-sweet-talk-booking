@@ -266,7 +266,7 @@ export function useBookingForm() {
       // --- END FREE TRIAL ELIGIBILITY CHECK ---
 
       // Create booking with correct initial status
-      const initialStatus = pricingTier === PRICING_TIERS.FREE_TRIAL ? 'pending' : 'pending_payment';
+      const initialStatus = pricingTier === PRICING_TIERS.FREE_TRIAL ? 'queued' : 'pending_payment';
       
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
