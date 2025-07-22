@@ -24,10 +24,10 @@ const Hero = () => {
       <div className="container mx-auto relative z-10 flex justify-center">
         <div className={`max-w-xl md:max-w-3xl text-center animate-fade-in ${!isMobile ? 'px-8' : ''}`}>
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight text-white font-cormorant">
-            Experience <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">AI-Enhanced Intimacy</span> That Leaves You Breathless
+            Experience <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">AI-Enhanced Intimacy</span> for Deeper Connections
           </h1>
           <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto font-montserrat">
-            Connect instantly with our advanced AI companions who understand your desires perfectly and are available 24/7.
+            Connect instantly with AI companions who understand your needs. They're available 24/7.
           </p>
           
           <div className="flex flex-wrap justify-center gap-3 md:gap-6 mb-8 md:mb-12">

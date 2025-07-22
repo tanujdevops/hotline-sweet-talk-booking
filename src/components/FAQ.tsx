@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 export const faqData = [
   {
     question: "Are your companions AI-powered?",
-    answer: "Yes! Our companions use advanced AI technology to provide consistent, personalized conversations. This means they're available 24/7, never have bad days, and are trained to focus entirely on your satisfaction and comfort."
+    answer: "Yes! Our companions use advanced AI technology. They provide consistent, personalized conversations. This means they're available 24/7 and always focus on your satisfaction and comfort."
   },
   {
     question: "How does the booking process work?",

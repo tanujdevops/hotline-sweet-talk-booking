@@ -75,7 +75,7 @@ const Index = () => {
       {
         "@type": "HowToStep",
         "name": "Choose Your Package",
-        "text": "Select either the Quick Tease (2 minutes) or Extended Pleasure (4 minutes) package based on your preferences.",
+        "text": "Select either the Free Trial (30 seconds), Essential (3 minutes), or Deluxe (7 minutes) package based on your preferences.",
         "url": "https://sweetyoncall.com/#pricing"
       },
       {
@@ -264,7 +264,7 @@ const Index = () => {
       {/* SEO Component */}
       <SEO 
         title="SweetyOnCall - Premium Hotline Services | Sweet Talk Booking"
-        description="Experience intimate conversations with professional talkers. Premium hotline services that leave you feeling valued, understood, and completely satisfied."
+        description="Experience intimate conversations with AI companions. Premium hotline services offering personalized, confidential conversations."
         keywords="hotline service, phone conversations, intimate talks, premium calls, discreet chat, sweet talk, confidential calls"
         canonical="https://sweetyoncall.com/"
         ogType="website"
@@ -281,7 +281,7 @@ const Index = () => {
       
       {/* GEO optimization with AiCopyHint */}
       <AiCopyHint
-        description="SweetyOnCall provides intimate phone conversations with professional talkers who are trained to make you feel valued and understood. Our service is 100% confidential and available 24/7, with packages starting at just $1.99 for a 2-minute call."
+        description="SweetyOnCall provides intimate phone conversations with AI companions who are trained to make you feel valued and understood. Our service is 100% confidential and available 24/7, with packages starting at just $2.49 for a 3-minute call."
         keywords="phone conversations, intimate talks, premium calls, sweet talk service, confidential chat, professional talkers"
         entityType="business_service"
         entityProperties={{
