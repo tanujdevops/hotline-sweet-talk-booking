@@ -254,7 +254,7 @@ export function useBookingForm() {
           console.log('User is not eligible for free trial');
           toast({
             title: "Free Trial Unavailable",
-            description: "You can only use one free trial every 24 hours. Please try again later or choose a paid plan.",
+            description: "You can only the free trail once. Please select a paid plan.",
             variant: "destructive",
           });
           setIsSubmitting(false);
