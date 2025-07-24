@@ -231,7 +231,21 @@ export function useBookingForm() {
 
       // --- FREE TRIAL ELIGIBILITY CHECK BEFORE BOOKING CREATION ---
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
-        console.log('Checking free trial eligibility for user:', userId);
+        console.log('🔍 DEBUG: Checking free trial eligibility for user:', userId);
+        
+        // Run debug check first
+        try {
+          const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-free-trial', {
+            body: { userId, phone: fullPhoneNumber }
+          });
+          console.log('🔍 DEBUG REPORT:', debugData);
+          
+          if (debugError) {
+            console.error('Debug function error:', debugError);
+          }
+        } catch (debugErr) {
+          console.error('Failed to run debug check:', debugErr);
+        }
         
         const { data: eligibilityData, error: eligibilityError } = await supabase.rpc('check_free_trial_eligibility', {
           user_id: userId
@@ -242,8 +256,8 @@ export function useBookingForm() {
         if (eligibilityError) {
           console.error("Error checking free trial eligibility:", eligibilityError);
           toast({
-            title: "Error",
-            description: "Could not check free trial eligibility. Please try again.",
+            title: "Free Trial Check Failed",
+            description: `Database error: ${eligibilityError.message}. Please contact support.`,
             variant: "destructive",
           });
           setIsSubmitting(false);
@@ -253,15 +267,15 @@ export function useBookingForm() {
         if (!eligibilityData) {
           console.log('User is not eligible for free trial');
           toast({
-            title: "Free Trial Unavailable",
-            description: "You can only the free trail once. Please select a paid plan.",
+            title: "Free Trial Used Recently",
+            description: "You can only use the free trial once every 24 hours. Please select a paid plan or try again later.",
             variant: "destructive",
           });
           setIsSubmitting(false);
           return;
         }
         
-        console.log('User is eligible for free trial, proceeding...');
+        console.log('✅ User is eligible for free trial, proceeding...');
       }
       // --- END FREE TRIAL ELIGIBILITY CHECK ---
 
@@ -353,7 +367,7 @@ export function useBookingForm() {
         });
         
         try {
-          console.log('Initiating free trial call with params:', { 
+          console.log('🔄 Initiating free trial call with params:', { 
             bookingId, 
             phone: fullPhoneNumber, 
             name 
@@ -361,27 +375,52 @@ export function useBookingForm() {
           
           // Call the initiate-vapi-call function directly for free trials
           const callData = await CallManager.initiateVapiCall(bookingId, fullPhoneNumber, name);
-          console.log('Free trial call initiated successfully:', callData);
+          console.log('✅ Free trial call initiated successfully:', callData);
         } catch (error) {
-          console.error('Error in free trial call initiation:', error);
+          console.error('❌ Error in free trial call initiation:', error);
+          
+          // Run debug check for failed calls
+          try {
+            const { data: debugData } = await supabase.functions.invoke('debug-free-trial', {
+              body: { userId, phone: fullPhoneNumber }
+            });
+            console.log('🔍 POST-ERROR DEBUG:', debugData);
+          } catch (debugErr) {
+            console.error('Failed to run post-error debug:', debugErr);
+          }
           
           // Extract error message from the error object
           let errorMessage = "Unable to start your free trial call. Please try again.";
           let errorTitle = "Call Initiation Failed";
           
           if (error instanceof Error) {
+            console.log('📝 Full error details:', {
+              name: error.name,
+              message: error.message,
+              stack: error.stack
+            });
+            
             errorMessage = error.message;
             
-            // Handle specific error cases
+            // Handle specific error cases with better descriptions
             if (error.message.includes('Free trial not available') || error.message.includes('cooldown')) {
               errorTitle = "Free Trial Unavailable";
               errorMessage = "You can only use one free trial every 24 hours. Please try again later or choose a paid plan.";
             } else if (error.message.includes('VAPI API error')) {
               errorTitle = "Service Temporarily Unavailable";
               errorMessage = "Our calling service is temporarily unavailable. Please try again in a few minutes.";
-            } else if (error.message.includes('concurrency')) {
+            } else if (error.message.includes('concurrency') || error.message.includes('busy')) {
               errorTitle = "All Agents Busy";
               errorMessage = "All our agents are currently busy. Your call has been queued and will start soon.";
+            } else if (error.message.includes('Failed to get VAPI account')) {
+              errorTitle = "Service Configuration Error";
+              errorMessage = "There's a configuration issue with our calling service. Please contact support.";
+            } else if (error.message.includes('assistant')) {
+              errorTitle = "Assistant Configuration Error";
+              errorMessage = "The free trial assistant is not properly configured. Please contact support.";
+            } else if (error.message.includes('plan')) {
+              errorTitle = "Plan Configuration Error";
+              errorMessage = "The free trial plan is not properly set up. Please contact support.";
             }
           }
           
