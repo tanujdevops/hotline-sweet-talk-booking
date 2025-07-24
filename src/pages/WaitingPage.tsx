@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useLocation, Navigate, useSearchParams, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PRICING_DETAILS } from '@/lib/pricing';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock, Copy } from 'lucide-react';
+import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock, Copy, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
@@ -18,6 +18,15 @@ const statusMessages = {
   cancelled: "This booking has been cancelled.",
   failed: "We encountered an issue with this booking. Please contact support.",
   payment_failed: "Payment failed. Please try again.",
+};
+
+// iOS Safari detection
+const isIOSSafari = () => {
+  const ua = navigator.userAgent;
+  const iOS = /iPad|iPhone|iPod/.test(ua);
+  const webkit = /WebKit/.test(ua);
+  const safari = /Safari/.test(ua) && !/Chrome/.test(ua);
+  return iOS && webkit && safari;
 };
 
 export default function WaitingPage() {
@@ -35,6 +44,8 @@ export default function WaitingPage() {
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  const [isIOSDevice] = useState(() => isIOSSafari());
   
   const paymentSuccess = searchParams.get('success') === 'true';
   const paymentCanceled = searchParams.get('canceled') === 'true';
@@ -68,8 +79,14 @@ export default function WaitingPage() {
     }
   }, [paymentSuccess, paymentCanceled, toast]);
 
-  const fetchBookingStatus = async () => {
+  const fetchBookingStatus = useCallback(async (force = false) => {
     try {
+      // iOS Safari fix: Clear any stale state if forced refresh
+      if (force && isIOSDevice) {
+        setNeedsRefresh(false);
+        setLoading(true);
+      }
+
       // Fetching booking status
       const { data, error } = await supabase
         .from('bookings')
@@ -79,6 +96,10 @@ export default function WaitingPage() {
 
       if (error) {
         console.error('Error fetching booking status:', error);
+        // On iOS, if we get an error and it looks like a stale connection, suggest refresh
+        if (isIOSDevice && error.message?.includes('network')) {
+          setNeedsRefresh(true);
+        }
         return;
       }
 
@@ -91,13 +112,20 @@ export default function WaitingPage() {
         if (data.status === 'queued') {
           checkQueuePosition();
         }
+        
+        // Clear refresh flag on successful fetch
+        setNeedsRefresh(false);
       }
     } catch (error) {
       console.error('Error in fetching booking status:', error);
+      // iOS Safari often throws network errors on redirect, suggest refresh
+      if (isIOSDevice) {
+        setNeedsRefresh(true);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookingId, isIOSDevice]);
 
   const checkQueuePosition = async () => {
     try {
@@ -123,40 +151,71 @@ export default function WaitingPage() {
     
     fetchBookingStatus();
     
-    // Set up real-time subscription for booking status changes
-    const channel = supabase
-      .channel('booking_status_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'bookings',
-          filter: `id=eq.${bookingId}`
-        },
-        (payload) => {
-          console.log('Real-time booking update:', payload);
-          const newBooking = payload.new as any;
-          setBookingStatus(newBooking.status);
-          setPaymentStatus(newBooking.payment_status || 'pending');
-          
-          if (newBooking.status === 'queued') {
-            checkQueuePosition();
-          }
+    // iOS Safari specific handling
+    if (isIOSDevice) {
+      // Handle page visibility changes (iOS Safari suspends background tabs)
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          // Page became visible, refresh data
+          fetchBookingStatus(true);
         }
-      )
-      .subscribe();
+      };
+      
+      // Handle focus events (when user returns to tab)
+      const handleFocus = () => {
+        fetchBookingStatus(true);
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleFocus);
+      
+      // More aggressive polling for iOS
+      const interval = setInterval(() => {
+        if (!document.hidden) {
+          fetchBookingStatus();
+        }
+      }, 3000);
+      
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
+      };
+    } else {
+      // Non-iOS: Use normal real-time subscription + polling
+      const channel = supabase
+        .channel('booking_status_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'bookings',
+            filter: `id=eq.${bookingId}`
+          },
+          (payload) => {
+            console.log('Real-time booking update:', payload);
+            const newBooking = payload.new as any;
+            setBookingStatus(newBooking.status);
+            setPaymentStatus(newBooking.payment_status || 'pending');
+            
+            if (newBooking.status === 'queued') {
+              checkQueuePosition();
+            }
+          }
+        )
+        .subscribe();
 
-    // Set up polling as fallback
-    const interval = setInterval(() => {
-      fetchBookingStatus();
-    }, 5000);
-    
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(channel);
-    };
-  }, [bookingId]);
+      const interval = setInterval(() => {
+        fetchBookingStatus();
+      }, 5000);
+      
+      return () => {
+        clearInterval(interval);
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [bookingId, isIOSDevice, fetchBookingStatus]);
 
   const handlePayment = async () => {
     setProcessingPayment(true);
@@ -177,8 +236,13 @@ export default function WaitingPage() {
       }
 
       if (data && data.checkout_url) {
-        // Redirecting to payment checkout
-        window.location.href = data.checkout_url;
+        // iOS Safari specific handling for payment redirects
+        if (isIOSDevice) {
+          // Use location.assign instead of window.location.href for better iOS compatibility
+          window.location.assign(data.checkout_url);
+        } else {
+          window.location.href = data.checkout_url;
+        }
       } else {
         console.error("No checkout URL returned");
         toast({
@@ -197,6 +261,11 @@ export default function WaitingPage() {
     } finally {
       setProcessingPayment(false);
     }
+  };
+
+  const handleManualRefresh = () => {
+    setLoading(true);
+    fetchBookingStatus(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -276,6 +345,17 @@ export default function WaitingPage() {
                 <p className="text-sm font-medium">
                   Status: {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1).replace('_', ' ')}
                 </p>
+                {isIOSDevice && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleManualRefresh}
+                    className="ml-auto"
+                    disabled={loading}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  </Button>
+                )}
               </div>
               <p className="text-sm mt-2">
                 {statusMessages[bookingStatus as keyof typeof statusMessages] || "Processing your booking..."}
@@ -286,6 +366,39 @@ export default function WaitingPage() {
                 </p>
               )}
             </div>
+            
+            {/* iOS Safari specific refresh prompt */}
+            {needsRefresh && isIOSDevice && (
+              <div className="rounded-lg bg-blue-500/10 border border-blue-200 p-4 mt-4">
+                <div className="flex items-start space-x-2">
+                  <RefreshCw className="h-5 w-5 text-blue-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-700">Refresh Needed</p>
+                    <p className="text-sm text-blue-600 mb-3">
+                      Please tap the refresh button to get the latest status update.
+                    </p>
+                    <Button 
+                      onClick={handleManualRefresh}
+                      size="sm"
+                      disabled={loading}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Refreshing...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Refresh Status
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {shouldShowPaymentButton && (
               <div className="rounded-lg bg-secondary p-4 mt-6">
