@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset Free Trial Users</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Reset Free Trial Users</h1>
+    <button onclick="resetUsers()">Reset All Users</button>
+    <div id="result"></div>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            'https://emtwxyywgszhboxpaunk.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtdHd4eXl3Z3N6aGJveHBhdW5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjEzOTI0NzcsImV4cCI6MjAzNjk2ODQ3N30.gFDXVPKT7DiTQzqkHqWRhFMfJ7WiV6D7_9o-pYbV7tQ'
+        );
+
+        async function resetUsers() {
+            document.getElementById('result').innerHTML = 'Resetting users...';
+            
+            try {
+                const { data, error } = await supabase.functions.invoke('reset-free-trial-users', {
+                    body: {}
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                document.getElementById('result').innerHTML = `
+                    <h3>✅ Reset Successful!</h3>
+                    <p><strong>Users Reset:</strong> ${data.usersReset}</p>
+                    <p><strong>Failed Bookings Cleaned:</strong> ${data.failedBookingsCleaned}</p>
+                    <p><strong>Timestamp:</strong> ${data.timestamp}</p>
+                    
+                    <h4>Reset Users:</h4>
+                    <pre>${JSON.stringify(data.resetUsers, null, 2)}</pre>
+                    
+                    <h4>Original Data:</h4>
+                    <pre>${JSON.stringify(data.originalUsers, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                    <pre>${JSON.stringify(error, null, 2)}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -45,8 +45,8 @@ serve(async (req) => {
 
     console.log(`👤 USER DATA:`, { userData, userError });
 
-    // 4. Check recent bookings
-    const { data: recentBookings, error: bookingsError } = await supabaseClient
+    // 4. Check all free trial bookings for this user (lifetime)
+    const { data: freeTrialBookings, error: bookingsError } = await supabaseClient
       .from('bookings')
       .select(`
         id, 
@@ -57,10 +57,9 @@ serve(async (req) => {
       `)
       .eq('user_id', userId)
       .eq('plans.key', 'free_trial')
-      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: false });
 
-    console.log(`📚 RECENT BOOKINGS:`, { recentBookings, bookingsError });
+    console.log(`📚 FREE TRIAL BOOKINGS:`, { freeTrialBookings, bookingsError });
 
     // 5. Check VAPI accounts
     const { data: vapiAccounts, error: vapiError } = await supabaseClient
@@ -89,15 +88,16 @@ serve(async (req) => {
         user: {
           exists: !!userData,
           lastFreeTrial: userData?.last_free_trial,
+          hasUsedFreeTrial: userData?.last_free_trial !== null,
           timeSinceLastTrial: userData?.last_free_trial 
             ? (Date.now() - new Date(userData.last_free_trial).getTime()) / (1000 * 60 * 60)
             : null,
           data: userData,
           error: userError
         },
-        recentBookings: {
-          count: recentBookings?.length || 0,
-          bookings: recentBookings,
+        freeTrialBookings: {
+          count: freeTrialBookings?.length || 0,
+          bookings: freeTrialBookings,
           error: bookingsError
         },
         vapi: {

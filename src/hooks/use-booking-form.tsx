@@ -265,10 +265,10 @@ export function useBookingForm() {
         }
         
         if (!eligibilityData) {
-          console.log('User is not eligible for free trial');
+          console.log('User is not eligible for free trial - already used');
           toast({
-            title: "Free Trial Used Recently",
-            description: "You can only use the free trial once every 24 hours. Please select a paid plan or try again later.",
+            title: "Free Trial Already Used",
+            description: "You can only use the free trial once per account. Please select a paid plan to continue.",
             variant: "destructive",
           });
           setIsSubmitting(false);
@@ -403,9 +403,9 @@ export function useBookingForm() {
             errorMessage = error.message;
             
             // Handle specific error cases with better descriptions
-            if (error.message.includes('Free trial not available') || error.message.includes('cooldown')) {
-              errorTitle = "Free Trial Unavailable";
-              errorMessage = "You can only use one free trial every 24 hours. Please try again later or choose a paid plan.";
+            if (error.message.includes('Free trial not available') || error.message.includes('cooldown') || error.message.includes('already used')) {
+              errorTitle = "Free Trial Already Used";
+              errorMessage = "You can only use the free trial once per account. Please choose a paid plan to continue.";
             } else if (error.message.includes('VAPI API error')) {
               errorTitle = "Service Temporarily Unavailable";
               errorMessage = "Our calling service is temporarily unavailable. Please try again in a few minutes.";

@@ -106,8 +106,8 @@ serve(async (req)=>{
         }).eq('id', bookingId);
         return new Response(JSON.stringify({
           status: 'error',
-          code: 'FREE_TRIAL_LIMIT_EXCEEDED',
-          message: 'You have already used your free trial in the last 24 hours. Please purchase a plan to continue.',
+          code: 'FREE_TRIAL_ALREADY_USED',
+          message: 'You have already used your free trial. Each account gets one free trial only.',
           details: {
             action: 'redirect_to_pricing',
             message: 'Please purchase a plan to continue using our service.'
@@ -129,7 +129,7 @@ serve(async (req)=>{
       });
       if (updateError) {
         console.error('Error updating last free trial:', updateError);
-        throw new ValidationError(`Failed to update last free trial: ${updateError.message}`);
+        throw new ValidationError(`Failed to update free trial status: ${updateError.message}`);
       }
       // Verify the update
       const { data: userData, error: userError } = await supabaseClient.from('users').select('last_free_trial').eq('id', bookingData.users.id).single();
