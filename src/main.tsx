@@ -2,8 +2,10 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { HelmetProvider } from 'react-helmet-async';
-import App from './App.tsx';
 import './index.css';
+
+// Import App directly for faster LCP
+import App from './App.tsx';
 
 // Error boundary for better error handling
 class ErrorBoundary extends React.Component {
@@ -72,7 +74,20 @@ const observePerformance = () => {
 // Initialize performance monitoring
 observePerformance();
 
-// Mount the application with error boundary
+// Register service worker for caching
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('SW: Service Worker registered successfully', registration);
+      })
+      .catch((error) => {
+        console.log('SW: Service Worker registration failed', error);
+      });
+  });
+}
+
+// Mount the application with error boundary and suspense
 const rootElement = document.getElementById("root");
 if (rootElement) {
   createRoot(rootElement).render(

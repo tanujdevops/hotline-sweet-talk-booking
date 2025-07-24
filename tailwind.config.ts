@@ -9,6 +9,13 @@ export default {
 		"./src/**/*.{ts,tsx}",
 	],
 	prefix: "",
+	safelist: [
+		'bg-hotline',
+		'bg-hotline-dark',
+		'border-hotline',
+		'text-hotline',
+		'pulse-glow'
+	],
 	theme: {
 		container: {
 			center: true,

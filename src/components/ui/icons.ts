@@ -1,0 +1,41 @@
+// Centralized icon exports for better tree shaking
+// Only import the icons that are actually used in the application
+
+export {
+  // Component icons
+  Check,
+  Calendar,
+  PhoneCall,
+  CreditCard,
+  Zap,
+  Home,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Copy,
+  MessageCircleQuestion,
+  ArrowRight,
+  ArrowLeft,
+  ShieldCheck,
+  Heart,
+  ChevronRight,
+  ChevronLeft,
+  ChevronDown,
+  ChevronUp,
+  Mail,
+  Instagram,
+  Twitter,
+  Facebook,
+  Phone,
+  Star,
+  Quote,
+  Sparkles,
+  Search,
+  Circle,
+  X,
+  Dot,
+  MoreHorizontal,
+  GripVertical,
+  PanelLeft
+} from 'lucide-react';

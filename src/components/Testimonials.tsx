@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { cn } from "@/lib/utils";
-import { Star, Quote } from "lucide-react";
+import { Star, Quote } from "@/components/ui/icons";
 
 type TestimonialProps = {
   quote: string;
@@ -12,7 +12,7 @@ type TestimonialProps = {
   avatar?: string;
 };
 
-const Testimonial = ({ quote, name, position, className, rating = 5, avatar }: TestimonialProps) => (
+const Testimonial = memo(({ quote, name, position, className, rating = 5, avatar }: TestimonialProps) => (
   <div className={cn("bg-card p-6 rounded-xl border border-border card-hover glass-effect", className)}>
     <div className="flex items-start mb-4">
       <div className="mr-3">
@@ -41,7 +41,7 @@ const Testimonial = ({ quote, name, position, className, rating = 5, avatar }: T
       <p className="text-gray-300 mb-4 italic relative z-10 pl-4">{quote}</p>
     </div>
   </div>
-);
+));
 
 const Testimonials = () => {
   return (
@@ -96,4 +96,4 @@ const Testimonials = () => {
   );
 };
 
-export default Testimonials;
+export default memo(Testimonials);

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { PRICING_TIERS, PRICING_DETAILS, type PricingTier } from "@/lib/pricing";
 import { useBookingForm } from "@/hooks/use-booking-form";
-import { PhoneCall, CreditCard, Zap } from "lucide-react";
+import { PhoneCall, CreditCard, Zap } from "@/components/ui/icons";
 
 const BookingForm = () => {
   const isMobile = useIsMobile();
@@ -48,99 +48,85 @@ const BookingForm = () => {
             </div>
             
             <div className="space-y-4 hidden md:block">
-              <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-lg">
-                <div className="rounded-full bg-hotline p-3">
-                  <PhoneCall size={24} className="text-white" />
+              {[
+                { icon: PhoneCall, title: '100% Confidential', desc: 'Your information is secure with us' },
+                { icon: 'shield', title: 'Secure Payment', desc: 'Your transactions are fully encrypted' },
+                { icon: Zap, title: 'Instant Connection', desc: 'No waiting - your call starts now' }
+              ].map(({ icon, title, desc }, idx) => (
+                <div key={idx} className="flex items-center gap-4 p-4 bg-secondary/30 rounded-lg">
+                  <div className="rounded-full bg-hotline p-3 flex-shrink-0">
+                    {typeof icon === 'string' ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                      </svg>
+                    ) : (
+                      React.createElement(icon, { size: 24, className: 'text-white' })
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-bold">{title}</h3>
+                    <p className="text-muted-foreground text-sm">{desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold">100% Confidential</h3>
-                  <p className="text-muted-foreground text-sm">Your information is secure with us</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-lg">
-                <div className="rounded-full bg-hotline p-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-bold">Secure Payment</h3>
-                  <p className="text-muted-foreground text-sm">Your transactions are fully encrypted</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4 p-4 bg-secondary/30 rounded-lg">
-                <div className="rounded-full bg-hotline p-3">
-                  <Zap size={24} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold">Instant Connection</h3>
-                  <p className="text-muted-foreground text-sm">No waiting - your call starts now</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
           
           <div className="bg-card p-6 md:p-8 rounded-xl border border-border shadow-lg">
             <form onSubmit={onSubmit} className="space-y-4">
-              <div className="space-y-4">
-                <Input 
-                  placeholder="Your Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="bg-secondary/50 border-muted"
-                />
-                
-                <Input 
-                  type="email"
-                  placeholder="Your Email Address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="bg-secondary/50 border-muted"
-                />
-                
-                <PhoneInput
-                  countryCode={countryCode}
-                  setCountryCode={setCountryCode}
-                  phoneNumber={phoneNumber}
-                  setPhoneNumber={setPhoneNumber}
-                  required
-                />
-              </div>
+              <Input 
+                placeholder="Your Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="bg-secondary/50 border-muted"
+              />
+              
+              <Input 
+                type="email"
+                placeholder="Your Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-secondary/50 border-muted"
+              />
+              
+              <PhoneInput
+                countryCode={countryCode}
+                setCountryCode={setCountryCode}
+                phoneNumber={phoneNumber}
+                setPhoneNumber={setPhoneNumber}
+                required
+              />
 
-              <div className="space-y-2">
-                <RadioGroup 
-                  value={pricingTier} 
-                  onValueChange={(value: PricingTier) => setPricingTier(value)} 
-                  className="grid grid-cols-1 gap-2"
-                >
-                  {Object.entries(PRICING_DETAILS).map(([tier, details]) => (
-                    <label
-                      key={tier}
-                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                        pricingTier === tier ? "border-hotline bg-secondary/50" : "border-border hover:border-hotline"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value={tier} id={tier} />
-                        <div className="flex-1">
-                          <div className="font-medium flex items-center gap-2">
-                            {details.label}
-                            <Zap size={14} className="text-hotline" />
-                          </div>
-                          <div className="text-sm text-muted-foreground">{details.description}</div>
+              <RadioGroup 
+                value={pricingTier} 
+                onValueChange={(value: PricingTier) => setPricingTier(value)} 
+                className="grid grid-cols-1 gap-2"
+              >
+                {Object.entries(PRICING_DETAILS).map(([tier, details]) => (
+                  <label
+                    key={tier}
+                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                      pricingTier === tier ? "border-hotline bg-secondary/50" : "border-border hover:border-hotline"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value={tier} id={tier} />
+                      <div className="flex-1">
+                        <div className="font-medium flex items-center gap-2">
+                          {details.label}
+                          <Zap size={14} className="text-hotline" />
                         </div>
+                        <div className="text-sm text-muted-foreground">{details.description}</div>
                       </div>
-                      <div className="text-sm font-semibold whitespace-nowrap">
-                        {details.price === 0 ? 'FREE' : `$${details.price}`}
-                      </div>
-                    </label>
-                  ))}
-                </RadioGroup>
-              </div>
+                    </div>
+                    <div className="text-sm font-semibold whitespace-nowrap">
+                      {details.price === 0 ? 'FREE' : `$${details.price}`}
+                    </div>
+                  </label>
+                ))}
+              </RadioGroup>
 
               <Textarea 
                 placeholder="Tell us about your preferences or special requests"

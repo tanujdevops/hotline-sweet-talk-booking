@@ -5,11 +5,14 @@ import SEO from "@/components/SEO";
 import JsonLd from "@/components/JsonLd";
 import AiCopyHint from "@/components/AiCopyHint";
 import Navbar from "@/components/Navbar";
-import { faqData } from "@/components/FAQ";
+import ProgressiveLoader from "@/components/ProgressiveLoader";
+import { faqData } from "@/data/faqData";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
-// Lazy-loaded components for better performance
+// Hero component - lazy load for better initial bundle size
 const Hero = lazy(() => import("@/components/Hero"));
+
+// Below-the-fold components - progressive loading for better performance
 const PricingCards = lazy(() => import("@/components/PricingCards"));
 const BookingForm = lazy(() => import("@/components/BookingForm"));
 const Testimonials = lazy(() => import("@/components/Testimonials"));
@@ -307,37 +310,47 @@ const Index = () => {
             <Hero />
           </header>
           
-          <section id="pricing" aria-labelledby="pricing-heading">
-            <div className="sr-only">
-              <h2 id="pricing-heading">Our Pricing Options</h2>
-            </div>
-            <PricingCards />
-          </section>
+          <ProgressiveLoader fallback={<div className="h-96 bg-gradient-to-b from-background to-black/90" />}>
+            <section id="pricing" aria-labelledby="pricing-heading">
+              <div className="sr-only">
+                <h2 id="pricing-heading">Our Pricing Options</h2>
+              </div>
+              <PricingCards />
+            </section>
+          </ProgressiveLoader>
           
-          <section id="booking" aria-labelledby="booking-heading">
-            <div className="sr-only">
-              <h2 id="booking-heading">Book Your Call</h2>
-            </div>
-            <BookingForm />
-          </section>
+          <ProgressiveLoader fallback={<div className="h-96 bg-gradient-to-b from-black/90 to-background" />}>
+            <section id="booking" aria-labelledby="booking-heading">
+              <div className="sr-only">
+                <h2 id="booking-heading">Book Your Call</h2>
+              </div>
+              <BookingForm />
+            </section>
+          </ProgressiveLoader>
           
-          <section id="testimonials" aria-labelledby="testimonials-heading">
-            <div className="sr-only">
-              <h2 id="testimonials-heading">Client Testimonials</h2>
-            </div>
-            <Testimonials />
-          </section>
+          <ProgressiveLoader fallback={<div className="h-80 bg-gradient-to-b from-background to-black/90" />}>
+            <section id="testimonials" aria-labelledby="testimonials-heading">
+              <div className="sr-only">
+                <h2 id="testimonials-heading">Client Testimonials</h2>
+              </div>
+              <Testimonials />
+            </section>
+          </ProgressiveLoader>
           
-          <section id="faq" aria-labelledby="faq-heading">
-            <div className="sr-only">
-              <h2 id="faq-heading">Frequently Asked Questions</h2>
-            </div>
-            <FAQ />
-          </section>
+          <ProgressiveLoader fallback={<div className="h-96 bg-gradient-to-b from-black/90 to-background" />}>
+            <section id="faq" aria-labelledby="faq-heading">
+              <div className="sr-only">
+                <h2 id="faq-heading">Frequently Asked Questions</h2>
+              </div>
+              <FAQ />
+            </section>
+          </ProgressiveLoader>
           
-          <footer role="contentinfo">
-            <Footer />
-          </footer>
+          <ProgressiveLoader fallback={<div className="h-64 bg-background" />}>
+            <footer role="contentinfo">
+              <Footer />
+            </footer>
+          </ProgressiveLoader>
         </Suspense>
       </main>
     </>

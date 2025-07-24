@@ -59,29 +59,25 @@ export const PhoneInput = ({
     <div className={cn("space-y-2", className)}>
       <Label htmlFor={phoneInputId} className="flex items-center gap-1.5">
         <Phone size={16} className="text-hotline-pink" aria-hidden="true" />
-        <span>Phone Number</span> 
-        {required && <span className="text-destructive" aria-hidden="true">*</span>}
+        Phone Number {required && <span className="text-destructive">*</span>}
         {required && <span className="sr-only">(required)</span>}
       </Label>
       <div 
-        className="relative flex rounded-md border border-input overflow-hidden focus-within:ring-1 focus-within:ring-hotline focus-within:border-hotline"
+        className="flex rounded-md border border-input overflow-hidden focus-within:ring-1 focus-within:ring-hotline focus-within:border-hotline"
         role="group"
         aria-labelledby={phoneInputId}
       >
-        <div className="relative">
-          <Input
-            id={countryCodeId}
-            name="countryCode"
-            placeholder="+1"
-            value={countryCode}
-            onChange={handleCountryCodeChange}
-            className="border-0 rounded-none w-[70px] text-center font-medium bg-primary/5 focus-visible:ring-0"
-            maxLength={5}
-            aria-label="Country code"
-            inputMode="tel"
-          />
-          <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-input" aria-hidden="true"></div>
-        </div>
+        <Input
+          id={countryCodeId}
+          name="countryCode"
+          placeholder="+1"
+          value={countryCode}
+          onChange={handleCountryCodeChange}
+          className="border-0 rounded-none w-[70px] text-center font-medium bg-primary/5 focus-visible:ring-0 border-r border-input"
+          maxLength={5}
+          aria-label="Country code"
+          inputMode="tel"
+        />
         <Input
           id={phoneInputId}
           name="phoneNumber"

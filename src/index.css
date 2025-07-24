@@ -95,75 +95,43 @@
 }
 
 .card-hover {
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform;
 }
 .card-hover:hover {
-  transform: translateY(-5px);
+  transform: translateY(-5px) translate3d(0, 0, 0);
   box-shadow: 0 10px 25px rgba(217, 70, 239, 0.25);
 }
 
-/* Sensual gradient overlay */
-.sensual-overlay {
-  background: linear-gradient(to right, rgba(155, 135, 245, 0.4), rgba(217, 70, 239, 0.4));
-}
+/* Removed unused sensual overlay */
 
 /* Text effects */
 .text-shadow {
   text-shadow: 0 2px 10px rgba(217, 70, 239, 0.3);
 }
 
-/* Animation enhancements */
+/* Optimized animation with GPU acceleration */
 @keyframes pulse-glow {
   0%, 100% { 
     opacity: 1;
     box-shadow: 0 0 15px 2px rgba(217, 70, 239, 0.4);
+    transform: translate3d(0, 0, 0);
   }
   50% { 
     opacity: 0.85;
     box-shadow: 0 0 20px 5px rgba(217, 70, 239, 0.6);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .pulse-glow {
   animation: pulse-glow 3s ease-in-out infinite;
+  will-change: opacity, box-shadow;
 }
 
-/* Continuous testimonial animation */
-@keyframes testimonial-scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-100%);
-  }
-}
+/* Removed unused testimonial scroll animation */
 
-.animate-testimonial {
-  animation: testimonial-scroll 30s linear infinite;
-}
-
-/* Sensual highlight */
-.sensual-highlight {
-  position: relative;
-}
-
-.sensual-highlight::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(to right, #9b87f5, #D946EF);
-  transform: scaleX(0);
-  transform-origin: bottom right;
-  transition: transform 0.3s ease;
-}
-
-.sensual-highlight:hover::after {
-  transform: scaleX(1);
-  transform-origin: bottom left;
-}
+/* Removed unused sensual highlight styles */
 
 /* Glass effect */
 .glass-effect {
