@@ -6,9 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Loading from "@/components/Loading";
 import CriticalResourceLoader from "@/components/CriticalResourceLoader";
-
-// Lazy load React Query only when needed (not for initial render)
-const QueryWrapper = lazy(() => import("./components/QueryWrapper"));
+import QueryWrapper from "@/components/QueryWrapper";
 
 // Lazy-loaded components for better code splitting and performance
 const Index = lazy(() => import("./pages/Index"));
