@@ -12,7 +12,7 @@ const HomePage = () => (
     color: '#fff',
     fontSize: '24px'
   }}>
-    <h1>SweetyOnCall - Home Page</h1>
+    <h1>SweetyOnCall - Home Page (Updated)</h1>
   </div>
 );
 
