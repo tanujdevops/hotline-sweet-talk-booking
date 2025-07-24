@@ -1,66 +1,44 @@
 
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import BookingConfirmation from "./pages/BookingConfirmation";
+import WaitingPage from "./pages/WaitingPage";
 
-// Loading component
+// Simple loading component
 const Loading = () => (
-  <div style={{ 
-    minHeight: '100vh', 
-    display: 'flex', 
-    alignItems: 'center', 
-    justifyContent: 'center',
-    background: '#000',
-    color: '#fff',
-    fontSize: '18px'
-  }}>
-    Loading...
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-hotline"></div>
   </div>
 );
 
-// Test lazy loading
-const HomePage = lazy(() => Promise.resolve({
-  default: () => (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      background: '#000',
-      color: '#fff',
-      fontSize: '24px'
-    }}>
-      <h1>SweetyOnCall - Lazy Loaded Home</h1>
-    </div>
-  )
-}));
+// Create query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    },
+  },
+});
 
-const NotFoundPage = lazy(() => Promise.resolve({
-  default: () => (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      background: '#000',
-      color: '#fff',
-      fontSize: '24px'
-    }}>
-      <h1>404 - Lazy Loaded Not Found</h1>
-    </div>
-  )
-}));
-
-const App = () => {
-  return (
+const App = () => (
+  <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <Suspense fallback={<Loading />}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="/" element={<Index />} />
+          <Route path="/waiting" element={<WaitingPage />} />
+          <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
-  );
-};
+  </QueryClientProvider>
+);
 
 export default App;
