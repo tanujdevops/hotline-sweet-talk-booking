@@ -140,8 +140,9 @@ serve(async (req)=>{
       }
     }
     const assistantId = bookingData.plans.vapi_assistant_id;
-    const customerName = bookingData.users.name;
+    const customerName = name; // Use the fresh name from the request instead of database
     console.log(`Plan type for booking ${bookingId}: ${bookingData.plans.key}, Assistant ID: ${assistantId}`);
+    console.log(`Using customer name: ${customerName} (from request, not database)`);
     // Fetch the single active VAPI account
     const { data: account, error: accountError } = await supabaseClient.from('vapi_accounts').select('id, current_active_calls, max_concurrent_calls, api_key, phone_number_id').eq('is_active', true).limit(1).single();
     if (accountError || !account) {
