@@ -67,48 +67,20 @@ serve(async (req)=>{
         const agent1 = availableAgent[0];
         const assistantId = queueItem.bookings.plans.vapi_assistant_id;
         console.log(`Processing call for booking ${queueItem.booking_id} with agent ${agent1.agent_id}, assistant ${assistantId}`);
-        // Check if this is a free trial booking
+        // Handle free trial - trust frontend eligibility check, just mark as used
         if (queueItem.bookings.plans.key === 'free_trial') {
-          console.log(`Processing free trial for user ${queueItem.bookings.users.id}`);
-          // Check free trial eligibility
-          const { data: eligibilityData, error: eligibilityError } = await supabaseClient.rpc('check_free_trial_eligibility', {
-            user_id: queueItem.bookings.users.id
-          });
-          if (eligibilityError) {
-            console.error("Error checking eligibility:", eligibilityError);
-            throw new Error("Failed to check free trial eligibility");
-          }
-          console.log(`Free trial eligibility check result: ${eligibilityData}`);
-          if (!eligibilityData) {
-            console.log(`User ${queueItem.bookings.users.id} is not eligible for free trial`);
-            // Update queue item status to indicate ineligibility
-            await supabaseClient.from('call_queue').update({
-              status: 'cancelled',
-              error: 'FREE_TRIAL_LIMIT_EXCEEDED',
-              error_details: 'User has already used their free trial in the last 24 hours'
-            }).eq('id', queueItem.id);
-            // Also update the booking status
-            await supabaseClient.from('bookings').update({
-              status: 'cancelled'
-            }).eq('id', queueItem.booking_id);
-            continue; // Skip to next queue item
-          }
-          // Update last free trial timestamp
-          console.log(`Updating last free trial for user ${queueItem.bookings.users.id}`);
+          console.log(`Processing free trial for user ${queueItem.bookings.users.id} - trusting frontend eligibility check`);
+          
+          // Update last free trial timestamp (no need to re-check eligibility)
+          console.log(`Marking free trial as used for user ${queueItem.bookings.users.id}`);
           const { error: updateError } = await supabaseClient.rpc('update_last_free_trial', {
             user_id: queueItem.bookings.users.id
           });
           if (updateError) {
             console.error('Error updating last free trial:', updateError);
-            throw new Error(`Failed to update last free trial: ${updateError.message}`);
+            throw new Error(`Failed to update free trial status: ${updateError.message}`);
           }
-          // Verify the update
-          const { data: userData, error: userError } = await supabaseClient.from('users').select('last_free_trial').eq('id', queueItem.bookings.users.id).single();
-          if (userError) {
-            console.error('Error verifying last free trial update:', userError);
-          } else {
-            console.log(`Updated last_free_trial to: ${userData.last_free_trial}`);
-          }
+          console.log(`✅ Successfully marked free trial as used for user ${queueItem.bookings.users.id}`);
         }
         // Mark queue item as processing
         await supabaseClient.from('call_queue').update({

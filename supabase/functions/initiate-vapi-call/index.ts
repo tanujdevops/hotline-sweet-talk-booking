@@ -87,43 +87,12 @@ serve(async (req)=>{
       console.error('Error fetching booking:', bookingError);
       throw new ValidationError('Failed to get booking details');
     }
-    // Check if this is a free trial booking
+    // Handle free trial - trust frontend eligibility check, just mark as used
     if (bookingData.plans.key === 'free_trial') {
-      console.log(`Processing free trial for user ${bookingData.users.id}`);
-      // Check free trial eligibility
-      const { data: eligibilityData, error: eligibilityError } = await supabaseClient.rpc('check_free_trial_eligibility', {
-        user_id: bookingData.users.id
-      });
-      if (eligibilityError) {
-        console.error("Error checking eligibility:", eligibilityError);
-        throw new ValidationError("Failed to check free trial eligibility");
-      }
-      console.log(`Free trial eligibility check result: ${eligibilityData}`);
-      if (!eligibilityData) {
-        // Update booking status to indicate ineligibility
-        await supabaseClient.from('bookings').update({
-          status: 'cancelled'
-        }).eq('id', bookingId);
-        return new Response(JSON.stringify({
-          status: 'error',
-          code: 'FREE_TRIAL_ALREADY_USED',
-          message: 'You have already used your free trial. Each account gets one free trial only.',
-          details: {
-            action: 'redirect_to_pricing',
-            message: 'Please purchase a plan to continue using our service.'
-          }
-        }), {
-          status: 403,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-          }
-        });
-      }
-      // Update last free trial timestamp
-      console.log(`Updating last free trial for user ${bookingData.users.id}`);
+      console.log(`Processing free trial for user ${bookingData.users.id} - trusting frontend eligibility check`);
+      
+      // Update last free trial timestamp (no need to re-check eligibility)
+      console.log(`Marking free trial as used for user ${bookingData.users.id}`);
       const { error: updateError } = await supabaseClient.rpc('update_last_free_trial', {
         user_id: bookingData.users.id
       });
@@ -131,13 +100,7 @@ serve(async (req)=>{
         console.error('Error updating last free trial:', updateError);
         throw new ValidationError(`Failed to update free trial status: ${updateError.message}`);
       }
-      // Verify the update
-      const { data: userData, error: userError } = await supabaseClient.from('users').select('last_free_trial').eq('id', bookingData.users.id).single();
-      if (userError) {
-        console.error('Error verifying last free trial update:', userError);
-      } else {
-        console.log(`Updated last_free_trial to: ${userData.last_free_trial}`);
-      }
+      console.log(`✅ Successfully marked free trial as used for user ${bookingData.users.id}`);
     }
     const assistantId = bookingData.plans.vapi_assistant_id;
     const customerName = name; // Use the fresh name from the request instead of database
