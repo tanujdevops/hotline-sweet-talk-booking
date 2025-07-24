@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -39,7 +38,7 @@ export default {
 				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))'
+					foreground: '217.2 32.6% 65%'
 				},
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',

@@ -124,19 +124,19 @@ const BookingForm = () => {
                         pricingTier === tier ? "border-hotline bg-secondary/50" : "border-border hover:border-hotline"
                       }`}
                     >
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-center gap-2">
                         <RadioGroupItem value={tier} id={tier} />
-                        <div>
-                          <p className="font-medium flex items-center gap-2">
+                        <div className="flex-1">
+                          <div className="font-medium flex items-center gap-2">
                             {details.label}
                             <Zap size={14} className="text-hotline" />
-                          </p>
-                          <p className="text-sm text-muted-foreground">{details.description}</p>
+                          </div>
+                          <div className="text-sm text-muted-foreground">{details.description}</div>
                         </div>
                       </div>
-                      <p className="text-sm font-semibold whitespace-nowrap">
+                      <div className="text-sm font-semibold whitespace-nowrap">
                         {details.price === 0 ? 'FREE' : `$${details.price}`}
-                      </p>
+                      </div>
                     </label>
                   ))}
                 </RadioGroup>

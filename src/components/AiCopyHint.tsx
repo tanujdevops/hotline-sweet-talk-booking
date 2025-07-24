@@ -19,8 +19,6 @@ const AiCopyHint = ({
   faqs,
   children
 }: AiCopyHintProps) => {
-  // This component doesn't render anything visible but includes hidden metadata
-  // for AI crawlers to better understand content
   return (
     <div className="ai-copy-hint">
       {description && (
@@ -41,29 +39,12 @@ const AiCopyHint = ({
         </div>
       )}
       
-      {/* AI prompt questions for generative engines */}
       {promptQuestions && promptQuestions.length > 0 && (
-        <div className="hidden" aria-hidden="true" data-ai-prompt-questions>
-          <ul>
-            {promptQuestions.map((question, index) => (
-              <li key={index} data-ai-prompt-question={question}>{question}</li>
-            ))}
-          </ul>
-        </div>
+        <div className="hidden" aria-hidden="true" data-ai-prompt-questions={JSON.stringify(promptQuestions)}></div>
       )}
       
-      {/* FAQs in a format optimized for AI crawlers */}
       {faqs && faqs.length > 0 && (
-        <div className="hidden" aria-hidden="true" data-ai-faqs>
-          <dl>
-            {faqs.map((faq, index) => (
-              <div key={index} className="faq-item">
-                <dt data-ai-faq-question>{faq.question}</dt>
-                <dd data-ai-faq-answer>{faq.answer}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+        <div className="hidden" aria-hidden="true" data-ai-faqs={JSON.stringify(faqs)}></div>
       )}
       
       {children}

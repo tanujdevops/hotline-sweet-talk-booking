@@ -15,13 +15,13 @@ const Footer = () => {
               Premium hotline services for those seeking intimate conversations at affordable rates.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors" aria-label="Follow us on Instagram">
                 <Instagram size={20} />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors" aria-label="Follow us on Twitter">
                 <Twitter size={20} />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors">
+              <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors" aria-label="Follow us on Facebook">
                 <Facebook size={20} />
               </a>
             </div>
