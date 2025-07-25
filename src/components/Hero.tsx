@@ -73,7 +73,7 @@ const Hero = () => {
       <button 
         onClick={() => scrollToSection('pricing')} 
         aria-label="Scroll down to pricing"
-        className="absolute bottom-6 sm:bottom-8 md:bottom-10 left-1/2 transform -translate-x-1/2 text-hotline opacity-75 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-hotline focus:ring-offset-2 focus:ring-offset-transparent rounded-full p-2 sm:p-3 animate-bounce hover:animate-none transition-all duration-300 backdrop-blur-sm bg-black/20 hover:bg-black/40 flex items-center justify-center"
+        className="absolute bottom-6 sm:bottom-8 md:bottom-10 left-1/2 -translate-x-1/2 text-hotline opacity-75 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-hotline focus:ring-offset-2 focus:ring-offset-transparent rounded-full p-2 sm:p-3 animate-bounce hover:animate-none transition-all duration-300 backdrop-blur-sm bg-black/20 hover:bg-black/40 flex items-center justify-center"
       >
         <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
           <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
