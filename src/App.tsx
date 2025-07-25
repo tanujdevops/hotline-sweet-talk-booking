@@ -1,12 +1,15 @@
 
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
 
 // Simple test components without complex dependencies
 const TestIndex = () => (
   <div style={{ padding: "20px" }}>
     <h1>SweetyOnCall</h1>
-    <p>Home page working</p>
+    <p>Home page working with QueryClient and TooltipProvider</p>
   </div>
 );
 
@@ -16,15 +19,29 @@ const TestNotFound = () => (
   </div>
 );
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
 const App = () => {
-  console.log("App with router rendered");
+  console.log("App with providers rendered");
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<TestIndex />} />
-        <Route path="*" element={<TestNotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<TestIndex />} />
+            <Route path="*" element={<TestNotFound />} />
+          </Routes>
+          <Toaster />
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
