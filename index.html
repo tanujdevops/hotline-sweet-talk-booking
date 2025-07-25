@@ -42,70 +42,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Montserrat:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Montserrat:wght@400;500&display=swap" rel="stylesheet" /></noscript>
     
-    <!-- Critical inline CSS for LCP element - optimized for mobile -->
+    <!-- Minimal critical CSS for LCP -->
     <style>
-      /* Critical LCP element styles with immediate fallbacks */
-      .hero-heading-critical {
-        font-family: 'Cormorant Garamond', Georgia, serif !important;
-        font-weight: 700 !important;
-        font-display: swap;
-        color: white !important;
-        text-align: center !important;
-        line-height: 1.1 !important;
-        letter-spacing: -0.025em !important;
-        contain: layout style paint;
-        font-size: 1.875rem !important; /* 30px mobile base */
-        margin-bottom: 1.5rem !important;
-        transform: translateZ(0);
-        will-change: auto;
-      }
-      
-      /* Mobile-first responsive sizing */
-      @media (min-width: 768px) {
-        .hero-heading-critical {
-          font-size: 3rem !important; /* 48px tablet */
-        }
-      }
-      
-      @media (min-width: 1024px) {
-        .hero-heading-critical {
-          font-size: 3.75rem !important; /* 60px desktop */
-        }
-      }
-      
-      /* Critical gradient for mobile performance */
-      .text-hotline-pink.bg-gradient-to-r {
-        background: linear-gradient(90deg, #ff6b9d 0%, #c471ed 100%) !important;
-        -webkit-background-clip: text !important;
-        background-clip: text !important;
-        -webkit-text-fill-color: transparent !important;
-        color: transparent !important;
-      }
-      
-      /* Immediate body font with fallbacks */
+      /* Immediate font fallback */
       body {
-        font-family: 'Montserrat', system-ui, sans-serif;
+        font-family: system-ui, sans-serif;
+      }
+      
+      /* Critical LCP text styling - no overrides */
+      .hero-heading-critical {
+        font-family: 'Cormorant Garamond', Georgia, serif;
         font-display: swap;
-      }
-      
-      /* Optimize hero background for faster LCP */
-      .hero-bg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        transform: translateZ(0);
-        contain: strict;
-        z-index: 1;
-      }
-      
-      /* Mobile CSS containment for performance */
-      .container {
-        contain: layout style;
       }
     </style>
     
@@ -113,18 +60,14 @@
     <link rel="preload" as="image" href="https://images.unsplash.com/photo-1542736667-7c405c485dd6?w=1920&h=1080&q=75&fm=webp" media="(min-width: 768px)" />
     <link rel="preload" as="image" href="https://images.unsplash.com/photo-1542736667-7c405c485dd6?w=800&h=600&q=75&fm=webp" media="(max-width: 767px)" />
     
-    <!-- Resource hints for better performance -->
+    <!-- Critical resource hints for better performance -->
     <link rel="preconnect" href="https://images.unsplash.com" />
     <link rel="dns-prefetch" href="https://cdn.gpteng.co" />
     
-    <!-- Critical resource priorities for mobile -->
-    <script>
-      // Mobile-specific performance optimizations
-      if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        // Reduce motion for mobile performance
-        document.documentElement.style.setProperty('--reduce-motion', '1');
-      }
-    </script>
+    <!-- Preload the main CSS bundle for faster parsing -->
+    <link rel="preload" as="style" href="/src/index.css" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="/src/index.css" /></noscript>
+    
     
     
     <!-- Favicon -->
@@ -216,7 +159,7 @@
     </noscript>
     
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module" defer></script>
-    <script type="module" src="/src/main.tsx" defer></script>
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
