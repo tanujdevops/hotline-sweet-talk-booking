@@ -57,7 +57,7 @@ const Hero = () => {
             </Button>
           </div>
           
-          <div className="mt-6 flex flex-col md:flex-row items-center justify-center gap-4 text-sm text-gray-400">
+          <div className="mt-6 mb-12 sm:mb-16 md:mb-20 flex flex-col md:flex-row items-center justify-center gap-4 text-sm text-gray-400">
             <div className="flex items-center gap-2">
               <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
               AI companions online - connect now!
@@ -73,7 +73,7 @@ const Hero = () => {
       <button 
         onClick={() => scrollToSection('pricing')} 
         aria-label="Scroll down to pricing"
-        className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 text-hotline opacity-75 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-hotline focus:ring-offset-2 focus:ring-offset-transparent rounded-full p-2 sm:p-3 animate-bounce hover:animate-none transition-all duration-300 backdrop-blur-sm bg-black/20 hover:bg-black/40"
+        className="absolute bottom-6 sm:bottom-8 md:bottom-10 left-1/2 transform -translate-x-1/2 text-hotline opacity-75 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-hotline focus:ring-offset-2 focus:ring-offset-transparent rounded-full p-2 sm:p-3 animate-bounce hover:animate-none transition-all duration-300 backdrop-blur-sm bg-black/20 hover:bg-black/40"
       >
         <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
           <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
