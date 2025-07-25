@@ -1,9 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { PRICING_TIERS, PRICING_DETAILS, type PricingTier } from "@/lib/pricing";
-import { CallManager } from "@/lib/call-manager";
+
+// Lazy load Supabase and CallManager only when needed
+const getSupabase = async () => {
+  const { supabase } = await import("@/integrations/supabase/client");
+  return supabase;
+};
+
+const getCallManager = async () => {
+  const { CallManager } = await import("@/lib/call-manager");
+  return CallManager;
+};
 
 export function useBookingForm() {
   const { toast } = useToast();
@@ -163,6 +172,7 @@ export function useBookingForm() {
         };
         const dbPlanKey = planKeyMap[pricingTier];
         
+        const CallManager = await getCallManager();
         const concurrencyData = await CallManager.checkVapiConcurrency(dbPlanKey);
         
         if (!concurrencyData.canMakeCall) {
@@ -231,6 +241,7 @@ export function useBookingForm() {
 
       // --- FREE TRIAL ELIGIBILITY CHECK BEFORE BOOKING CREATION ---
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
+        const supabase = await getSupabase();
         const { data: eligibilityData, error: eligibilityError } = await supabase.rpc('check_free_trial_eligibility', {
           user_id: userId
         });
@@ -313,7 +324,7 @@ export function useBookingForm() {
       // Handle different flows
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
         // Update user's last_free_trial timestamp
-        const { error: updateError } = await supabase.rpc('update_last_free_trial', {
+        const { error: updateError } = await (await getSupabase()).rpc('update_last_free_trial', {
           user_id: userId
         });
 
@@ -384,7 +395,7 @@ export function useBookingForm() {
         
         // Create payment session
         try {
-          const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
+          const { data, error } = await (await getSupabase()).functions.invoke('create-stripe-checkout', {
             body: { bookingId }
           });
 
