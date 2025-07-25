@@ -50,10 +50,21 @@ export default defineConfig(({ mode }) => {
     },
   },
   build: {
-    // Minimal build configuration for debugging
-    minify: false,
-    sourcemap: true,
-    target: 'es2020'
+    minify: isProduction ? 'terser' : false,
+    sourcemap: !isProduction,
+    target: ['es2020', 'chrome80', 'safari13'],
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-select', '@radix-ui/react-toast'],
+          router: ['react-router-dom'],
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    cssCodeSplit: true
   }
   };
 });

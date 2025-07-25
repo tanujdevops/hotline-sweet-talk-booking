@@ -74,11 +74,8 @@ serve(async (req)=>{
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `Sweet Talk ${booking.plans.key.replace('_', ' ')} Call`,
-              description: `${booking.plans.key === 'standard' ? '3' : '7'} minute sweet talk conversation`,
-              images: [
-                'https://sweetyoncall.com/logo.png'
-              ]
+              name: `Sweet Talk ${booking.plans.key.charAt(0).toUpperCase() + booking.plans.key.slice(1)} Call`,
+              description: `${booking.plans.key === 'standard' ? '3' : '7'} minute sweet talk conversation`
             },
             unit_amount: booking.plans.price_cents
           },
@@ -89,19 +86,27 @@ serve(async (req)=>{
       success_url: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?success=true`,
       cancel_url: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?canceled=true`,
       metadata: {
-        booking_id: booking.id
+        booking_id: booking.id,
+        business_name: 'Sweety On Call'
       },
-      // Branding options to match sweetyoncall.com - using supported parameters
+      // Enhanced branding for sweetyoncall
       payment_intent_data: {
-        description: `Sweet Talk Call - ${booking.plans.key}`,
+        description: `Sweety On Call - ${booking.plans.key} Sweet Talk Session`,
+        statement_descriptor: 'SWEETYONCALL',
         metadata: {
-          booking_id: booking.id
+          booking_id: booking.id,
+          service: 'sweet_talk_call'
         }
       },
       custom_text: {
         submit: {
-          message: "We'll connect you with your sweet talker right after payment is complete."
+          message: "Complete your payment to start your sweet talk session! 💕"
         }
+      },
+      locale: 'en',
+      billing_address_collection: 'auto',
+      phone_number_collection: {
+        enabled: true
       }
     });
     console.log("Stripe session created:", session.id);
