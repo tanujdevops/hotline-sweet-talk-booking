@@ -22,7 +22,6 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  console.log("App with providers rendered");
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

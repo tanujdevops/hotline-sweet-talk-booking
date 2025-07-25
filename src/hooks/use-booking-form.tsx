@@ -231,27 +231,9 @@ export function useBookingForm() {
 
       // --- FREE TRIAL ELIGIBILITY CHECK BEFORE BOOKING CREATION ---
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
-        console.log('🔍 DEBUG: Checking free trial eligibility for user:', userId);
-        
-        // Run debug check first
-        try {
-          const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-free-trial', {
-            body: { userId, phone: fullPhoneNumber }
-          });
-          console.log('🔍 DEBUG REPORT:', debugData);
-          
-          if (debugError) {
-            console.error('Debug function error:', debugError);
-          }
-        } catch (debugErr) {
-          console.error('Failed to run debug check:', debugErr);
-        }
-        
         const { data: eligibilityData, error: eligibilityError } = await supabase.rpc('check_free_trial_eligibility', {
           user_id: userId
         });
-        
-        console.log('Free trial eligibility result:', { eligibilityData, eligibilityError });
         
         if (eligibilityError) {
           console.error("Error checking free trial eligibility:", eligibilityError);
@@ -265,7 +247,6 @@ export function useBookingForm() {
         }
         
         if (!eligibilityData) {
-          console.log('User is not eligible for free trial - already used');
           toast({
             title: "Free Trial Already Used",
             description: "You can only use the free trial once per account. Please select a paid plan to continue.",
@@ -274,22 +255,11 @@ export function useBookingForm() {
           setIsSubmitting(false);
           return;
         }
-        
-        console.log('✅ User is eligible for free trial, proceeding...');
       }
       // --- END FREE TRIAL ELIGIBILITY CHECK ---
 
       // Create booking with correct initial status
       const initialStatus = pricingTier === PRICING_TIERS.FREE_TRIAL ? 'queued' : 'pending_payment';
-
-      console.log('Creating booking with data:', {
-        user_id: userId,
-        plan_id: planData.id,
-        message,
-        call_duration: PRICING_DETAILS[pricingTier].duration * 60,
-        payment_status: pricingTier === PRICING_TIERS.FREE_TRIAL ? 'completed' : 'pending',
-        status: initialStatus
-      });
 
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
@@ -304,8 +274,6 @@ export function useBookingForm() {
           }
         ])
         .select();
-
-      console.log('Booking insert result:', { bookingData, bookingError });
 
       if (bookingError) {
         console.error("Booking insert error:", bookingError);
@@ -344,20 +312,13 @@ export function useBookingForm() {
 
       // Handle different flows
       if (pricingTier === PRICING_TIERS.FREE_TRIAL) {
-        console.log('Processing free trial booking:', bookingId);
-        
         // Update user's last_free_trial timestamp
-        console.log('Updating last_free_trial timestamp for user:', userId);
         const { error: updateError } = await supabase.rpc('update_last_free_trial', {
           user_id: userId
         });
 
         if (updateError) {
           console.error('Error updating last_free_trial:', updateError);
-          // Don't fail the entire process for this, just log it
-          console.warn('Continuing despite last_free_trial update error');
-        } else {
-          console.log('Successfully updated last_free_trial timestamp');
         }
         
         // For free trial, initiate call immediately
@@ -367,39 +328,16 @@ export function useBookingForm() {
         });
         
         try {
-          console.log('🔄 Initiating free trial call with params:', { 
-            bookingId, 
-            phone: fullPhoneNumber, 
-            name 
-          });
-          
           // Call the initiate-vapi-call function directly for free trials
-          const callData = await CallManager.initiateVapiCall(bookingId, fullPhoneNumber, name);
-          console.log('✅ Free trial call initiated successfully:', callData);
+          await CallManager.initiateVapiCall(bookingId, fullPhoneNumber, name);
         } catch (error) {
-          console.error('❌ Error in free trial call initiation:', error);
-          
-          // Run debug check for failed calls
-          try {
-            const { data: debugData } = await supabase.functions.invoke('debug-free-trial', {
-              body: { userId, phone: fullPhoneNumber }
-            });
-            console.log('🔍 POST-ERROR DEBUG:', debugData);
-          } catch (debugErr) {
-            console.error('Failed to run post-error debug:', debugErr);
-          }
+          console.error('Error in free trial call initiation:', error);
           
           // Extract error message from the error object
           let errorMessage = "Unable to start your free trial call. Please try again.";
           let errorTitle = "Call Initiation Failed";
           
           if (error instanceof Error) {
-            console.log('📝 Full error details:', {
-              name: error.name,
-              message: error.message,
-              stack: error.stack
-            });
-            
             errorMessage = error.message;
             
             // Handle specific error cases with better descriptions
@@ -433,7 +371,6 @@ export function useBookingForm() {
           return;
         }
         
-        console.log('Navigating to waiting page...');
         const shortId = bookingId.slice(0, 6);
         navigate(`/waiting/${shortId}`, { 
           state: { 
@@ -462,7 +399,6 @@ export function useBookingForm() {
           }
 
           if (data && data.checkout_url) {
-            console.log("Redirecting to Stripe checkout:", data.checkout_url);
             window.location.href = data.checkout_url;
           } else {
             console.error("No checkout URL returned");
