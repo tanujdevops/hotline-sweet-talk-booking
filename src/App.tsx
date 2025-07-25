@@ -1,14 +1,30 @@
 
 import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+// Simple test components without complex dependencies
+const TestIndex = () => (
+  <div style={{ padding: "20px" }}>
+    <h1>SweetyOnCall</h1>
+    <p>Home page working</p>
+  </div>
+);
+
+const TestNotFound = () => (
+  <div style={{ padding: "20px" }}>
+    <h1>404 - Page Not Found</h1>
+  </div>
+);
 
 const App = () => {
-  console.log("App component rendered");
+  console.log("App with router rendered");
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h1>SweetyOnCall - Test</h1>
-      <p>If you can see this, React is working in production!</p>
-      <button onClick={() => alert("Click works!")}>Test Button</button>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<TestIndex />} />
+        <Route path="*" element={<TestNotFound />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
