@@ -62,8 +62,8 @@ export default defineConfig(({ mode }) => {
         tryCatchDeoptimization: false,
       },
       output: {
-        // Optimize chunk sizes for faster parsing
-        experimentalMinChunkSize: 500, // Smaller chunks for faster parsing
+        // Optimize chunk sizes for faster parsing - increased to avoid React breaking
+        experimentalMinChunkSize: 1000, // Safer chunk size for React
         manualChunks: (id) => {
           // Split React dev/prod bundles
           if (id.includes('react-dom/cjs/react-dom.development.js')) {
@@ -153,39 +153,8 @@ export default defineConfig(({ mode }) => {
       }
     },
     chunkSizeWarningLimit: 1000,
-    target: 'esnext',
-    minify: 'terser',
-    terserOptions: {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_funcs: ['console.log', 'console.info', 'console.warn'],
-          passes: 3,
-          unsafe: true,
-          unsafe_comps: true,
-          unsafe_math: true,
-          unsafe_methods: true,
-          unsafe_proto: true,
-          unsafe_regexp: true,
-          unsafe_undefined: true,
-          dead_code: true,
-          keep_fargs: false,
-          pure_getters: true,
-          reduce_vars: true,
-          side_effects: false,
-          unused: true
-        },
-        mangle: {
-          safari10: true,
-          toplevel: true,
-          properties: {
-            regex: /^_/
-          }
-        },
-        format: {
-          comments: false
-        }
-      },
+    target: 'es2020',
+    minify: 'esbuild',
     sourcemap: false,
     reportCompressedSize: false
   }
