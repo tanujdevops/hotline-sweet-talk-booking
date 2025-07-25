@@ -1,5 +1,7 @@
 
-/* Fonts are preloaded in HTML head for better LCP performance */
+/* Optimized font imports with display=swap for better LCP performance */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -54,14 +56,20 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    @apply bg-background text-foreground font-montserrat;
     background-image: radial-gradient(circle at 80% 20%, hsla(297, 50%, 15%, 0.35) 0%, hsla(260, 50%, 10%, 0.4) 100%);
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    @apply font-cormorant;
     font-display: swap;
+  }
+  
+  /* Critical LCP optimizations */
+  .hero-heading {
+    font-display: swap;
+    contain: layout style;
+    will-change: auto;
   }
   
   /* Improved responsive behavior */
