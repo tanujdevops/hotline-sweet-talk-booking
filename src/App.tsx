@@ -1,76 +1,15 @@
 
-import { Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/toaster";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import BookingConfirmation from "./pages/BookingConfirmation";
-import WaitingPage from "./pages/WaitingPage";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import RefundPolicy from "./pages/RefundPolicy";
+import React from "react";
 
-// Optimized loading component with skeleton
-const Loading = () => (
-  <div className="min-h-screen bg-background">
-    <div className="container mx-auto px-4 py-8">
-      <div className="animate-pulse">
-        <div className="h-8 bg-secondary rounded w-64 mb-4"></div>
-        <div className="h-4 bg-secondary rounded w-96 mb-8"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <div className="h-4 bg-secondary rounded"></div>
-            <div className="h-4 bg-secondary rounded w-5/6"></div>
-            <div className="h-4 bg-secondary rounded w-4/6"></div>
-          </div>
-          <div className="h-64 bg-secondary rounded"></div>
-        </div>
-      </div>
+const App = () => {
+  console.log("App component rendered");
+  return (
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+      <h1>SweetyOnCall - Test</h1>
+      <p>If you can see this, React is working in production!</p>
+      <button onClick={() => alert("Click works!")}>Test Button</button>
     </div>
-  </div>
-);
-
-// Optimized query client for better performance
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      // Reduce network requests during initial load
-      refetchOnMount: false,
-      // Disable background refetching during initial load
-      refetchOnReconnect: false,
-      // Use structural sharing for better performance
-      structuralSharing: true,
-    },
-    mutations: {
-      // Optimize mutation retries
-      retry: 1,
-    },
-  },
-});
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/waiting" element={<WaitingPage />} />
-          <Route path="/booking-confirmation" element={<BookingConfirmation />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/refund" element={<RefundPolicy />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  );
+};
 
 export default App;
