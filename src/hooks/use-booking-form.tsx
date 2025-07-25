@@ -434,7 +434,8 @@ export function useBookingForm() {
         }
         
         console.log('Navigating to waiting page...');
-        navigate(`/waiting?booking_id=${bookingId}`, { 
+        const shortId = bookingId.slice(0, 6);
+        navigate(`/waiting/${shortId}`, { 
           state: { 
             bookingId,
             planKey: dbPlanKey,

@@ -29,7 +29,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/waiting" element={<WaitingPage />} />
+            <Route path="/waiting/:shortId" element={<WaitingPage />} />
             <Route path="/booking-confirmation" element={<BookingConfirmation />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />

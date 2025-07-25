@@ -86,8 +86,8 @@ serve(async (req)=>{
         }
       ],
       mode: 'payment',
-      success_url: `${req.headers.get('origin')}/waiting?booking_id=${booking.id}&success=true`,
-      cancel_url: `${req.headers.get('origin')}/waiting?booking_id=${booking.id}&canceled=true`,
+      success_url: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?success=true`,
+      cancel_url: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?canceled=true`,
       metadata: {
         booking_id: booking.id
       },

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useLocation, Navigate, useSearchParams, Link } from 'react-router-dom';
+import { useLocation, Navigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PRICING_DETAILS } from '@/lib/pricing';
@@ -31,11 +31,15 @@ const isIOSSafari = () => {
 
 export default function WaitingPage() {
   const location = useLocation();
+  const { shortId } = useParams();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   
-  // Get booking ID from URL params first, then fallback to state
-  const bookingId = searchParams.get('booking_id') || location.state?.bookingId;
+  const paymentSuccess = searchParams.get('success') === 'true';
+  const paymentCanceled = searchParams.get('canceled') === 'true';
+  
+  // Get booking ID - either from state (immediate navigation) or lookup by short ID
+  const [bookingId, setBookingId] = useState<string | null>(location.state?.bookingId || null);
   const planKey = location.state?.planKey;
   
   const [bookingStatus, setBookingStatus] = useState<string>("pending");
@@ -47,15 +51,53 @@ export default function WaitingPage() {
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const [isIOSDevice] = useState(() => isIOSSafari());
   
-  const paymentSuccess = searchParams.get('success') === 'true';
-  const paymentCanceled = searchParams.get('canceled') === 'true';
+  // Lookup full booking ID from short ID if needed
+  const lookupBookingId = useCallback(async () => {
+    if (!shortId || bookingId) return;
+    
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('id')
+        .ilike('id', `${shortId}%`)
+        .limit(1)
+        .single();
+        
+      if (error || !data) {
+        console.error('Error looking up booking ID:', error);
+        toast({
+          title: "Booking Not Found",
+          description: "The booking ID could not be found. Please check the link or contact support.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setBookingId(data.id);
+    } catch (error) {
+      console.error('Error in booking lookup:', error);
+      toast({
+        title: "Booking Lookup Failed",
+        description: "Unable to find booking. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [shortId, bookingId, toast]);
 
-  // Redirect to home if no booking ID
-  if (!bookingId) {
+  // Redirect to home if no short ID and no booking ID
+  if (!shortId && !bookingId) {
     return <Navigate to="/" replace />;
   }
 
   const planDetails = planKey ? PRICING_DETAILS[planKey as keyof typeof PRICING_DETAILS] : null;
+
+  // Run booking ID lookup on mount if needed
+  useEffect(() => {
+    lookupBookingId();
+  }, [lookupBookingId]);
 
   useEffect(() => {
     if (paymentSuccess) {
