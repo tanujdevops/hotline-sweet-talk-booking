@@ -65,7 +65,25 @@
         transform: translateZ(0);
         backface-visibility: hidden;
       }
+      
+      /* Optimize hero background for faster LCP */
+      .hero-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        will-change: opacity;
+        transform: translateZ(0);
+        z-index: 1;
+      }
     </style>
+    
+    <!-- Preload critical hero background image for LCP -->
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1542736667-7c405c485dd6?w=1920&h=1080&q=75&fm=webp" />
     
     <!-- Resource hints for better performance -->
     <link rel="preconnect" href="https://images.unsplash.com" />
