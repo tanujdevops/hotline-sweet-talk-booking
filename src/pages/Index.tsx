@@ -1,22 +1,18 @@
-import React, { useEffect, lazy, Suspense } from "react";
+import React, { useEffect, Suspense, memo } from "react";
 import { useLocation } from "react-router-dom";
-import Loading from "@/components/Loading";
 import SEO from "@/components/SEO";
 import JsonLd from "@/components/JsonLd";
 import AiCopyHint from "@/components/AiCopyHint";
-import Navbar from "@/components/Navbar";
 import { faqData } from "@/data/faqData";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-
-// Hero component - lazy load for better initial bundle size
-const Hero = lazy(() => import("@/components/Hero"));
-
-// Below-the-fold components - progressive loading for better performance
-const PricingCards = lazy(() => import("@/components/PricingCards"));
-const BookingForm = lazy(() => import("@/components/BookingForm"));
-const Testimonials = lazy(() => import("@/components/Testimonials"));
-const FAQ = lazy(() => import("@/components/FAQ"));
-const Footer = lazy(() => import("@/components/Footer"));
+import {
+  LazySection,
+  OptimizedHero,
+  OptimizedPricingCards,
+  OptimizedBookingForm,
+  OptimizedTestimonials,
+  OptimizedFAQ,
+  OptimizedFooter
+} from "@/components/PerformanceOptimizer";
 
 const Index = () => {
   const location = useLocation();
@@ -304,43 +300,53 @@ const Index = () => {
       <main className="min-h-screen bg-background text-foreground" role="main" itemScope itemType="https://schema.org/WebPage">
         
         
-        <Suspense fallback={<Loading />}>
-          <header role="banner">
-            <Hero />
-          </header>
-          
-          <section id="pricing" aria-labelledby="pricing-heading">
-            <div className="sr-only">
-              <h2 id="pricing-heading">Our Pricing Options</h2>
-            </div>
-            <PricingCards />
-          </section>
-          
-          <section id="booking" aria-labelledby="booking-heading">
-            <div className="sr-only">
-              <h2 id="booking-heading">Book Your Call</h2>
-            </div>
-            <BookingForm />
-          </section>
-          
-          <section id="testimonials" aria-labelledby="testimonials-heading">
-            <div className="sr-only">
-              <h2 id="testimonials-heading">Client Testimonials</h2>
-            </div>
-            <Testimonials />
-          </section>
-          
-          <section id="faq" aria-labelledby="faq-heading">
-            <div className="sr-only">
-              <h2 id="faq-heading">Frequently Asked Questions</h2>
-            </div>
-            <FAQ />
-          </section>
-          
-          <footer role="contentinfo">
-            <Footer />
-          </footer>
-        </Suspense>
+        <header role="banner">
+          <LazySection>
+            <OptimizedHero />
+          </LazySection>
+        </header>
+        
+        <section id="pricing" aria-labelledby="pricing-heading">
+          <div className="sr-only">
+            <h2 id="pricing-heading">Our Pricing Options</h2>
+          </div>
+          <LazySection>
+            <OptimizedPricingCards />
+          </LazySection>
+        </section>
+        
+        <section id="booking" aria-labelledby="booking-heading">
+          <div className="sr-only">
+            <h2 id="booking-heading">Book Your Call</h2>
+          </div>
+          <LazySection>
+            <OptimizedBookingForm />
+          </LazySection>
+        </section>
+        
+        <section id="testimonials" aria-labelledby="testimonials-heading">
+          <div className="sr-only">
+            <h2 id="testimonials-heading">Client Testimonials</h2>
+          </div>
+          <LazySection>
+            <OptimizedTestimonials />
+          </LazySection>
+        </section>
+        
+        <section id="faq" aria-labelledby="faq-heading">
+          <div className="sr-only">
+            <h2 id="faq-heading">Frequently Asked Questions</h2>
+          </div>
+          <LazySection>
+            <OptimizedFAQ />
+          </LazySection>
+        </section>
+        
+        <footer role="contentinfo">
+          <LazySection>
+            <OptimizedFooter />
+          </LazySection>
+        </footer>
       </main>
     </>
   );

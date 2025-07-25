@@ -50,8 +50,17 @@ export default defineConfig(({ mode }) => {
     },
   },
   build: {
+    // Optimize for faster parsing
+    cssCodeSplit: true,
     rollupOptions: {
+      // Enable more aggressive tree shaking
+      treeshake: {
+        preset: 'recommended',
+        manualPureFunctions: ['console.log', 'console.info', 'console.warn'],
+      },
       output: {
+        // Enable smaller initial chunks for faster parsing
+        experimentalMinChunkSize: 1000,
         manualChunks: (id) => {
           // Split React dev/prod bundles
           if (id.includes('react-dom/cjs/react-dom.development.js')) {
