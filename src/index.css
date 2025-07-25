@@ -72,6 +72,32 @@
     will-change: auto;
   }
   
+  /* Performance optimizations to reduce Style & Layout work */
+  .performance-optimized {
+    transform: translateZ(0); /* Force GPU acceleration */
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  /* Optimize animations and transitions */
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: opacity;
+    contain: layout;
+  }
+  
+  /* Reduce layout thrashing */
+  .container {
+    contain: layout style;
+  }
+  
+  /* Optimize gradient rendering */
+  .bg-gradient-to-b,
+  .bg-gradient-to-r {
+    will-change: background-image;
+    contain: layout;
+  }
+  
   /* Improved responsive behavior */
   @media (max-width: 640px) {
     h1 {

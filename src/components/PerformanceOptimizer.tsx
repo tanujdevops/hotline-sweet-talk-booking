@@ -1,4 +1,4 @@
-import { lazy, Suspense, memo } from 'react';
+import { lazy, Suspense, memo, useState, useEffect, useRef } from 'react';
 
 // Optimized loading component for smaller sections
 const SectionLoader = memo(() => (
@@ -9,20 +9,49 @@ const SectionLoader = memo(() => (
   </div>
 ));
 
-// Intersection Observer based lazy loading for below-the-fold content  
+// Enhanced intersection observer based lazy loading
 export const LazySection = memo(({ 
   children, 
   fallback = <SectionLoader />,
-  rootMargin = "100px"
+  rootMargin = "200px",
+  threshold = 0.01
 }: {
   children: React.ReactNode;
   fallback?: React.ReactNode;
   rootMargin?: string;
+  threshold?: number;
 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect(); // Stop observing once visible
+        }
+      },
+      { rootMargin, threshold }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [rootMargin, threshold]);
+
   return (
-    <Suspense fallback={fallback}>
-      {children}
-    </Suspense>
+    <div ref={ref}>
+      {isVisible ? (
+        <Suspense fallback={fallback}>
+          {children}
+        </Suspense>
+      ) : (
+        fallback
+      )}
+    </div>
   );
 });
 

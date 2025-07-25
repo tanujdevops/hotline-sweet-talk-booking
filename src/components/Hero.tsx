@@ -21,7 +21,7 @@ const Hero = () => {
       <OptimizedHeroImage />
       <div className="container mx-auto relative z-10 flex justify-center">
         <div className={`max-w-xl md:max-w-3xl text-center ${!isMobile ? 'px-8' : ''}`}>
-          <h1 className="hero-heading text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight text-white font-cormorant">
+          <h1 className="hero-heading-critical text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
             Experience <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">AI-Enhanced Intimacy</span> for Deeper Connections
           </h1>
           <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto font-montserrat">

@@ -50,17 +50,20 @@ export default defineConfig(({ mode }) => {
     },
   },
   build: {
-    // Optimize for faster parsing
+    // Optimize for faster parsing and reduced main thread work
     cssCodeSplit: true,
     rollupOptions: {
       // Enable more aggressive tree shaking
       treeshake: {
         preset: 'recommended',
-        manualPureFunctions: ['console.log', 'console.info', 'console.warn'],
+        manualPureFunctions: ['console.log', 'console.info', 'console.warn', 'console.debug'],
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        tryCatchDeoptimization: false,
       },
       output: {
-        // Enable smaller initial chunks for faster parsing
-        experimentalMinChunkSize: 1000,
+        // Optimize chunk sizes for faster parsing
+        experimentalMinChunkSize: 500, // Smaller chunks for faster parsing
         manualChunks: (id) => {
           // Split React dev/prod bundles
           if (id.includes('react-dom/cjs/react-dom.development.js')) {
