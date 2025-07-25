@@ -1,7 +1,12 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { DatabaseError } from './errors';
 import { callEdgeFunction, ApiError, handleApiError } from '@/lib/api-client';
+
+// Lazy load Supabase client only when needed
+const getSupabase = async () => {
+  const { supabase } = await import("@/integrations/supabase/client");
+  return supabase;
+};
 
 export type CallStatus = 'failed' | 'cancelled' | 'completed';
 
@@ -25,6 +30,7 @@ export class CallManager {
     errorMessage?: string
   ): Promise<void> {
     try {
+      const supabase = await getSupabase();
       const { error } = await supabase.rpc('cleanup_inactive_call', {
         p_booking_id: bookingId,
         p_status: status,
@@ -43,6 +49,7 @@ export class CallManager {
   static async checkAndCleanupStaleCalls(): Promise<void> {
     try {
       // Find calls that have been active for too long (e.g., > 2 hours)
+      const supabase = await getSupabase();
       const { data: staleCalls, error } = await supabase
         .from('active_calls')
         .select('booking_id, started_at')

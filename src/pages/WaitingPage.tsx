@@ -3,10 +3,15 @@ import { useLocation, Navigate, useParams, useSearchParams, Link } from 'react-r
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PRICING_DETAILS } from '@/lib/pricing';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock, Copy, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+
+// Lazy load Supabase client only when needed
+const getSupabase = async () => {
+  const { supabase } = await import("@/integrations/supabase/client");
+  return supabase;
+};
 
 const statusMessages = {
   pending: "Your booking has been received and is being processed.",
@@ -57,6 +62,7 @@ export default function WaitingPage() {
     
     try {
       setLoading(true);
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('bookings')
         .select('id')
@@ -130,6 +136,7 @@ export default function WaitingPage() {
       }
 
       // Fetching booking status
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('bookings')
         .select('status, payment_status')
@@ -171,6 +178,7 @@ export default function WaitingPage() {
 
   const checkQueuePosition = async () => {
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase.functions.invoke('check-vapi-concurrency', {
         body: { bookingId }
       });
@@ -225,28 +233,35 @@ export default function WaitingPage() {
       };
     } else {
       // Non-iOS: Use normal real-time subscription + polling
-      const channel = supabase
-        .channel('booking_status_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'bookings',
-            filter: `id=eq.${bookingId}`
-          },
-          (payload) => {
-            console.log('Real-time booking update:', payload);
-            const newBooking = payload.new as any;
-            setBookingStatus(newBooking.status);
-            setPaymentStatus(newBooking.payment_status || 'pending');
-            
-            if (newBooking.status === 'queued') {
-              checkQueuePosition();
+      let channel: any;
+      
+      const setupRealtime = async () => {
+        const supabase = await getSupabase();
+        channel = supabase
+          .channel('booking_status_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'bookings',
+              filter: `id=eq.${bookingId}`
+            },
+            (payload) => {
+              console.log('Real-time booking update:', payload);
+              const newBooking = payload.new as any;
+              setBookingStatus(newBooking.status);
+              setPaymentStatus(newBooking.payment_status || 'pending');
+              
+              if (newBooking.status === 'queued') {
+                checkQueuePosition();
+              }
             }
-          }
-        )
-        .subscribe();
+          )
+          .subscribe();
+      };
+      
+      setupRealtime();
 
       const interval = setInterval(() => {
         fetchBookingStatus();
@@ -254,7 +269,9 @@ export default function WaitingPage() {
       
       return () => {
         clearInterval(interval);
-        supabase.removeChannel(channel);
+        if (channel) {
+          getSupabase().then(supabase => supabase.removeChannel(channel));
+        }
       };
     }
   }, [bookingId, isIOSDevice, fetchBookingStatus]);
@@ -263,6 +280,7 @@ export default function WaitingPage() {
     setProcessingPayment(true);
     try {
       // Initiating payment process
+      const supabase = await getSupabase();
       const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
         body: { bookingId }
       });

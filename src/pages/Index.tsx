@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import SEO from "@/components/SEO";
 import JsonLd from "@/components/JsonLd";
@@ -6,10 +6,19 @@ import AiCopyHint from "@/components/AiCopyHint";
 import Hero from "@/components/Hero";
 import PricingCards from "@/components/PricingCards";
 import BookingForm from "@/components/BookingForm";
-import Testimonials from "@/components/Testimonials";
-import FAQ from "@/components/FAQ";
-import Footer from "@/components/Footer";
 import { faqData } from "@/data/faqData";
+
+// Mobile-optimized lazy loading for below-the-fold components
+const Testimonials = React.lazy(() => import("@/components/Testimonials"));
+const FAQ = React.lazy(() => import("@/components/FAQ"));
+const Footer = React.lazy(() => import("@/components/Footer"));
+
+// Lightweight loading placeholder for non-critical sections
+const SectionLoader = () => (
+  <div className="flex items-center justify-center py-12">
+    <div className="animate-pulse bg-muted rounded h-4 w-32"></div>
+  </div>
+);
 
 const Index = () => {
   const location = useLocation();
@@ -319,18 +328,24 @@ const Index = () => {
           <div className="sr-only">
             <h2 id="testimonials-heading">Client Testimonials</h2>
           </div>
-          <Testimonials />
+          <Suspense fallback={<SectionLoader />}>
+            <Testimonials />
+          </Suspense>
         </section>
         
         <section id="faq" aria-labelledby="faq-heading">
           <div className="sr-only">
             <h2 id="faq-heading">Frequently Asked Questions</h2>
           </div>
-          <FAQ />
+          <Suspense fallback={<SectionLoader />}>
+            <FAQ />
+          </Suspense>
         </section>
         
         <footer role="contentinfo">
-          <Footer />
+          <Suspense fallback={<SectionLoader />}>
+            <Footer />
+          </Suspense>
         </footer>
       </main>
     </>
