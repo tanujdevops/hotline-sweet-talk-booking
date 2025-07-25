@@ -16,13 +16,14 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center px-4 py-16 overflow-hidden bg-gradient-to-b from-black/90 via-black/80 to-transparent">
+    <section className="hero-container px-4 py-16">
       {/* Optimized background image with progressive loading */}
       <OptimizedHeroImage />
       <div className="container mx-auto relative z-10 flex justify-center">
         <div className={`max-w-xl md:max-w-3xl text-center ${!isMobile ? 'px-8' : ''}`}>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight text-white font-cormorant">
-            Experience <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">AI-Enhanced Intimacy</span> for Deeper Connections
+          {/* LCP optimized heading with critical CSS */}
+          <h1 className="hero-heading flex items-center justify-center">
+            Experience <span className="gradient-text">AI-Enhanced Intimacy</span> for Deeper Connections
           </h1>
           <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto font-montserrat">
             Connect instantly with AI companions who understand your needs. They're available 24/7.

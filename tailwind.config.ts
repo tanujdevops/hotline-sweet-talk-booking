@@ -130,9 +130,8 @@ export default {
 				'shimmer': 'shimmer 2s infinite linear'
 			},
 			fontFamily: {
-				'playfair': ['"Playfair Display"', 'serif'],
-				'montserrat': ['Montserrat', 'sans-serif'],
-				'cormorant': ['"Cormorant Garamond"', 'serif'],
+				'montserrat': ['Montserrat', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'system-ui', 'sans-serif'],
+				'cormorant': ['"Cormorant Garamond"', 'Georgia', '"Times New Roman"', 'serif'],
 			},
 			backgroundImage: {
 				'hotline-gradient': 'linear-gradient(to right, #9b87f5, #D946EF)',
