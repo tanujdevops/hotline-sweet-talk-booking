@@ -8,6 +8,9 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import WaitingPage from "./pages/WaitingPage";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import RefundPolicy from "./pages/RefundPolicy";
 
 // Simple loading component
 const Loading = () => (
@@ -37,6 +40,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/waiting" element={<WaitingPage />} />
             <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/refund" element={<RefundPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

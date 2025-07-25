@@ -71,13 +71,13 @@ const Footer = () => {
             &copy; {new Date().getFullYear()} SweetyOnCall. All rights reserved.
           </p>
           <div className="flex justify-center gap-4 mt-2 text-sm">
-            <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors">
+            <a href="/privacy" className="text-muted-foreground hover:text-hotline-pink transition-colors">
               Privacy Policy
             </a>
-            <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors">
+            <a href="/terms" className="text-muted-foreground hover:text-hotline-pink transition-colors">
               Terms of Service
             </a>
-            <a href="#" className="text-muted-foreground hover:text-hotline-pink transition-colors">
+            <a href="/refund" className="text-muted-foreground hover:text-hotline-pink transition-colors">
               Refund Policy
             </a>
           </div>

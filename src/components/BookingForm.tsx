@@ -157,7 +157,7 @@ const BookingForm = () => {
               </Button>
               
               <p className="text-xs text-center text-muted-foreground">
-                By booking, you agree to our <a href="#" className="text-hotline hover:underline">Terms</a> & <a href="#" className="text-hotline hover:underline">Privacy Policy</a>
+                By booking, you agree to our <a href="/terms" className="text-hotline hover:underline">Terms</a> & <a href="/privacy" className="text-hotline hover:underline">Privacy Policy</a>
               </p>
             </form>
           </div>
