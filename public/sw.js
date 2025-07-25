@@ -9,11 +9,8 @@ const STATIC_RESOURCES = [
   '/index.html',
 ];
 
-// Font resources for aggressive caching
-const FONT_RESOURCES = [
-  'https://fonts.gstatic.com/s/cormorantgaramond/v16/co3bmX5slCNuHLi8bLeY9MK7whWMhyjQrWem.woff2',
-  'https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg1_i6t8kCHKm459WlhyyTh89Y.woff2',
-];
+// Font resources for caching (will be cached dynamically from Google Fonts)
+const FONT_RESOURCES = [];
 
 // Resources to cache dynamically
 const DYNAMIC_RESOURCES = [
@@ -22,22 +19,14 @@ const DYNAMIC_RESOURCES = [
   'https://images.unsplash.com/',
 ];
 
-// Install event - cache critical resources aggressively
+// Install event - cache critical resources
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    Promise.all([
-      // Cache static resources
-      caches.open(STATIC_CACHE).then(cache => {
-        console.log('SW: Caching static resources');
-        return cache.addAll(STATIC_RESOURCES);
-      }),
-      // Cache fonts immediately for LCP optimization
-      caches.open(FONT_CACHE).then(cache => {
-        console.log('SW: Caching critical fonts');
-        return cache.addAll(FONT_RESOURCES);
-      })
-    ]).then(() => {
-      console.log('SW: All critical resources cached');
+    caches.open(STATIC_CACHE).then(cache => {
+      console.log('SW: Caching static resources');
+      return cache.addAll(STATIC_RESOURCES);
+    }).then(() => {
+      console.log('SW: Critical resources cached');
       return self.skipWaiting();
     }).catch((error) => {
       console.error('SW: Failed to cache resources', error);
