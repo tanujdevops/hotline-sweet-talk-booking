@@ -1,18 +1,16 @@
 
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
-
-// Lazy load pages for code splitting
-const Index = lazy(() => import("./pages/Index"));
-const BookingConfirmation = lazy(() => import("./pages/BookingConfirmation"));
-const WaitingPage = lazy(() => import("./pages/WaitingPage"));
-const TermsOfService = lazy(() => import("./pages/TermsOfService"));
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
-const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import BookingConfirmation from "./pages/BookingConfirmation";
+import WaitingPage from "./pages/WaitingPage";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import RefundPolicy from "./pages/RefundPolicy";
 
 // Optimized loading component with skeleton
 const Loading = () => (
@@ -60,17 +58,15 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <BrowserRouter>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/waiting" element={<WaitingPage />} />
-            <Route path="/booking-confirmation" element={<BookingConfirmation />} />
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/refund" element={<RefundPolicy />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/waiting" element={<WaitingPage />} />
+          <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/refund" element={<RefundPolicy />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
         <Toaster />
       </BrowserRouter>
     </TooltipProvider>

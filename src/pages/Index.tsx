@@ -1,18 +1,15 @@
-import React, { useEffect, Suspense, memo } from "react";
+import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import SEO from "@/components/SEO";
 import JsonLd from "@/components/JsonLd";
 import AiCopyHint from "@/components/AiCopyHint";
+import Hero from "@/components/Hero";
+import PricingCards from "@/components/PricingCards";
+import BookingForm from "@/components/BookingForm";
+import Testimonials from "@/components/Testimonials";
+import FAQ from "@/components/FAQ";
+import Footer from "@/components/Footer";
 import { faqData } from "@/data/faqData";
-import {
-  LazySection,
-  OptimizedHero,
-  OptimizedPricingCards,
-  OptimizedBookingForm,
-  OptimizedTestimonials,
-  OptimizedFAQ,
-  OptimizedFooter
-} from "@/components/PerformanceOptimizer";
 
 const Index = () => {
   const location = useLocation();
@@ -301,51 +298,39 @@ const Index = () => {
         
         
         <header role="banner">
-          <LazySection>
-            <OptimizedHero />
-          </LazySection>
+          <Hero />
         </header>
         
         <section id="pricing" aria-labelledby="pricing-heading">
           <div className="sr-only">
             <h2 id="pricing-heading">Our Pricing Options</h2>
           </div>
-          <LazySection>
-            <OptimizedPricingCards />
-          </LazySection>
+          <PricingCards />
         </section>
         
         <section id="booking" aria-labelledby="booking-heading">
           <div className="sr-only">
             <h2 id="booking-heading">Book Your Call</h2>
           </div>
-          <LazySection>
-            <OptimizedBookingForm />
-          </LazySection>
+          <BookingForm />
         </section>
         
         <section id="testimonials" aria-labelledby="testimonials-heading">
           <div className="sr-only">
             <h2 id="testimonials-heading">Client Testimonials</h2>
           </div>
-          <LazySection>
-            <OptimizedTestimonials />
-          </LazySection>
+          <Testimonials />
         </section>
         
         <section id="faq" aria-labelledby="faq-heading">
           <div className="sr-only">
             <h2 id="faq-heading">Frequently Asked Questions</h2>
           </div>
-          <LazySection>
-            <OptimizedFAQ />
-          </LazySection>
+          <FAQ />
         </section>
         
         <footer role="contentinfo">
-          <LazySection>
-            <OptimizedFooter />
-          </LazySection>
+          <Footer />
         </footer>
       </main>
     </>
