@@ -4,20 +4,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
-
-// Simple test components without complex dependencies
-const TestIndex = () => (
-  <div style={{ padding: "20px" }}>
-    <h1>SweetyOnCall</h1>
-    <p>Home page working with QueryClient and TooltipProvider</p>
-  </div>
-);
-
-const TestNotFound = () => (
-  <div style={{ padding: "20px" }}>
-    <h1>404 - Page Not Found</h1>
-  </div>
-);
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,8 +23,8 @@ const App = () => {
       <TooltipProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<TestIndex />} />
-            <Route path="*" element={<TestNotFound />} />
+            <Route path="/" element={<Index />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
         </BrowserRouter>
