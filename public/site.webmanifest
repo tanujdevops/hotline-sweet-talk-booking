@@ -1,0 +1,20 @@
+{
+  "name": "SweetyOnCall",
+  "short_name": "SweetyOnCall", 
+  "description": "Premium AI voice call booking platform for intimate conversations",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#ff6b9d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["entertainment", "social"],
+  "lang": "en-US"
+}
