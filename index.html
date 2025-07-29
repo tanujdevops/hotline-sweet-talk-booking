@@ -35,25 +35,37 @@
     <meta name="twitter:image" content="https://sweetyoncall.com/opengraph-image.png" />
     <meta name="twitter:creator" content="@sweetyoncall" />
 
-    <!-- Critical resource hints for mobile performance -->
+    <!-- Critical resource hints (desktop's winning approach) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
-    <!-- Mobile-optimized font loading with fallbacks -->
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <!-- Mobile-specific critical image preloading -->
+    <link rel="preload" href="https://images.unsplash.com/photo-1542736667-7c405c485dd6?w=800&h=600&q=75&fm=webp" as="image" media="(max-width: 767px)" />
+    
+    <!-- Apply desktop's winning font loading to mobile (same strategy) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600&display=swap&subset=latin" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet" /></noscript>
     
-    <!-- Minimal critical CSS for LCP -->
+    <!-- Critical CSS for LCP (desktop's winning approach + mobile) -->
     <style>
       /* Immediate font fallback */
       body {
         font-family: system-ui, sans-serif;
       }
       
-      /* Critical LCP text styling - no overrides */
+      /* Critical LCP text styling - same as desktop */
       .hero-heading-critical {
         font-family: 'Cormorant Garamond', Georgia, serif;
         font-display: swap;
+      }
+      
+      /* Mobile-specific critical styles to match desktop performance */
+      @media (max-width: 767px) {
+        /* Ensure mobile gets immediate paint */
+        .hero-heading-critical {
+          font-size: 1.875rem; /* 30px - mobile optimized */
+          line-height: 1.2;
+        }
       }
     </style>
     
@@ -171,34 +183,16 @@
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     
-    <!-- Mobile-optimized script loading -->
+    <!-- Apply desktop's winning script loading to mobile too -->
     <script type="module">
-      // Defer non-critical JavaScript for mobile performance
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-      
-      if (isMobile) {
-        // For mobile: defer main script until critical rendering is complete
-        window.addEventListener('load', () => {
-          // Use requestIdleCallback if available, otherwise setTimeout
-          const scheduleWork = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
-          scheduleWork(async () => {
-            try {
-              await import('/src/main.tsx');
-            } catch (error) {
-              console.error('Failed to load main module:', error);
-            }
-          });
-        });
-      } else {
-        // For desktop: load immediately
-        (async () => {
-          try {
-            await import('/src/main.tsx');
-          } catch (error) {
-            console.error('Failed to load main module:', error);
-          }
-        })();
-      }
+      // Give mobile the SAME fast treatment as desktop
+      (async () => {
+        try {
+          await import('/src/main.tsx');
+        } catch (error) {
+          console.error('Failed to load main module:', error);
+        }
+      })();
     </script>
   </body>
 </html>
