@@ -63,8 +63,19 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
-    chunkSizeWarningLimit: 1000,
-    cssCodeSplit: true
+    chunkSizeWarningLimit: 800, // Smaller chunks for mobile
+    cssCodeSplit: true,
+    terserOptions: isProduction ? {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info'],
+        passes: 2 // More aggressive compression for mobile
+      },
+      mangle: {
+        safari10: true
+      }
+    } : undefined
   }
   };
 });

@@ -59,9 +59,9 @@
         font-display: swap;
       }
       
-      /* Mobile-specific critical styles to match desktop performance */
+      /* Mobile-specific critical styles (safe optimizations only) */
       @media (max-width: 767px) {
-        /* Ensure mobile gets immediate paint */
+        /* Critical hero styles for fast mobile paint */
         .hero-heading-critical {
           font-size: 1.875rem; /* 30px - mobile optimized */
           line-height: 1.2;
@@ -183,16 +183,30 @@
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     
-    <!-- Apply desktop's winning script loading to mobile too -->
+    <!-- Safe mobile script loading optimization -->
     <script type="module">
-      // Give mobile the SAME fast treatment as desktop
-      (async () => {
-        try {
-          await import('/src/main.tsx');
-        } catch (error) {
-          console.error('Failed to load main module:', error);
-        }
-      })();
+      // Gentle mobile optimization - small delay to reduce main-thread blocking
+      const isMobile = window.innerWidth < 768;
+      
+      if (isMobile) {
+        // For mobile: Tiny delay to let critical content paint first
+        setTimeout(async () => {
+          try {
+            await import('/src/main.tsx');
+          } catch (error) {
+            console.error('Failed to load main module:', error);
+          }
+        }, 50); // Very small delay
+      } else {
+        // Desktop: Keep immediate loading for 98 score
+        (async () => {
+          try {
+            await import('/src/main.tsx');
+          } catch (error) {
+            console.error('Failed to load main module:', error);
+          }
+        })();
+      }
     </script>
   </body>
 </html>
