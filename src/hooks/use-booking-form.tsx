@@ -202,7 +202,7 @@ export function useBookingForm() {
       let userId;
       
       try {
-        const { data: userResult, error: userError } = await supabase
+        const { data: userResult, error: userError } = await (await getSupabase())
           .rpc('upsert_user', {
             p_name: name,
             p_email: email,
@@ -228,6 +228,7 @@ export function useBookingForm() {
         [PRICING_TIERS.DELUXE]: 'extended'
       };
       const dbPlanKey = planKeyMap[pricingTier];
+      const supabase = await getSupabase();
       const { data: planData, error: planError } = await supabase
         .from('plans')
         .select()
