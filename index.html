@@ -53,10 +53,37 @@
         font-family: system-ui, sans-serif;
       }
       
-      /* Critical LCP text styling - same as desktop */
+      /* Critical LCP text styling - with size-matched fallbacks */
       .hero-heading-critical {
-        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-family: 'Cormorant Garamond', 'Cormorant Fallback', Georgia, serif;
         font-display: swap;
+        /* Reserve space to prevent layout shift */
+        line-height: 1.2;
+        letter-spacing: -0.025em;
+      }
+      
+      /* Apply size-matched fallback to body text */
+      body, .font-montserrat {
+        font-family: 'Montserrat', 'Montserrat Fallback', system-ui, sans-serif;
+      }
+      
+      /* Size-matched fallback fonts to prevent layout shifts */
+      @font-face {
+        font-family: 'Cormorant Fallback';
+        src: local('Georgia'), local('Times New Roman');
+        size-adjust: 94%;
+        ascent-override: 95%;
+        descent-override: 25%;
+        line-gap-override: 0%;
+      }
+      
+      @font-face {
+        font-family: 'Montserrat Fallback';
+        src: local('system-ui'), local('Arial');
+        size-adjust: 97%;
+        ascent-override: 90%;
+        descent-override: 22%;
+        line-gap-override: 0%;
       }
       
       /* Mobile-specific critical styles (safe optimizations only) */
