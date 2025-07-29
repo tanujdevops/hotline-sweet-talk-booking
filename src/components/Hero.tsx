@@ -20,7 +20,7 @@ const Hero = () => {
       {/* Optimized background image with progressive loading */}
       <OptimizedHeroImage />
       <div className="container mx-auto relative z-10 flex justify-center">
-        <div className={`max-w-xl md:max-w-3xl text-center ${!isMobile ? 'px-8' : ''}`}>
+        <div className="max-w-xl md:max-w-3xl text-center px-4 md:px-8">
           <h1 className="hero-heading-critical text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
             Experience <span className="text-hotline-pink bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">AI-Enhanced Intimacy</span> for Deeper Connections
           </h1>
