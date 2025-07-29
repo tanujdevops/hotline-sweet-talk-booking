@@ -183,30 +183,16 @@
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     
-    <!-- Safe mobile script loading optimization -->
+    <!-- Unified script loading - same strategy for mobile and desktop -->
     <script type="module">
-      // Gentle mobile optimization - small delay to reduce main-thread blocking
-      const isMobile = window.innerWidth < 768;
-      
-      if (isMobile) {
-        // For mobile: Tiny delay to let critical content paint first
-        setTimeout(async () => {
-          try {
-            await import('/src/main.tsx');
-          } catch (error) {
-            console.error('Failed to load main module:', error);
-          }
-        }, 50); // Very small delay
-      } else {
-        // Desktop: Keep immediate loading for 98 score
-        (async () => {
-          try {
-            await import('/src/main.tsx');
-          } catch (error) {
-            console.error('Failed to load main module:', error);
-          }
-        })();
-      }
+      // Give mobile the same immediate loading that gives desktop 98 score
+      (async () => {
+        try {
+          await import('/src/main.tsx');
+        } catch (error) {
+          console.error('Failed to load main module:', error);
+        }
+      })();
     </script>
   </body>
 </html>
