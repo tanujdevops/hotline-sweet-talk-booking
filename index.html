@@ -57,9 +57,7 @@
       }
     </style>
     
-    <!-- Preload critical hero background image for immediate LCP - mobile optimized -->
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1542736667-7c405c485dd6?w=1920&h=1080&q=75&fm=webp" media="(min-width: 768px)" fetchpriority="high" />
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1542736667-7c405c485dd6?w=800&h=600&q=75&fm=webp" media="(max-width: 767px)" fetchpriority="high" />
+    <!-- Hero background images are now handled by OptimizedHeroImage component -->
     
     <!-- Critical resource hints for better performance -->
     <link rel="preconnect" href="https://images.unsplash.com" />
