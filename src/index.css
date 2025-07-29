@@ -1,7 +1,5 @@
 
-/* Optimized font imports with display=swap for better LCP performance */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap');
+/* Fonts are loaded in index.html with optimized media print trick */
 
 @tailwind base;
 @tailwind components;
