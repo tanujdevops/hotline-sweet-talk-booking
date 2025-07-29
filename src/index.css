@@ -63,11 +63,19 @@
     font-display: swap;
   }
   
-  /* Critical LCP optimizations */
-  .hero-heading {
+  /* Critical LCP optimizations - fix class targeting */
+  .hero-heading-critical {
     font-display: swap;
     contain: layout style;
     will-change: auto;
+  }
+  
+  /* Add missing hero-bg performance optimizations */
+  .hero-bg {
+    contain: layout style;
+    will-change: background-image;
+    transform: translateZ(0); /* Force GPU acceleration */
+    backface-visibility: hidden;
   }
   
   /* Performance optimizations to reduce Style & Layout work */
