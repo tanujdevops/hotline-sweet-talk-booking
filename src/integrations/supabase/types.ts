@@ -71,6 +71,11 @@ export type Database = {
         Row: {
           call_duration: number
           created_at: string
+          crypto_amount: number | null
+          crypto_currency: string | null
+          crypto_network: string | null
+          crypto_payment_data: Json | null
+          crypto_transaction_hash: string | null
           error_message: string | null
           id: string
           message: string | null
@@ -81,10 +86,16 @@ export type Database = {
           status: Database["public"]["Enums"]["booking_status"]
           user_id: string | null
           vapi_call_id: string | null
+          xaigate_invoice_id: string | null
         }
         Insert: {
           call_duration?: number
           created_at?: string
+          crypto_amount?: number | null
+          crypto_currency?: string | null
+          crypto_network?: string | null
+          crypto_payment_data?: Json | null
+          crypto_transaction_hash?: string | null
           error_message?: string | null
           id?: string
           message?: string | null
@@ -95,10 +106,16 @@ export type Database = {
           status?: Database["public"]["Enums"]["booking_status"]
           user_id?: string | null
           vapi_call_id?: string | null
+          xaigate_invoice_id?: string | null
         }
         Update: {
           call_duration?: number
           created_at?: string
+          crypto_amount?: number | null
+          crypto_currency?: string | null
+          crypto_network?: string | null
+          crypto_payment_data?: Json | null
+          crypto_transaction_hash?: string | null
           error_message?: string | null
           id?: string
           message?: string | null
@@ -109,6 +126,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["booking_status"]
           user_id?: string | null
           vapi_call_id?: string | null
+          xaigate_invoice_id?: string | null
         }
         Relationships: [
           {

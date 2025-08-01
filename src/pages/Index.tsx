@@ -310,18 +310,18 @@ const Index = () => {
           <Hero />
         </header>
         
-        <section id="pricing" aria-labelledby="pricing-heading">
-          <div className="sr-only">
-            <h2 id="pricing-heading">Our Pricing Options</h2>
-          </div>
-          <PricingCards />
-        </section>
-        
         <section id="booking" aria-labelledby="booking-heading">
           <div className="sr-only">
             <h2 id="booking-heading">Book Your Call</h2>
           </div>
           <BookingForm />
+        </section>
+        
+        <section id="pricing" aria-labelledby="pricing-heading">
+          <div className="sr-only">
+            <h2 id="pricing-heading">Our Pricing Options</h2>
+          </div>
+          <PricingCards />
         </section>
         
         <section id="testimonials" aria-labelledby="testimonials-heading">
