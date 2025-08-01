@@ -395,17 +395,17 @@ export function useBookingForm() {
         // For paid plans, redirect to payment first
         // Paid plan selected - creating payment session
         
-        // Create crypto payment session
+        // Create crypto payment session with PayGate.to
         try {
           const { data, error } = await (await getSupabase()).functions.invoke('create-xaigate-invoice', {
             body: { bookingId }
           });
 
           if (error) {
-            console.error('Error creating crypto payment session:', error);
+            console.error('Error creating PayGate.to payment session:', error);
             toast({
-              title: "Crypto Payment Error",
-              description: "We couldn't process your crypto payment request. Please try again.",
+              title: "Payment Error",
+              description: "We couldn't process your payment request. Please try again.",
               variant: "destructive",
             });
             return;
@@ -416,7 +416,7 @@ export function useBookingForm() {
           } else {
             console.error("No payment URL returned");
             toast({
-              title: "Crypto Payment Error",
+              title: "Payment Error", 
               description: "No payment URL returned. Please try again.",
               variant: "destructive",
             });

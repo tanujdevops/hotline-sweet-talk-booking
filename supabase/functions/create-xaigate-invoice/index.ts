@@ -20,7 +20,7 @@ serve(async (req) => {
       throw new Error("Booking ID is required");
     }
 
-    console.log("Creating XaiGate invoice for booking:", bookingId);
+    console.log("Creating PayGate.to payment for booking:", bookingId);
 
     // Create a Supabase client with the service role key
     const supabaseClient = createClient(
@@ -28,15 +28,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Get XaiGate API key from environment
-    const XAIGATE_API_KEY = Deno.env.get("XAIGATE_API_KEY");
+    // Get USDC Polygon wallet address from environment
+    const USDC_WALLET_ADDRESS = Deno.env.get("USDC_WALLET_ADDRESS");
     
     console.log("Environment check:", {
-      XAIGATE_API_KEY: XAIGATE_API_KEY ? `Present (${XAIGATE_API_KEY.substring(0, 10)}...)` : 'Missing'
+      USDC_WALLET_ADDRESS: USDC_WALLET_ADDRESS ? `Present (${USDC_WALLET_ADDRESS.substring(0, 10)}...)` : 'Missing'
     });
     
-    if (!XAIGATE_API_KEY) {
-      throw new Error("XaiGate API key not configured");
+    if (!USDC_WALLET_ADDRESS) {
+      throw new Error("USDC wallet address not configured");
     }
 
     // Fetch booking details
@@ -50,68 +50,68 @@ serve(async (req) => {
       throw new Error(`Error fetching booking: ${bookingError?.message || "Booking not found"}`);
     }
 
-    console.log("Creating invoice for booking:", bookingId);
+    console.log("Creating PayGate.to payment for booking:", bookingId);
 
     // Validate that user has a real email address
     if (!booking.users.email || !booking.users.email.trim()) {
       throw new Error("User must have a valid email address for payment processing");
     }
 
-    // Create XaiGate invoice using correct API format
-    const invoicePayload = {
-      apiKey: XAIGATE_API_KEY,
-      orderId: booking.id,
-      amount: (booking.plans.price_cents / 100).toString(), // Convert to string as required
-      currency: 'USD', // XaiGate expects USD, not USDT
-      email: booking.users.email,
-      shopName: 'Sweety On Call',
-      description: `${booking.plans.key === 'standard' ? 'Essential' : 'Deluxe'} Sweet Talk Session`,
-      successUrl: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?success=true`,
-      failUrl: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?canceled=true`,
-      notifyUrl: `${req.headers.get('origin')?.replace('localhost:5173', 'localhost:54321')}/functions/v1/xaigate-webhook`
-    };
-
-    console.log("XaiGate invoice payload:", {
-      ...invoicePayload,
-      apiKey: '[HIDDEN]',
-      amount: invoicePayload.amount,
-      currency: invoicePayload.currency
-    });
-
-    console.log("Making request to: https://wallet-api.xaigate.com/api/v1/invoice/create");
+    // Step 1: Create wallet with PayGate.to
+    const callbackUrl = `${req.headers.get('origin')?.replace('localhost:5173', 'localhost:54321')}/functions/v1/paygate-webhook?booking_id=${booking.id}`;
+    const encodedCallback = encodeURIComponent(callbackUrl);
     
-    const xaigateResponse = await fetch('https://wallet-api.xaigate.com/api/v1/invoice/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(invoicePayload)
-    });
-
-    if (!xaigateResponse.ok) {
-      const errorText = await xaigateResponse.text();
-      console.error(`XaiGate API error: ${xaigateResponse.status} ${xaigateResponse.statusText}`, errorText);
-      throw new Error(`XaiGate API error: ${xaigateResponse.status} - ${errorText}`);
+    console.log("Step 1: Creating wallet with callback URL:", callbackUrl);
+    
+    const walletUrl = `https://api.paygate.to/control/wallet.php?address=${USDC_WALLET_ADDRESS}&callback=${encodedCallback}`;
+    
+    const walletResponse = await fetch(walletUrl);
+    console.log(`PayGate.to wallet response status: ${walletResponse.status}`);
+    
+    if (!walletResponse.ok) {
+      const errorText = await walletResponse.text();
+      console.error(`PayGate.to wallet error:`, errorText);
+      throw new Error(`PayGate.to wallet creation failed: ${walletResponse.status} - ${errorText}`);
     }
 
-    const invoiceData = await xaigateResponse.json();
-    console.log("XaiGate invoice created:", invoiceData.invoiceNo);
+    const walletData = await walletResponse.json();
+    console.log("PayGate.to wallet created:", {
+      address_in: walletData.address_in ? '[ENCRYPTED]' : 'Missing',
+      polygon_address_in: walletData.polygon_address_in,
+      callback_url: walletData.callback_url,
+      ipn_token: walletData.ipn_token
+    });
 
-    // Update booking with XaiGate invoice ID
+    // Step 2: Create payment URL
+    const amount = (booking.plans.price_cents / 100).toFixed(2);
+    const encodedEmail = encodeURIComponent(booking.users.email);
+    
+    // Use multi-provider mode for better user experience
+    const paymentUrl = `https://checkout.paygate.to/pay.php?address=${walletData.address_in}&amount=${amount}&email=${encodedEmail}&currency=USD`;
+    
+    console.log("Step 2: Payment URL generated with amount:", amount);
+
+    // Update booking with PayGate.to details
     await supabaseClient.from('bookings').update({
-      xaigate_invoice_id: invoiceData.invoiceNo,
-      crypto_currency: 'USD', // XaiGate uses USD which can be paid with crypto
-      crypto_amount: parseFloat(invoiceData.amount),
+      xaigate_invoice_id: walletData.ipn_token, // Store IPN token for tracking
+      crypto_currency: 'USDC',
+      crypto_network: 'Polygon',
+      crypto_amount: parseFloat(amount),
+      crypto_payment_data: {
+        address_in: walletData.address_in,
+        polygon_address_in: walletData.polygon_address_in,
+        callback_url: walletData.callback_url,
+        ipn_token: walletData.ipn_token
+      },
       payment_status: 'pending'
     }).eq('id', booking.id);
 
-    console.log("Invoice created successfully:", invoiceData.invoiceNo);
-    console.log("Payment URL:", invoiceData.payUrl);
+    console.log("Payment URL created successfully:", paymentUrl);
 
     return new Response(JSON.stringify({
       success: true,
-      payment_url: invoiceData.payUrl, // XaiGate returns payUrl
-      invoice_id: invoiceData.invoiceNo
+      payment_url: paymentUrl,
+      invoice_id: walletData.ipn_token
     }), {
       headers: {
         ...corsHeaders,
@@ -121,7 +121,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error creating XaiGate invoice:", error);
+    console.error("Error creating PayGate.to payment:", error);
     return new Response(JSON.stringify({
       error: error.message
     }), {
