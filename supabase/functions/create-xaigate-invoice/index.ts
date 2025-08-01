@@ -30,9 +30,13 @@ serve(async (req) => {
 
     // Get XaiGate API key from environment
     const XAIGATE_API_KEY = Deno.env.get("XAIGATE_API_KEY");
-    const XAIGATE_BASE_URL = Deno.env.get("XAIGATE_BASE_URL");
-    if (!XAIGATE_API_KEY || !XAIGATE_BASE_URL) {
-      throw new Error("XaiGate API credentials not configured");
+    
+    console.log("Environment check:", {
+      XAIGATE_API_KEY: XAIGATE_API_KEY ? `Present (${XAIGATE_API_KEY.substring(0, 10)}...)` : 'Missing'
+    });
+    
+    if (!XAIGATE_API_KEY) {
+      throw new Error("XaiGate API key not configured");
     }
 
     // Fetch booking details
@@ -53,35 +57,32 @@ serve(async (req) => {
       throw new Error("User must have a valid email address for payment processing");
     }
 
-    // Create XaiGate invoice
+    // Create XaiGate invoice using correct API format
     const invoicePayload = {
-      amount: (booking.plans.price_cents / 100), // Convert cents to decimal (2.49, 4.99)
-      currency: 'USDT', // Default to USDT as requested
-      network: 'BEP20', // Default to BEP20 as requested
-      customer_email: booking.users.email,
-      webhook_url: `${req.headers.get('origin')?.replace('localhost:5173', 'localhost:54321')}/functions/v1/xaigate-webhook`,
-      success_url: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?success=true`,
-      cancel_url: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?canceled=true`,
-      metadata: {
-        booking_id: booking.id,
-        business_name: 'Sweety On Call',
-        plan_key: booking.plans.key,
-        user_name: booking.users.name,
-        user_phone: booking.users.phone
-      }
+      apiKey: XAIGATE_API_KEY,
+      orderId: booking.id,
+      amount: (booking.plans.price_cents / 100).toString(), // Convert to string as required
+      currency: 'USD', // XaiGate expects USD, not USDT
+      email: booking.users.email,
+      shopName: 'Sweety On Call',
+      description: `${booking.plans.key === 'standard' ? 'Essential' : 'Deluxe'} Sweet Talk Session`,
+      successUrl: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?success=true`,
+      failUrl: `${req.headers.get('origin')}/waiting/${booking.id.slice(0, 6)}?canceled=true`,
+      notifyUrl: `${req.headers.get('origin')?.replace('localhost:5173', 'localhost:54321')}/functions/v1/xaigate-webhook`
     };
 
     console.log("XaiGate invoice payload:", {
       ...invoicePayload,
-      webhook_url: invoicePayload.webhook_url,
+      apiKey: '[HIDDEN]',
       amount: invoicePayload.amount,
       currency: invoicePayload.currency
     });
 
-    const xaigateResponse = await fetch(`${XAIGATE_BASE_URL}/v1/invoices`, {
+    console.log("Making request to: https://wallet-api.xaigate.com/api/v1/invoice/create");
+    
+    const xaigateResponse = await fetch('https://wallet-api.xaigate.com/api/v1/invoice/create', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${XAIGATE_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(invoicePayload)
@@ -94,23 +95,23 @@ serve(async (req) => {
     }
 
     const invoiceData = await xaigateResponse.json();
-    console.log("XaiGate invoice created:", invoiceData.id);
+    console.log("XaiGate invoice created:", invoiceData.invoiceNo);
 
     // Update booking with XaiGate invoice ID
     await supabaseClient.from('bookings').update({
-      xaigate_invoice_id: invoiceData.id,
-      crypto_currency: 'USDT',
-      crypto_network: 'BEP20',
+      xaigate_invoice_id: invoiceData.invoiceNo,
+      crypto_currency: 'USD', // XaiGate uses USD which can be paid with crypto
+      crypto_amount: parseFloat(invoiceData.amount),
       payment_status: 'pending'
     }).eq('id', booking.id);
 
-    console.log("Invoice created successfully:", invoiceData.id);
-    console.log("Payment URL:", invoiceData.payment_url);
+    console.log("Invoice created successfully:", invoiceData.invoiceNo);
+    console.log("Payment URL:", invoiceData.payUrl);
 
     return new Response(JSON.stringify({
       success: true,
-      payment_url: invoiceData.payment_url || invoiceData.checkout_url, // Handle different response formats
-      invoice_id: invoiceData.id
+      payment_url: invoiceData.payUrl, // XaiGate returns payUrl
+      invoice_id: invoiceData.invoiceNo
     }), {
       headers: {
         ...corsHeaders,
