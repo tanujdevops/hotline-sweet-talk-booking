@@ -395,29 +395,29 @@ export function useBookingForm() {
         // For paid plans, redirect to payment first
         // Paid plan selected - creating payment session
         
-        // Create payment session
+        // Create crypto payment session
         try {
-          const { data, error } = await (await getSupabase()).functions.invoke('create-stripe-checkout', {
+          const { data, error } = await (await getSupabase()).functions.invoke('create-xaigate-invoice', {
             body: { bookingId }
           });
 
           if (error) {
-            console.error('Error creating checkout session:', error);
+            console.error('Error creating crypto payment session:', error);
             toast({
-              title: "Payment Error",
-              description: "We couldn't process your payment request. Please try again.",
+              title: "Crypto Payment Error",
+              description: "We couldn't process your crypto payment request. Please try again.",
               variant: "destructive",
             });
             return;
           }
 
-          if (data && data.checkout_url) {
-            window.location.href = data.checkout_url;
+          if (data && data.payment_url) {
+            window.location.href = data.payment_url;
           } else {
-            console.error("No checkout URL returned");
+            console.error("No payment URL returned");
             toast({
-              title: "Payment Error",
-              description: "No checkout URL returned. Please try again.",
+              title: "Crypto Payment Error",
+              description: "No payment URL returned. Please try again.",
               variant: "destructive",
             });
           }
