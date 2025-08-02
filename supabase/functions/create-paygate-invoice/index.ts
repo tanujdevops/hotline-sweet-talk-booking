@@ -58,10 +58,18 @@ serve(async (req) => {
     }
 
     // Step 1: Create wallet with PayGate.to
-    const callbackUrl = `${req.headers.get('origin')?.replace('localhost:5173', 'localhost:54321')}/functions/v1/paygate-webhook?booking_id=${booking.id}`;
+    // Frontend origin (where user should return)
+    const frontendOrigin = req.headers.get('origin') || 'https://sweetyoncall.com';
+    
+    // Backend origin (where webhook should hit)  
+    const backendOrigin = Deno.env.get("SUPABASE_URL") || 'http://localhost:54321';
+    
+    const callbackUrl = `${backendOrigin}/functions/v1/paygate-webhook?booking_id=${booking.id}`;
+    const returnUrl = `${frontendOrigin}/waiting/${booking.id.slice(0, 6)}?success=true`;
     const encodedCallback = encodeURIComponent(callbackUrl);
     
     console.log("Step 1: Creating wallet with callback URL:", callbackUrl);
+    console.log("Return URL for user:", returnUrl);
     
     const walletUrl = `https://api.paygate.to/control/wallet.php?address=${USDC_WALLET_ADDRESS}&callback=${encodedCallback}`;
     
@@ -87,7 +95,8 @@ serve(async (req) => {
     const encodedEmail = encodeURIComponent(booking.users.email);
     
     // Create multiple payment URLs for different provider types
-    const baseParams = `address=${walletData.address_in}&amount=${amount}&email=${encodedEmail}&currency=USD`;
+    const encodedReturnUrl = encodeURIComponent(returnUrl);
+    const baseParams = `address=${walletData.address_in}&amount=${amount}&email=${encodedEmail}&currency=USD&return_url=${encodedReturnUrl}`;
     
     const paymentUrls = {
       multi: `https://checkout.paygate.to/pay.php?${baseParams}`, // All available providers

@@ -281,7 +281,7 @@ export default function WaitingPage() {
     try {
       // Initiating payment process
       const supabase = await getSupabase();
-      const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
+      const { data, error } = await supabase.functions.invoke('create-paygate-invoice', {
         body: { bookingId }
       });
 
@@ -295,19 +295,19 @@ export default function WaitingPage() {
         return;
       }
 
-      if (data && data.checkout_url) {
+      if (data && data.payment_url) {
         // iOS Safari specific handling for payment redirects
         if (isIOSDevice) {
           // Use location.assign instead of window.location.href for better iOS compatibility
-          window.location.assign(data.checkout_url);
+          window.location.assign(data.payment_url);
         } else {
-          window.location.href = data.checkout_url;
+          window.location.href = data.payment_url;
         }
       } else {
-        console.error("No checkout URL returned");
+        console.error("No payment URL returned");
         toast({
           title: "Payment Error", 
-          description: "No checkout URL returned. Please try again.",
+          description: "No payment URL returned. Please try again.",
           variant: "destructive",
         });
       }

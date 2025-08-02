@@ -46,6 +46,33 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+  
+  /* iOS Safari optimizations */
+  body {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    overscroll-behavior: none; /* Prevent bounce */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  
+  /* Prevent iOS zoom on input focus */
+  input[type="text"], 
+  input[type="email"], 
+  input[type="tel"], 
+  textarea, 
+  select {
+    font-size: 16px; /* Prevents iOS zoom */
+    -webkit-appearance: none;
+    border-radius: 0; /* Remove iOS default styling */
+  }
+  
+  /* Fix button touch targets for iOS */
+  button, 
+  .btn,
+  a[role="button"] {
+    min-height: 44px; /* iOS minimum touch target */
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 @layer base {
