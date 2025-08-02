@@ -33,7 +33,7 @@ const BookingForm = () => {
   };
 
   return (
-    <section id="booking" className="py-6 md:py-20 px-4 bg-gradient-to-b from-black/90 to-background">
+    <section id="booking" className="py-6 md:py-20 px-4 bg-gradient-to-b from-transparent via-black/80 to-background">
       <div className="container mx-auto max-w-4xl">
         <div className="grid md:grid-cols-2 gap-6 md:gap-12 items-start">
           <div className="md:sticky md:top-24">
