@@ -22,7 +22,7 @@ const FAQ = () => {
   };
 
   return (
-    <section id="faq" className="py-20 px-4 bg-gradient-to-b from-black/90 to-background relative">
+    <section id="faq" className="py-20 px-4 bg-gradient-to-b from-background to-black/90 relative">
       <div className="absolute inset-0 bg-sensual-gradient opacity-30"></div>
       
       <div className="container mx-auto max-w-4xl relative z-10">

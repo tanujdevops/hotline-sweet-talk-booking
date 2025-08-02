@@ -45,7 +45,7 @@ const Testimonial = memo(({ quote, name, position, className, rating = 5, avatar
 
 const Testimonials = () => {
   return (
-    <section className="py-20 px-4 bg-gradient-to-b from-background to-black/90 relative overflow-hidden">
+    <section className="py-20 px-4 bg-gradient-to-b from-black/90 via-black/60 to-background relative overflow-hidden">
       <div className="absolute inset-0 bg-sensual-gradient opacity-40"></div>
       
       <div className="container mx-auto relative z-10">
