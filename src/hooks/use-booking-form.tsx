@@ -397,7 +397,7 @@ export function useBookingForm() {
         
         // Create crypto payment session with PayGate.to
         try {
-          const { data, error } = await (await getSupabase()).functions.invoke('create-xaigate-invoice', {
+          const { data, error } = await (await getSupabase()).functions.invoke('create-paygate-invoice', {
             body: { bookingId }
           });
 

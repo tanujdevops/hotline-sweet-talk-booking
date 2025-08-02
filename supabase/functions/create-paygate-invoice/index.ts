@@ -86,8 +86,17 @@ serve(async (req) => {
     const amount = (booking.plans.price_cents / 100).toFixed(2);
     const encodedEmail = encodeURIComponent(booking.users.email);
     
-    // Use multi-provider mode for better user experience
-    const paymentUrl = `https://checkout.paygate.to/pay.php?address=${walletData.address_in}&amount=${amount}&email=${encodedEmail}&currency=USD`;
+    // Create multiple payment URLs for different provider types
+    const baseParams = `address=${walletData.address_in}&amount=${amount}&email=${encodedEmail}&currency=USD`;
+    
+    const paymentUrls = {
+      multi: `https://checkout.paygate.to/pay.php?${baseParams}`, // All available providers
+      crypto: `https://checkout.paygate.to/process-payment.php?${baseParams}&provider=simpleswap`, // Crypto-only
+      fiat: `https://checkout.paygate.to/process-payment.php?${baseParams}&provider=rampnetwork` // Fiat (card/bank)
+    };
+    
+    // Use multi-provider for now, but return all options
+    const paymentUrl = paymentUrls.multi;
     
     console.log("Step 2: Payment URL generated with amount:", amount);
 
@@ -111,6 +120,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       payment_url: paymentUrl,
+      payment_urls: paymentUrls, // All payment options
       invoice_id: walletData.ipn_token
     }), {
       headers: {
