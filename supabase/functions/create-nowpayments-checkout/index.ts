@@ -76,7 +76,8 @@ serve(async (req) => {
     const invoicePayload = {
       price_amount: parseFloat(priceAmount),
       price_currency: "usd",
-      pay_currency: "btc", // Default to BTC, NOWPayments will show all available options
+      // No pay_currency specified - NOWPayments will show all available crypto options
+      // This allows users to choose cheap networks like USDT/USDC on TRON, Polygon, BSC
       order_id: booking.id,
       order_description: `Sweet Talk ${booking.plans.key.charAt(0).toUpperCase() + booking.plans.key.slice(1)} Call`,
       ipn_callback_url: ipnCallbackUrl,
