@@ -16,13 +16,13 @@ export const PRICING_DETAILS = {
   },
   [PRICING_TIERS.ESSENTIAL]: {
     duration: 3,
-    price: 5.99,
+    price: 9.99,
     label: 'Essential',
     description: 'Perfect for a focused 3-minute conversation.'
   },
   [PRICING_TIERS.DELUXE]: {
     duration: 7,
-    price: 9.99,
+    price: 14.99,
     label: 'Deluxe',
     description: 'Extended 7-minute session for deeper connection.'
   }
