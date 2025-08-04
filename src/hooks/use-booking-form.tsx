@@ -395,14 +395,14 @@ export function useBookingForm() {
         // For paid plans, redirect to payment first
         // Paid plan selected - creating payment session
         
-        // Create crypto payment session with PayGate.to
+        // Create crypto payment session with NOWPayments
         try {
-          const { data, error } = await (await getSupabase()).functions.invoke('create-paygate-invoice', {
+          const { data, error } = await (await getSupabase()).functions.invoke('create-nowpayments-checkout', {
             body: { bookingId }
           });
 
           if (error) {
-            console.error('Error creating PayGate.to payment session:', error);
+            console.error('Error creating NOWPayments checkout session:', error);
             toast({
               title: "Payment Error",
               description: "We couldn't process your payment request. Please try again.",
@@ -411,8 +411,11 @@ export function useBookingForm() {
             return;
           }
 
-          if (data && data.payment_url) {
-            window.location.href = data.payment_url;
+          if (data && (data.checkout_url || data.invoice_url)) {
+            // Use checkout_url for compatibility with existing frontend, fallback to invoice_url
+            const paymentUrl = data.checkout_url || data.invoice_url;
+            console.log("Redirecting to NOWPayments checkout:", paymentUrl);
+            window.location.href = paymentUrl;
           } else {
             console.error("No payment URL returned");
             toast({

@@ -20,21 +20,98 @@ serve(async (req)=>{
     console.log("Checking payment status for booking:", bookingId);
     // Create a Supabase client with the service role key
     const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
-    // Get Stripe API key from environment
-    const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!STRIPE_SECRET_KEY) {
-      throw new Error("Stripe secret key not configured");
-    }
-    // Initialize Stripe client
-    const stripe = new Stripe(STRIPE_SECRET_KEY, {
-      apiVersion: '2023-10-16'
-    });
-    // Fetch booking details
-    const { data: booking, error: bookingError } = await supabaseClient.from('bookings').select('payment_intent_id, payment_status, status').eq('id', bookingId).single();
+    
+    // Fetch booking details (include NOWPayments fields)
+    const { data: booking, error: bookingError } = await supabaseClient.from('bookings').select('payment_intent_id, payment_status, status, nowpayments_payment_id, nowpayments_invoice_id').eq('id', bookingId).single();
     if (bookingError || !booking) {
       throw new Error(`Error fetching booking: ${bookingError?.message || "Booking not found"}`);
     }
     console.log("Current booking status:", booking);
+    
+    // Check if this is a NOWPayments payment
+    if (booking.nowpayments_payment_id || booking.nowpayments_invoice_id) {
+      // NOWPayments payment - check status via API
+      const NOWPAYMENTS_API_KEY = Deno.env.get("NOWPAYMENTS_API_KEY");
+      
+      if (NOWPAYMENTS_API_KEY && booking.nowpayments_payment_id) {
+        try {
+          console.log("Checking NOWPayments status for payment:", booking.nowpayments_payment_id);
+          
+          const nowPaymentsResponse = await fetch(`https://api.nowpayments.io/v1/payment/${booking.nowpayments_payment_id}`, {
+            headers: {
+              'x-api-key': NOWPAYMENTS_API_KEY
+            }
+          });
+          
+          if (nowPaymentsResponse.ok) {
+            const nowPaymentsData = await nowPaymentsResponse.json();
+            console.log("NOWPayments status:", nowPaymentsData.payment_status);
+            
+            let paymentStatus = booking.payment_status;
+            
+            // Update booking if NOWPayments shows payment completed but our DB doesn't
+            if (nowPaymentsData.payment_status === 'finished' && booking.payment_status !== 'completed') {
+              paymentStatus = 'completed';
+              
+              await supabaseClient.from('bookings').update({
+                payment_status: 'completed',
+                status: 'queued',
+                payment_amount: nowPaymentsData.actually_paid || nowPaymentsData.pay_amount
+              }).eq('id', bookingId);
+              
+              console.log("NOWPayments payment completed, booking updated");
+            }
+            
+            return new Response(JSON.stringify({
+              status: paymentStatus,
+              nowpayments_status: nowPaymentsData.payment_status,
+              payment_amount: nowPaymentsData.actually_paid || nowPaymentsData.pay_amount
+            }), {
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json"
+              },
+              status: 200
+            });
+          }
+        } catch (nowPaymentsError) {
+          console.error("Error checking NOWPayments status:", nowPaymentsError);
+          // Fall through to return current status
+        }
+      }
+      
+      // Return current status for NOWPayments payments
+      return new Response(JSON.stringify({
+        status: booking.payment_status || 'not_started'
+      }), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json"
+        },
+        status: 200
+      });
+    }
+    
+    // Legacy Stripe payment handling
+    const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!STRIPE_SECRET_KEY) {
+      // No Stripe key and no NOWPayments payment - return current status
+      return new Response(JSON.stringify({
+        status: booking.payment_status || 'not_started'
+      }), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json"
+        },
+        status: 200
+      });
+    }
+    
+    // Initialize Stripe client for legacy payments
+    const stripe = new Stripe(STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16'
+    });
+    
     // If no payment intent ID, return current status
     if (!booking.payment_intent_id) {
       return new Response(JSON.stringify({
