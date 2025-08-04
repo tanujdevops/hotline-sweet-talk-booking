@@ -85,8 +85,8 @@ serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer_email: booking.users.email,
-      fixed_rate: true,        // Lock the exchange rate so user pays exactly the expected amount
-      fee_paid_by_user: true   // User pays network fees, merchant receives full amount
+      is_fixed_rate: true,        // Lock the exchange rate so user pays exactly the expected amount  
+      is_fee_paid_by_user: true   // User pays network fees, merchant receives full amount
     };
 
     console.log("Creating NOWPayments invoice:", {
