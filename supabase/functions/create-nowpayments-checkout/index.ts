@@ -61,9 +61,10 @@ serve(async (req) => {
     // Backend origin (where webhook should hit)  
     const backendOrigin = Deno.env.get("SUPABASE_URL") || 'http://localhost:54321';
     
-    // URLs for success/cancel (same as Stripe flow)
-    const successUrl = `${frontendOrigin}/waiting?booking_id=${booking.id}&success=true`;
-    const cancelUrl = `${frontendOrigin}/waiting?booking_id=${booking.id}&canceled=true`;
+    // URLs for success/cancel (exact same format as original Stripe flow)
+    const shortId = booking.id.slice(0, 6);
+    const successUrl = `${frontendOrigin}/waiting/${shortId}?success=true`;
+    const cancelUrl = `${frontendOrigin}/waiting/${shortId}?canceled=true`;
     const ipnCallbackUrl = `${backendOrigin}/functions/v1/nowpayments-webhook`;
     
     console.log("NOWPayments URLs:", {
