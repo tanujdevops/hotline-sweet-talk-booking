@@ -2,9 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("CORS_ORIGIN") || "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-nowpayments-sig",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400"
 };
 
@@ -177,38 +177,39 @@ serve(async (req) => {
 
     console.log("Booking updated successfully:", booking.id);
 
-    // If payment completed, initiate call (EXACT same logic as Stripe webhook)
+    // If payment completed, initiate call (EXACT same logic as working Stripe webhook)
     if (paymentStatus === 'finished') {
       try {
         console.log("Payment completed, initiating VAPI call");
         
-        // Check concurrency before initiating call
-        const { data: concurrencyData } = await supabaseClient.functions.invoke('check-vapi-concurrency', {
-          body: { bookingId: booking.id }
+        // Direct call initiation - same as working Stripe webhook (no concurrency check)
+        const { error: processError } = await supabaseClient.functions.invoke('initiate-vapi-call', {
+          body: {
+            bookingId: booking.id,
+            phone: booking.users.phone,
+            name: booking.users.name
+          }
         });
         
-        if (concurrencyData?.canMakeCall === true) {
-          // Initiate VAPI call
-          await supabaseClient.functions.invoke('initiate-vapi-call', {
-            body: {
-              bookingId: booking.id,
-              phone: booking.users.phone,
-              name: booking.users.name
-            }
-          });
-          
-          console.log("VAPI call initiated successfully");
+        if (processError) {
+          console.error(`Error initiating call for booking ${booking.id}:`, processError);
+          // Don't throw here - the booking is still valid, we can retry later
         } else {
-          console.log("Call queued due to concurrency limits");
+          console.log(`Successfully initiated call for booking ${booking.id}`);
         }
-      } catch (vapiError) {
-        console.error("Error initiating VAPI call after payment:", vapiError);
-        // Don't fail the webhook - payment was still successful
+      } catch (initiateError) {
+        console.error(`Failed to initiate call for booking ${booking.id}:`, initiateError);
+        // Don't throw - the payment was successful, we can retry the call later
       }
     }
 
-    return new Response("Webhook processed successfully", {
-      headers: corsHeaders,
+    return new Response(JSON.stringify({
+      received: true
+    }), {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json"
+      },
       status: 200
     });
 
