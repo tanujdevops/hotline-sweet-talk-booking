@@ -16,7 +16,7 @@ const PricingCard = memo(({ tier, isPopular = false }: { tier: string; isPopular
   const getDuration = () => {
     switch (tier) {
       case PRICING_TIERS.FREE_TRIAL: return '30 sec';
-      case PRICING_TIERS.ESSENTIAL: return '3 min';
+      case PRICING_TIERS.ESSENTIAL: return '4 min';
       case PRICING_TIERS.DELUXE: return '7 min';
       default: return '';
     }
@@ -34,7 +34,7 @@ const PricingCard = memo(({ tier, isPopular = false }: { tier: string; isPopular
         return [
           'Instant connection',
           'Elite companions',
-          `Just $${(details.price / 3).toFixed(2)}/minute`
+          `Just $${(details.price / 4).toFixed(2)}/minute`
         ];
       case PRICING_TIERS.DELUXE:
         return [
