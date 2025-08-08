@@ -86,6 +86,45 @@ serve(async (req) => {
 
     console.log("Found booking:", booking.id, "for address:", address);
 
+    // Verify payment amount if we have the expected amount and received value
+    if (booking.bitcoin_amount && value) {
+      const expectedSatoshis = Math.round(booking.bitcoin_amount * 100000000); // Convert BTC to satoshis
+      const receivedSatoshis = parseInt(value);
+      const tolerance = Math.max(1000, expectedSatoshis * 0.01); // 1% tolerance or minimum 1000 sats
+      
+      console.log("Payment verification:", {
+        expected: expectedSatoshis,
+        received: receivedSatoshis,
+        tolerance: tolerance,
+        difference: receivedSatoshis - expectedSatoshis
+      });
+
+      if (receivedSatoshis < (expectedSatoshis - tolerance)) {
+        console.log("Underpayment detected - rejecting");
+        return new Response("Insufficient payment amount", { status: 400, headers: corsHeaders });
+      }
+      
+      if (receivedSatoshis > (expectedSatoshis + tolerance)) {
+        console.log("Overpayment detected - accepting but logging");
+        // Accept overpayments but log them for monitoring
+      }
+    }
+
+    // Prevent duplicate transaction processing
+    if (txid) {
+      console.log("Checking for duplicate transaction:", txid);
+      const { data: existingTx, error: txCheckError } = await supabaseClient
+        .from('bookings')
+        .select('id, error_message')
+        .eq('id', booking.id)
+        .single();
+
+      if (!txCheckError && existingTx?.error_message?.includes(txid)) {
+        console.log("Transaction already processed:", txid);
+        return new Response("Transaction already processed", { status: 200, headers: corsHeaders });
+      }
+    }
+
     // Check if payment window is still valid (prevent late payments to expired addresses)
     if (booking.blockonomics_created_at) {
       const createdAt = new Date(booking.blockonomics_created_at);
@@ -172,7 +211,18 @@ serve(async (req) => {
         
         if (callError) {
           console.error(`Error initiating call for booking ${booking.id}:`, callError);
-          // Don't fail the webhook - the booking is still valid, we can retry later
+          
+          // Log failed call attempt for potential manual retry
+          try {
+            await supabaseClient.from('bookings').update({
+              error_message: `Bitcoin TX: ${txid} | Call initiation failed: ${callError.message}`,
+              updated_at: new Date().toISOString()
+            }).eq('id', booking.id);
+          } catch (logError) {
+            console.error("Failed to log call initiation error:", logError);
+          }
+          
+          // Don't fail the webhook - the payment was successful
         } else {
           console.log(`Successfully initiated call for booking ${booking.id}`);
         }

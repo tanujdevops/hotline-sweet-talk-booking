@@ -8,6 +8,55 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400"
 };
 
+// Helper function to determine payment progress status for better UX
+function getPaymentProgressStatus(paymentStatus: string, bookingStatus: string, transactionDetails: any) {
+  if (paymentStatus === 'expired') {
+    return {
+      phase: 'expired',
+      message: 'Payment window has expired',
+      description: 'The 20-minute payment window has closed. Please create a new booking.'
+    };
+  }
+  
+  if (paymentStatus === 'completed' && bookingStatus === 'calling') {
+    return {
+      phase: 'calling',
+      message: 'Your call is being connected',
+      description: 'Payment confirmed! Your call is now being initiated.'
+    };
+  }
+  
+  if (paymentStatus === 'completed' && bookingStatus === 'queued') {
+    return {
+      phase: 'confirmed',
+      message: 'Payment confirmed - call starting soon',
+      description: 'Your Bitcoin payment has been fully confirmed. Your call will begin shortly.'
+    };
+  }
+  
+  if (paymentStatus === 'processing' || (transactionDetails && transactionDetails.unconfirmedBalance > 0)) {
+    return {
+      phase: 'confirming',
+      message: 'Payment detected - confirming on blockchain',
+      description: 'Your payment has been detected and is being confirmed. This typically takes 10-30 minutes.'
+    };
+  }
+  
+  if (paymentStatus === 'pending') {
+    return {
+      phase: 'waiting',
+      message: 'Waiting for Bitcoin payment',
+      description: 'Scan the QR code or send Bitcoin to the address above to complete your booking.'
+    };
+  }
+  
+  return {
+    phase: 'unknown',
+    message: 'Processing payment status',
+    description: 'Please wait while we check your payment status.'
+  };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -144,7 +193,9 @@ serve(async (req) => {
       expiresAt: expiresAt.toISOString(),
       bitcoinAddress: booking.blockonomics_address,
       bitcoinAmount: booking.bitcoin_amount,
-      currentPaymentStatus: booking.payment_status
+      currentPaymentStatus: booking.payment_status,
+      currentBookingStatus: booking.status,
+      paymentProgressStatus: getPaymentProgressStatus(booking.payment_status, booking.status, transactionDetails)
     }), {
       headers: {
         ...corsHeaders,

@@ -3,7 +3,7 @@ import { useLocation, Navigate, useParams, useSearchParams, Link } from 'react-r
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PRICING_DETAILS } from '@/lib/pricing';
-import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock, Copy, RefreshCw, QrCode } from 'lucide-react';
+import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock, Copy, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
@@ -60,12 +60,11 @@ export default function WaitingPage() {
     bitcoin_address: string;
     bitcoin_amount: number;
     usd_amount: number;
-    qr_code_data: string;
     payment_window_minutes: number;
   } | null>(null);
   const [paymentTimer, setPaymentTimer] = useState<number>(0);
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [addressCopied, setAddressCopied] = useState(false);
+  const [amountCopied, setAmountCopied] = useState(false);
   
   // Load Bitcoin payment data and get real timer from API
   useEffect(() => {
@@ -78,11 +77,6 @@ export default function WaitingPage() {
         try {
           const paymentData = JSON.parse(storedPayment);
           setBitcoinPayment(paymentData);
-          
-          // Generate branded QR code
-          const qrSize = 256;
-          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(paymentData.qr_code_data)}&color=9b87f5&bgcolor=ffffff`;
-          setQrCodeDataUrl(qrUrl);
           
           console.log("Loaded Bitcoin payment data from sessionStorage:", paymentData);
         } catch (error) {
@@ -114,23 +108,16 @@ export default function WaitingPage() {
               bitcoin_address: statusData.bitcoinAddress,
               bitcoin_amount: statusData.bitcoinAmount,
               usd_amount: statusData.bitcoinAmount * statusData.bitcoin_price_usd || 0, // Approximate
-              qr_code_data: `bitcoin:${statusData.bitcoinAddress}?amount=${statusData.bitcoinAmount}&label=SweetyOnCall%20Payment`,
               payment_window_minutes: statusData.paymentWindow
             };
             
             setBitcoinPayment(paymentData);
-            
-            // Generate QR code
-            const qrSize = 256;
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(paymentData.qr_code_data)}&color=9b87f5&bgcolor=ffffff`;
-            setQrCodeDataUrl(qrUrl);
           }
           
           // Handle expired payments
           if (statusData.expired && statusData.remainingSeconds === 0) {
             // Clear Bitcoin payment data since it's expired
             setBitcoinPayment(null);
-            setQrCodeDataUrl('');
             sessionStorage.removeItem('blockonomics_payment');
             
             toast({
@@ -144,12 +131,32 @@ export default function WaitingPage() {
             setPaymentStatus('expired');
           }
           
-          // Handle received payments
-          if (statusData.paymentReceived) {
+          // Handle received payments with progressive status updates
+          if (statusData.paymentReceived && paymentStatus !== 'completed') {
             setPaymentStatus('completed');
+            
+            // Show appropriate message based on payment progress
+            const progress = statusData.paymentProgressStatus;
+            if (progress) {
+              toast({
+                title: progress.message,
+                description: progress.description,
+                variant: progress.phase === 'confirmed' ? "default" : "default",
+              });
+            } else {
+              toast({
+                title: "Payment Received!",
+                description: "Your Bitcoin payment has been detected. Processing...",
+              });
+            }
+          }
+
+          // Handle payment processing status (unconfirmed transactions)
+          if (statusData.paymentProgressStatus?.phase === 'confirming' && paymentStatus === 'pending') {
+            setPaymentStatus('processing');
             toast({
-              title: "Payment Received!",
-              description: "Your Bitcoin payment has been detected. Waiting for confirmations...",
+              title: statusData.paymentProgressStatus.message,
+              description: statusData.paymentProgressStatus.description,
             });
           }
         }
@@ -235,7 +242,6 @@ export default function WaitingPage() {
           // Handle auto-expired payments from server
           if (statusData.currentPaymentStatus === 'expired' && paymentStatus !== 'expired') {
             setBitcoinPayment(null);
-            setQrCodeDataUrl('');
             sessionStorage.removeItem('blockonomics_payment');
             setBookingStatus('payment_failed');
             setPaymentStatus('expired');
@@ -257,8 +263,10 @@ export default function WaitingPage() {
       }
     };
 
-    // Sync every 30 seconds
-    const syncInterval = setInterval(syncTimer, 30000);
+    // Faster sync during payment pending (10s vs 30s for better UX)
+    const syncInterval = setInterval(syncTimer, 
+      bitcoinPayment && (paymentStatus === 'pending' || paymentStatus === 'processing') ? 10000 : 30000
+    );
     
     return () => clearInterval(syncInterval);
   }, [bookingId, bitcoinPayment, paymentTimer, paymentStatus, toast]);
@@ -277,6 +285,25 @@ export default function WaitingPage() {
         setTimeout(() => setAddressCopied(false), 2000);
       } catch (error) {
         console.error("Failed to copy address:", error);
+      }
+    }
+  };
+
+  // Copy Bitcoin amount to clipboard function
+  const copyAmount = async () => {
+    if (bitcoinPayment?.bitcoin_amount) {
+      try {
+        const btcAmount = bitcoinPayment.bitcoin_amount.toFixed(8);
+        await navigator.clipboard.writeText(btcAmount);
+        setAmountCopied(true);
+        toast({
+          title: "Amount Copied",
+          description: `${btcAmount} BTC copied to clipboard`,
+          variant: "default",
+        });
+        setTimeout(() => setAmountCopied(false), 2000);
+      } catch (error) {
+        console.error("Failed to copy amount:", error);
       }
     }
   };
@@ -689,82 +716,119 @@ export default function WaitingPage() {
                     )}
                   </div>
 
-                  {/* Amount Display - Large and Prominent */}
+                  {/* Amount Display - Large and Prominent with Copy */}
                   <div className="bg-secondary/30 rounded-xl p-6 border-2 border-hotline/10 shadow-inner">
-                    <div className="text-center space-y-2">
+                    <div className="text-center space-y-4">
                       <p className="text-sm text-muted-foreground uppercase tracking-wide">Send Exactly</p>
-                      <p className="text-3xl font-black text-hotline-pink font-mono">
-                        {bitcoinPayment.bitcoin_amount.toFixed(8)} BTC
-                      </p>
+                      
+                      {/* Bitcoin Amount with Copy Button */}
+                      <div className="flex items-center justify-center space-x-3">
+                        <p className="text-3xl font-black text-hotline-pink font-mono">
+                          {bitcoinPayment.bitcoin_amount.toFixed(8)} BTC
+                        </p>
+                        <Button
+                          size="sm"
+                          onClick={copyAmount}
+                          disabled={amountCopied}
+                          className={`
+                            ${amountCopied 
+                              ? 'bg-green-600 hover:bg-green-700 text-white' 
+                              : 'bg-hotline/20 hover:bg-hotline/30 text-hotline border-hotline/50'
+                            } transition-all duration-200 px-3 py-2
+                          `}
+                          variant="outline"
+                        >
+                          {amountCopied ? (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-1" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      
                       <p className="text-xl font-bold text-foreground">
                         ${bitcoinPayment.usd_amount.toFixed(2)} USD
                       </p>
                     </div>
                   </div>
                   
-                  {/* QR Code - Large and Centered */}
-                  <div className="flex justify-center">
-                    <div className="bg-gradient-to-br from-white/95 to-gray-50/95 p-6 rounded-2xl shadow-2xl border-2 border-hotline/30 backdrop-blur-sm">
-                      {qrCodeDataUrl ? (
-                        <img 
-                          src={qrCodeDataUrl} 
-                          alt="SweetyOnCall Bitcoin Payment QR Code"
-                          className="w-64 h-64 rounded-xl shadow-lg"
-                        />
-                      ) : (
-                        <div className="w-64 h-64 bg-secondary/30 rounded-xl flex items-center justify-center">
-                          <QrCode className="h-16 w-16 text-hotline animate-pulse" />
-                        </div>
-                      )}
-                      <p className="text-center text-sm text-gray-700 mt-4 font-medium">
-                        📱 Scan with your Bitcoin wallet
-                      </p>
+                  {/* Bitcoin Address - Prominent and Copyable */}
+                  <div className="bg-gradient-to-r from-gray-900/95 to-black/95 rounded-xl p-6 border-2 border-hotline/30 backdrop-blur-sm shadow-2xl">
+                    <div className="text-center mb-4">
+                      <p className="text-hotline text-base font-semibold mb-2">Bitcoin Address</p>
+                      <p className="text-gray-300 text-sm">Copy this address to send your Bitcoin payment</p>
                     </div>
-                  </div>
-                  
-                  {/* Bitcoin Address - Clean and Copyable */}
-                  <div className="bg-gradient-to-r from-gray-900/95 to-black/95 rounded-xl p-4 border border-hotline/20 backdrop-blur-sm shadow-xl">
-                    <p className="text-gray-200 text-sm font-medium mb-3 text-center">Bitcoin Address</p>
-                    <div className="flex items-center space-x-3 bg-black/50 rounded-lg p-3 border border-hotline/10">
-                      <code className="flex-1 text-white font-mono text-sm break-all bg-transparent">
+                    
+                    <div className="bg-black/60 rounded-lg p-4 border-2 border-hotline/20 mb-4">
+                      <code className="block text-white font-mono text-base break-all leading-relaxed text-center">
                         {bitcoinPayment.bitcoin_address}
                       </code>
+                    </div>
+                    
+                    <div className="flex justify-center">
                       <Button
-                        size="sm"
                         onClick={copyAddress}
                         disabled={addressCopied}
                         className={`
                           ${addressCopied 
-                            ? 'bg-green-600 hover:bg-green-700 text-white' 
-                            : 'bg-hotline hover:bg-hotline-dark text-white'
-                          } transition-all duration-200 px-4 py-2
+                            ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                            : 'bg-hotline hover:bg-hotline-dark text-white border-hotline'
+                          } transition-all duration-200 px-6 py-3 text-base font-semibold min-w-[140px]
                         `}
                       >
                         {addressCopied ? (
                           <>
-                            <CheckCircle className="h-4 w-4 mr-1" />
+                            <CheckCircle className="h-5 w-5 mr-2" />
                             Copied!
                           </>
                         ) : (
                           <>
-                            <Copy className="h-4 w-4 mr-1" />
-                            Copy
+                            <Copy className="h-5 w-5 mr-2" />
+                            Copy Address
                           </>
                         )}
                       </Button>
                     </div>
                   </div>
                   
-                  {/* Important Notice */}
-                  <div className="bg-secondary/50 border-l-4 border-hotline p-4 rounded-r-lg">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <AlertCircle className="h-5 w-5 text-hotline" />
+                  {/* Helpful Payment Instructions */}
+                  <div className="space-y-4">
+                    {/* How to Pay Instructions */}
+                    <div className="bg-hotline/10 border-2 border-hotline/20 p-5 rounded-xl">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-hotline rounded-full flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">💡</span>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-hotline font-semibold mb-2">How to Send Payment</h4>
+                          <div className="space-y-2 text-sm text-muted-foreground">
+                            <p><strong>Option 1:</strong> Copy the Bitcoin address and amount, then paste them in your Bitcoin wallet app</p>
+                            <p><strong>Option 2:</strong> Use your wallet's "Send" feature and manually enter the address and exact amount</p>
+                            <p><strong>Popular wallets:</strong> Coinbase, Cash App, Electrum, BlueWallet, Exodus</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="ml-3">
-                        <p className="text-sm text-muted-foreground">
-                          <strong>Important:</strong> Send the exact Bitcoin amount shown above. Your call will be initiated automatically once the payment is confirmed on the blockchain (usually within 10-30 minutes).
-                        </p>
+                    </div>
+
+                    {/* Important Notice */}
+                    <div className="bg-secondary/50 border-l-4 border-hotline p-4 rounded-r-lg">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <AlertCircle className="h-5 w-5 text-hotline" />
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-muted-foreground">
+                            <strong>Important:</strong> Send the exact Bitcoin amount shown above. Your call will be initiated automatically once payment is confirmed on the blockchain (usually within 10-30 minutes).
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
