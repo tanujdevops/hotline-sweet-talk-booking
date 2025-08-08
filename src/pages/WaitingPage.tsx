@@ -51,7 +51,6 @@ export default function WaitingPage() {
   const [paymentStatus, setPaymentStatus] = useState<string>("pending");
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const [isIOSDevice] = useState(() => isIOSSafari());
@@ -509,59 +508,6 @@ export default function WaitingPage() {
     }
   }, [bookingId, isIOSDevice, fetchBookingStatus]);
 
-  const handlePayment = async () => {
-    setProcessingPayment(true);
-    try {
-      // Create Bitcoin payment with Blockonomics
-      const supabase = await getSupabase();
-      const { data, error } = await supabase.functions.invoke('create-blockonomics-payment', {
-        body: { bookingId }
-      });
-
-      if (error) {
-        console.error('Error creating Blockonomics payment:', error);
-        toast({
-          title: "Payment Error",
-          description: "We couldn't create your Bitcoin payment. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data && data.bitcoin_address) {
-        console.log("Blockonomics payment created successfully");
-        
-        // Store payment data in sessionStorage
-        sessionStorage.setItem('blockonomics_payment', JSON.stringify({
-          bitcoin_address: data.bitcoin_address,
-          bitcoin_amount: data.bitcoin_amount,
-          usd_amount: data.usd_amount,
-          qr_code_data: data.qr_code_data,
-          payment_window_minutes: data.payment_window_minutes,
-          booking_id: data.booking_id
-        }));
-        
-        // Reload the page to show the Bitcoin payment interface
-        window.location.reload();
-      } else {
-        console.error("No Bitcoin address returned");
-        toast({
-          title: "Payment Error", 
-          description: "No Bitcoin address returned. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error in payment process:', error);
-      toast({
-        title: "Payment Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setProcessingPayment(false);
-    }
-  };
 
   const handleManualRefresh = () => {
     setLoading(true);
@@ -858,36 +804,6 @@ export default function WaitingPage() {
               </div>
             )}
             
-            {shouldShowPaymentButton && !bitcoinPayment && paymentStatus !== 'expired' && (
-              <div className="rounded-lg bg-secondary p-4 mt-6">
-                <div className="flex items-start space-x-2">
-                  <CreditCard className="h-5 w-5 text-blue-500 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Payment Required</p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Please complete the payment to confirm your booking.
-                    </p>
-                    <Button 
-                      onClick={handlePayment} 
-                      disabled={processingPayment}
-                      className="w-full bg-hotline hover:bg-hotline-dark"
-                    >
-                      {processingPayment ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Proceed to Payment
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
             
             {paymentStatus === 'completed' && (
               <div className="rounded-xl bg-hotline/10 border-2 border-hotline/30 p-6 mt-4 shadow-lg">
