@@ -129,11 +129,20 @@ export default function WaitingPage() {
           
           // Handle expired payments
           if (statusData.expired && statusData.remainingSeconds === 0) {
+            // Clear Bitcoin payment data since it's expired
+            setBitcoinPayment(null);
+            setQrCodeDataUrl('');
+            sessionStorage.removeItem('blockonomics_payment');
+            
             toast({
-              title: "Payment Window Expired",
-              description: "This payment window has expired. Please create a new payment.",
+              title: "Payment Window Expired ⏰",
+              description: "This payment window has expired. The booking has been cancelled.",
               variant: "destructive",
             });
+            
+            // Update booking status to reflect expiry
+            setBookingStatus('payment_failed');
+            setPaymentStatus('expired');
           }
           
           // Handle received payments
@@ -158,6 +167,24 @@ export default function WaitingPage() {
     if (paymentTimer > 0) {
       const interval = setInterval(() => {
         setPaymentTimer(prev => {
+          // Show warning at 3 minutes remaining (only once)
+          if (prev === 180 && bitcoinPayment) {
+            toast({
+              title: "Payment Window Closing Soon ⚠️",
+              description: "Only 3 minutes remaining to complete your Bitcoin payment!",
+              variant: "destructive",
+            });
+          }
+          
+          // Show final warning at 1 minute remaining
+          if (prev === 60 && bitcoinPayment) {
+            toast({
+              title: "Final Warning ⏰",
+              description: "Only 1 minute left! Complete payment now or booking will be cancelled.",
+              variant: "destructive",
+            });
+          }
+          
           if (prev <= 1) {
             clearInterval(interval);
             return 0;
@@ -168,7 +195,7 @@ export default function WaitingPage() {
       
       return () => clearInterval(interval);
     }
-  }, [paymentTimer]);
+  }, [paymentTimer, bitcoinPayment, toast]);
 
   // Periodically sync timer with server to handle clock drift
   useEffect(() => {
@@ -203,6 +230,21 @@ export default function WaitingPage() {
             toast({
               title: "Payment Received!",
               description: "Your Bitcoin payment has been detected. Processing...",
+            });
+          }
+
+          // Handle auto-expired payments from server
+          if (statusData.currentPaymentStatus === 'expired' && paymentStatus !== 'expired') {
+            setBitcoinPayment(null);
+            setQrCodeDataUrl('');
+            sessionStorage.removeItem('blockonomics_payment');
+            setBookingStatus('payment_failed');
+            setPaymentStatus('expired');
+            
+            toast({
+              title: "Payment Expired",
+              description: "The payment window has closed and the booking has been cancelled.",
+              variant: "destructive",
             });
           }
         }
@@ -663,7 +705,7 @@ export default function WaitingPage() {
               </div>
             )}
             
-            {shouldShowPaymentButton && bitcoinPayment && (
+            {shouldShowPaymentButton && bitcoinPayment && paymentStatus !== 'expired' && (
               <div className="bg-gradient-to-br from-hotline/10 via-black/20 to-hotline-pink/10 border-2 border-hotline/30 rounded-xl p-6 mt-6 shadow-2xl backdrop-blur-sm">
                 <div className="flex flex-col space-y-6">
                   {/* Header */}
@@ -771,8 +813,40 @@ export default function WaitingPage() {
                 </div>
               </div>
             )}
+
+            {/* Show expired payment message */}
+            {paymentStatus === 'expired' && (
+              <div className="bg-destructive/10 border-2 border-destructive/30 rounded-xl p-6 mt-6 shadow-lg backdrop-blur-sm">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-8 w-8 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-lg font-bold text-destructive">Payment Window Expired ⏰</p>
+                    <p className="text-muted-foreground font-medium mt-2 mb-4">
+                      The 20-minute payment window has closed and this booking has been cancelled. 
+                      Bitcoin prices change quickly, so we require payment within the time window to ensure accurate pricing.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Link to="/">
+                        <Button className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white">
+                          Create New Booking
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => window.location.reload()}
+                        className="border-hotline text-hotline hover:bg-hotline/10"
+                      >
+                        Refresh Status
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             
-            {shouldShowPaymentButton && !bitcoinPayment && (
+            {shouldShowPaymentButton && !bitcoinPayment && paymentStatus !== 'expired' && (
               <div className="rounded-lg bg-secondary p-4 mt-6">
                 <div className="flex items-start space-x-2">
                   <CreditCard className="h-5 w-5 text-blue-500 mt-0.5" />

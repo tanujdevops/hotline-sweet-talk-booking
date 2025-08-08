@@ -62,6 +62,37 @@ serve(async (req) => {
       expired
     });
 
+    // Auto-expire payment if window has closed and payment is still pending
+    if (expired && remainingSeconds === 0 && booking.payment_status === 'pending') {
+      console.log("Payment window expired, auto-cancelling booking:", booking.id);
+      
+      try {
+        const { error: expireError } = await supabaseClient
+          .from('bookings')
+          .update({
+            payment_status: 'expired',
+            status: 'payment_failed',
+            blockonomics_address: null, // Clear address to prevent late payments
+            bitcoin_amount: null, // Clear amount as well
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', bookingId);
+
+        if (expireError) {
+          console.error("Error expiring payment:", expireError);
+        } else {
+          console.log("Successfully expired payment for booking:", booking.id);
+          // Update local booking object for return data
+          booking.payment_status = 'expired';
+          booking.status = 'payment_failed';
+          booking.blockonomics_address = null;
+          booking.bitcoin_amount = null;
+        }
+      } catch (updateError) {
+        console.error("Failed to update expired payment:", updateError);
+      }
+    }
+
     // Optional: Check Blockonomics API for payment status
     let paymentReceived = false;
     let transactionDetails = null;

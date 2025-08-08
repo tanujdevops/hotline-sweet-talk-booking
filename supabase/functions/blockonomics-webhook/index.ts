@@ -86,6 +86,19 @@ serve(async (req) => {
 
     console.log("Found booking:", booking.id, "for address:", address);
 
+    // Check if payment window is still valid (prevent late payments to expired addresses)
+    if (booking.blockonomics_created_at) {
+      const createdAt = new Date(booking.blockonomics_created_at);
+      const windowMs = 20 * 60 * 1000; // 20 minutes
+      const expiresAt = new Date(createdAt.getTime() + windowMs);
+      const isExpired = Date.now() > expiresAt.getTime();
+      
+      if (isExpired && booking.payment_status !== 'completed') {
+        console.log("Rejecting late payment to expired address:", address, "expired at:", expiresAt.toISOString());
+        return new Response("Payment window expired", { status: 400, headers: corsHeaders });
+      }
+    }
+
     // Blockonomics status meanings:
     // 0 = Unconfirmed (payment detected but not confirmed)
     // 1 = Partially confirmed (some confirmations)
