@@ -395,14 +395,14 @@ export function useBookingForm() {
         // For paid plans, redirect to payment first
         // Paid plan selected - creating payment session
         
-        // Create crypto payment session with NOWPayments
+        // Create Bitcoin payment session with Blockonomics
         try {
-          const { data, error } = await (await getSupabase()).functions.invoke('create-nowpayments-checkout', {
+          const { data, error } = await (await getSupabase()).functions.invoke('create-blockonomics-payment', {
             body: { bookingId }
           });
 
           if (error) {
-            console.error('Error creating NOWPayments checkout session:', error);
+            console.error('Error creating Blockonomics payment session:', error);
             toast({
               title: "Payment Error",
               description: "We couldn't process your payment request. Please try again.",
@@ -411,16 +411,25 @@ export function useBookingForm() {
             return;
           }
 
-          if (data && (data.checkout_url || data.invoice_url)) {
-            // Use checkout_url for compatibility with existing frontend, fallback to invoice_url
-            const paymentUrl = data.checkout_url || data.invoice_url;
-            console.log("Redirecting to NOWPayments checkout:", paymentUrl);
-            window.location.href = paymentUrl;
+          if (data && data.bitcoin_address) {
+            console.log("Blockonomics payment created successfully");
+            // Store payment data in sessionStorage for the waiting page
+            sessionStorage.setItem('blockonomics_payment', JSON.stringify({
+              bitcoin_address: data.bitcoin_address,
+              bitcoin_amount: data.bitcoin_amount,
+              usd_amount: data.usd_amount,
+              qr_code_data: data.qr_code_data,
+              payment_window_minutes: data.payment_window_minutes,
+              booking_id: data.booking_id
+            }));
+            
+            // Navigate to waiting page with payment details
+            navigate(`/waiting/${bookingId.substring(0, 6)}`);
           } else {
-            console.error("No payment URL returned");
+            console.error("No Bitcoin address returned");
             toast({
               title: "Payment Error", 
-              description: "No payment URL returned. Please try again.",
+              description: "No Bitcoin address returned. Please try again.",
               variant: "destructive",
             });
           }

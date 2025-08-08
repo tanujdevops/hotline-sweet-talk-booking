@@ -39,6 +39,9 @@ serve(async (req) => {
 
     // Get IPN secret from environment
     const NOWPAYMENTS_IPN_SECRET = Deno.env.get("NOWPAYMENTS_IPN_SECRET");
+    console.log("[NOWPayments Webhook Debug] IPN secret configured:", NOWPAYMENTS_IPN_SECRET ? "Yes" : "No");
+    console.log("[NOWPayments Webhook Debug] IPN secret length:", NOWPAYMENTS_IPN_SECRET ? NOWPAYMENTS_IPN_SECRET.length : "N/A");
+    
     if (!NOWPAYMENTS_IPN_SECRET) {
       console.error("NOWPayments IPN secret not configured");
       return new Response("IPN secret not configured", { status: 500, headers: corsHeaders });
@@ -51,28 +54,36 @@ serve(async (req) => {
       return new Response("Missing signature", { status: 400, headers: corsHeaders });
     }
 
-    // Get request body
+    // Get request body as raw text (like Stripe webhook)
     const requestBody = await req.text();
-    let webhookData;
+    console.log("[NOWPayments Webhook Debug] Raw body length:", requestBody.length);
+    console.log("[NOWPayments Webhook Debug] Raw body sample:", requestBody.substring(0, 300));
+    console.log("[NOWPayments Webhook Debug] x-nowpayments-sig:", receivedSignature);
     
+    let webhookData;
     try {
       webhookData = JSON.parse(requestBody);
     } catch (parseError) {
       console.error("Invalid JSON in webhook:", parseError);
+      console.error("Raw body sample:", requestBody?.substring(0, 200));
       return new Response("Invalid JSON", { status: 400, headers: corsHeaders });
     }
 
-    console.log("NOWPayments webhook data:", {
+    console.log("[NOWPayments Webhook Debug] Parsed webhook data:", {
       payment_id: webhookData.payment_id,
       payment_status: webhookData.payment_status,
       order_id: webhookData.order_id
     });
 
-    // Verify HMAC signature (same security model as Stripe)
+    // Verify HMAC signature using sorted JSON (NOWPayments requirement)
+    // NOWPayments requires JSON key sorting before HMAC-SHA512 calculation
     const sortedData = sortObject(webhookData);
-    const sortedJson = JSON.stringify(sortedData, Object.keys(sortedData).sort());
+    const textToSign = JSON.stringify(sortedData, Object.keys(sortedData).sort());
     
-    // Create HMAC signature using sha512
+    console.log("[NOWPayments Webhook Debug] Sorted JSON for signing:", textToSign.substring(0, 300) + "...");
+    console.log("[NOWPayments Webhook Debug] Sorted JSON length:", textToSign.length);
+    
+    // Create HMAC signature using sha512 on sorted JSON
     const key = await crypto.subtle.importKey(
       'raw',
       new TextEncoder().encode(NOWPAYMENTS_IPN_SECRET),
@@ -84,19 +95,26 @@ serve(async (req) => {
     const signature = await crypto.subtle.sign(
       'HMAC',
       key,
-      new TextEncoder().encode(sortedJson)
+      new TextEncoder().encode(textToSign)
     );
     
     const computedSignature = Array.from(new Uint8Array(signature))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
 
+    console.log("[NOWPayments Webhook Debug] Computed signature:", computedSignature);
+    console.log("[NOWPayments Webhook Debug] Received signature:", receivedSignature);
+    console.log("[NOWPayments Webhook Debug] Signatures match:", computedSignature === receivedSignature);
+
     if (computedSignature !== receivedSignature) {
-      console.error("Invalid signature");
+      console.error("[NOWPayments Webhook Debug] Signature verification failed");
+      console.error("[NOWPayments Webhook Debug] Expected:", computedSignature);
+      console.error("[NOWPayments Webhook Debug] Received:", receivedSignature);
+      console.error("[NOWPayments Webhook Debug] Text used for signing:", textToSign);
       return new Response("Invalid signature", { status: 400, headers: corsHeaders });
     }
 
-    console.log("NOWPayments signature verified successfully");
+    console.log("[NOWPayments Webhook Debug] Signature verified successfully");
 
     // Get booking ID from order_id
     const bookingId = webhookData.order_id;

@@ -3,7 +3,7 @@ import { useLocation, Navigate, useParams, useSearchParams, Link } from 'react-r
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PRICING_DETAILS } from '@/lib/pricing';
-import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock, Copy, RefreshCw } from 'lucide-react';
+import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock, Copy, RefreshCw, QrCode } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
@@ -56,6 +56,85 @@ export default function WaitingPage() {
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const [isIOSDevice] = useState(() => isIOSSafari());
   
+  // Bitcoin payment data
+  const [bitcoinPayment, setBitcoinPayment] = useState<{
+    bitcoin_address: string;
+    bitcoin_amount: number;
+    usd_amount: number;
+    qr_code_data: string;
+    payment_window_minutes: number;
+  } | null>(null);
+  const [paymentTimer, setPaymentTimer] = useState<number>(0);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+  const [addressCopied, setAddressCopied] = useState(false);
+  
+  // Load Bitcoin payment data from sessionStorage
+  useEffect(() => {
+    const storedPayment = sessionStorage.getItem('blockonomics_payment');
+    if (storedPayment) {
+      try {
+        const paymentData = JSON.parse(storedPayment);
+        setBitcoinPayment(paymentData);
+        
+        // Generate QR code using a simple data URL approach
+        // For a more robust solution, you might want to use a QR code library
+        const qrSize = 200;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(paymentData.qr_code_data)}`;
+        setQrCodeDataUrl(qrUrl);
+        
+        // Set up payment timer
+        const windowMinutes = paymentData.payment_window_minutes || 20;
+        setPaymentTimer(windowMinutes * 60); // Convert to seconds
+        
+        console.log("Loaded Bitcoin payment data:", paymentData);
+      } catch (error) {
+        console.error("Failed to parse Bitcoin payment data:", error);
+      }
+    }
+  }, []);
+
+  // Payment timer countdown
+  useEffect(() => {
+    if (paymentTimer > 0) {
+      const interval = setInterval(() => {
+        setPaymentTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [paymentTimer]);
+
+  // Copy address to clipboard function
+  const copyAddress = async () => {
+    if (bitcoinPayment?.bitcoin_address) {
+      try {
+        await navigator.clipboard.writeText(bitcoinPayment.bitcoin_address);
+        setAddressCopied(true);
+        toast({
+          title: "Address Copied",
+          description: "Bitcoin address copied to clipboard",
+          variant: "default",
+        });
+        setTimeout(() => setAddressCopied(false), 2000);
+      } catch (error) {
+        console.error("Failed to copy address:", error);
+      }
+    }
+  };
+
+  // Format timer display
+  const formatTimer = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // Lookup full booking ID from short ID if needed
   const lookupBookingId = useCallback(async () => {
     if (!shortId || bookingId) return;
@@ -460,7 +539,88 @@ export default function WaitingPage() {
               </div>
             )}
             
-            {shouldShowPaymentButton && (
+            {shouldShowPaymentButton && bitcoinPayment && (
+              <div className="rounded-lg bg-orange-500/10 border border-orange-200 p-4 mt-6">
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-start space-x-2">
+                    <CreditCard className="h-5 w-5 text-orange-500 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Bitcoin Payment Required</p>
+                      <p className="text-sm text-muted-foreground">
+                        Send exactly <strong>{bitcoinPayment.bitcoin_amount.toFixed(8)} BTC</strong> (${bitcoinPayment.usd_amount.toFixed(2)}) to complete your booking.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Payment Timer */}
+                  {paymentTimer > 0 && (
+                    <div className="flex items-center space-x-2 text-orange-600">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        Payment window: {formatTimer(paymentTimer)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* QR Code */}
+                  <div className="flex justify-center">
+                    <div className="bg-white p-4 rounded-lg border">
+                      {qrCodeDataUrl ? (
+                        <img 
+                          src={qrCodeDataUrl} 
+                          alt="Bitcoin Payment QR Code"
+                          className="w-48 h-48"
+                        />
+                      ) : (
+                        <div className="w-48 h-48 bg-gray-100 flex items-center justify-center">
+                          <QrCode className="h-8 w-8 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Bitcoin Address */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-600 mb-1">Bitcoin Address:</p>
+                    <div className="flex items-center space-x-2">
+                      <code className="flex-1 text-xs bg-white px-2 py-1 rounded border break-all">
+                        {bitcoinPayment.bitcoin_address}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={copyAddress}
+                        disabled={addressCopied}
+                      >
+                        {addressCopied ? (
+                          <CheckCircle className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Amount Details */}
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Amount (USD):</span>
+                      <span>${bitcoinPayment.usd_amount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Amount (BTC):</span>
+                      <span>{bitcoinPayment.bitcoin_amount.toFixed(8)} BTC</span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                    <strong>Important:</strong> Send the exact Bitcoin amount shown above. Your call will be initiated automatically once the payment is confirmed on the blockchain.
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {shouldShowPaymentButton && !bitcoinPayment && (
               <div className="rounded-lg bg-secondary p-4 mt-6">
                 <div className="flex items-start space-x-2">
                   <CreditCard className="h-5 w-5 text-blue-500 mt-0.5" />

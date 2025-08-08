@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("CORS_ORIGIN") || "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-nowpayments-sig",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400"
 };
@@ -112,10 +112,22 @@ serve(async (req) => {
     }
 
     const invoiceData = await invoiceResponse.json();
-    console.log("NOWPayments invoice created:", {
+    console.log("NOWPayments invoice created successfully:", {
       id: invoiceData.id,
       invoice_url: invoiceData.invoice_url ? 'Present' : 'Missing',
-      order_id: invoiceData.order_id
+      order_id: invoiceData.order_id,
+      pay_amount: invoiceData.pay_amount,
+      pay_currency: invoiceData.pay_currency,
+      price_amount: invoiceData.price_amount,
+      price_currency: invoiceData.price_currency,
+      is_fixed_rate: invoiceData.is_fixed_rate,
+      is_fee_paid_by_user: invoiceData.is_fee_paid_by_user
+    });
+    
+    // Log full response for debugging (excluding sensitive data)
+    console.log("Complete NOWPayments response:", {
+      ...invoiceData,
+      customer_email: '[ENCRYPTED]'
     });
 
     // Update booking with NOWPayments details
