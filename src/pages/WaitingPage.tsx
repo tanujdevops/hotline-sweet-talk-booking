@@ -410,35 +410,42 @@ export default function WaitingPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'calling':
-        return 'bg-green-100 text-green-800 border-green-300';
+        return 'bg-green-500/10 text-green-600 border-green-500/30 backdrop-blur-sm';
       case 'completed':
-        return 'bg-green-100 text-green-800 border-green-300';
+        return 'bg-hotline/10 text-hotline border-hotline/30 backdrop-blur-sm';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+        return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30 backdrop-blur-sm';
       case 'initiating':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+        return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30 backdrop-blur-sm';
       case 'queued':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'bg-blue-500/10 text-blue-600 border-blue-500/30 backdrop-blur-sm';
       case 'pending_payment':
-        return 'bg-orange-100 text-orange-800 border-orange-300';
+        return 'bg-hotline-pink/10 text-hotline-pink border-hotline-pink/30 backdrop-blur-sm';
       case 'cancelled':
       case 'failed':
       case 'payment_failed':
-        return 'bg-red-100 text-red-800 border-red-300';
+        return 'bg-destructive/10 text-destructive border-destructive/30 backdrop-blur-sm';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-secondary/10 text-muted-foreground border-border/30 backdrop-blur-sm';
     }
   };
 
   const shouldShowPaymentButton = bookingStatus === 'pending_payment' && paymentStatus !== 'completed';
 
   return (
-    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>Booking Confirmed!</CardTitle>
-            <CardDescription>Your booking details are below</CardDescription>
+    <div className="min-h-screen bg-gradient-to-b from-black/90 via-black/80 to-transparent py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background gradient overlay for brand consistency */}
+      <div className="absolute inset-0 bg-gradient-to-br from-hotline/5 via-transparent to-hotline-pink/5 pointer-events-none" />
+      
+      <div className="max-w-md mx-auto relative z-10">
+        <Card className="bg-black/30 backdrop-blur-sm border border-hotline/20 shadow-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-white bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">
+              Booking Confirmed! ✨
+            </CardTitle>
+            <CardDescription className="text-gray-300 text-lg">
+              Your booking details are below
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -474,7 +481,7 @@ export default function WaitingPage() {
               </div>
             )}
             
-            <div className={`rounded-xl border-2 p-6 mt-6 shadow-lg ${getStatusColor(bookingStatus)}`}>
+            <div className={`rounded-xl border-2 p-6 mt-6 shadow-2xl ${getStatusColor(bookingStatus)}`}>
               <div className="flex items-center gap-3">
                 {loading ? (
                   <Loader2 className="h-6 w-6 animate-spin text-current" />
@@ -550,15 +557,17 @@ export default function WaitingPage() {
             )}
             
             {shouldShowPaymentButton && bitcoinPayment && (
-              <div className="bg-card border-2 border-hotline/20 rounded-xl p-6 mt-6 shadow-lg">
+              <div className="bg-gradient-to-br from-hotline/10 via-black/20 to-hotline-pink/10 border-2 border-hotline/30 rounded-xl p-6 mt-6 shadow-2xl backdrop-blur-sm">
                 <div className="flex flex-col space-y-6">
                   {/* Header */}
                   <div className="text-center">
-                    <div className="flex items-center justify-center space-x-2 mb-2">
-                      <div className="w-8 h-8 bg-hotline rounded-full flex items-center justify-center">
-                        <CreditCard className="w-5 h-5 text-white" />
+                    <div className="flex items-center justify-center space-x-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-hotline to-hotline-pink rounded-full flex items-center justify-center shadow-lg">
+                        <CreditCard className="w-6 h-6 text-white" />
                       </div>
-                      <h3 className="text-xl font-bold text-foreground">Bitcoin Payment Required</h3>
+                      <h3 className="text-2xl font-bold text-white bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">
+                        Bitcoin Payment Required
+                      </h3>
                     </div>
                     
                     {/* Payment Timer - Prominent */}
@@ -588,28 +597,28 @@ export default function WaitingPage() {
                   
                   {/* QR Code - Large and Centered */}
                   <div className="flex justify-center">
-                    <div className="bg-card p-6 rounded-2xl shadow-lg border-2 border-hotline/10">
+                    <div className="bg-gradient-to-br from-white/95 to-gray-50/95 p-6 rounded-2xl shadow-2xl border-2 border-hotline/30 backdrop-blur-sm">
                       {qrCodeDataUrl ? (
                         <img 
                           src={qrCodeDataUrl} 
                           alt="SweetyOnCall Bitcoin Payment QR Code"
-                          className="w-64 h-64 rounded-lg"
+                          className="w-64 h-64 rounded-xl shadow-lg"
                         />
                       ) : (
-                        <div className="w-64 h-64 bg-secondary/30 rounded-lg flex items-center justify-center">
-                          <QrCode className="h-16 w-16 text-hotline" />
+                        <div className="w-64 h-64 bg-secondary/30 rounded-xl flex items-center justify-center">
+                          <QrCode className="h-16 w-16 text-hotline animate-pulse" />
                         </div>
                       )}
-                      <p className="text-center text-sm text-muted-foreground mt-3 font-medium">
-                        Scan with your Bitcoin wallet
+                      <p className="text-center text-sm text-gray-700 mt-4 font-medium">
+                        📱 Scan with your Bitcoin wallet
                       </p>
                     </div>
                   </div>
                   
                   {/* Bitcoin Address - Clean and Copyable */}
-                  <div className="bg-gray-900 rounded-xl p-4">
-                    <p className="text-white text-sm font-medium mb-2 text-center">Bitcoin Address</p>
-                    <div className="flex items-center space-x-3 bg-gray-800 rounded-lg p-3">
+                  <div className="bg-gradient-to-r from-gray-900/95 to-black/95 rounded-xl p-4 border border-hotline/20 backdrop-blur-sm shadow-xl">
+                    <p className="text-gray-200 text-sm font-medium mb-3 text-center">Bitcoin Address</p>
+                    <div className="flex items-center space-x-3 bg-black/50 rounded-lg p-3 border border-hotline/10">
                       <code className="flex-1 text-white font-mono text-sm break-all bg-transparent">
                         {bitcoinPayment.bitcoin_address}
                       </code>
@@ -723,8 +732,8 @@ export default function WaitingPage() {
         {/* Return to Home Button */}
         <div className="flex justify-center mt-8">
           <Link to="/">
-            <Button className="bg-hotline hover:bg-hotline-dark flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7m-9 2v6m0 0h4m-4 0a2 2 0 01-2-2v-4a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2z" /></svg>
+            <Button className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white px-6 py-4 text-lg rounded-md flex items-center gap-3 transition-all duration-300 shadow-2xl backdrop-blur-sm border border-hotline/20">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7m-9 2v6m0 0h4m-4 0a2 2 0 01-2-2v-4a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2z" /></svg>
               Return Home
             </Button>
           </Link>
