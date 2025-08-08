@@ -247,6 +247,11 @@ export default function WaitingPage() {
               variant: "destructive",
             });
           }
+
+          // Also handle server status updates properly  
+          if (statusData.currentPaymentStatus === 'expired') {
+            setPaymentStatus('expired');
+          }
         }
       } catch (error) {
         console.error('Error syncing timer:', error);
@@ -507,35 +512,42 @@ export default function WaitingPage() {
   const handlePayment = async () => {
     setProcessingPayment(true);
     try {
-      // Initiating payment process
+      // Create Bitcoin payment with Blockonomics
       const supabase = await getSupabase();
-      const { data, error } = await supabase.functions.invoke('create-paygate-invoice', {
+      const { data, error } = await supabase.functions.invoke('create-blockonomics-payment', {
         body: { bookingId }
       });
 
       if (error) {
-        console.error('Error creating checkout session:', error);
+        console.error('Error creating Blockonomics payment:', error);
         toast({
           title: "Payment Error",
-          description: "We couldn't process your payment request. Please try again.",
+          description: "We couldn't create your Bitcoin payment. Please try again.",
           variant: "destructive",
         });
         return;
       }
 
-      if (data && data.payment_url) {
-        // iOS Safari specific handling for payment redirects
-        if (isIOSDevice) {
-          // Use location.assign instead of window.location.href for better iOS compatibility
-          window.location.assign(data.payment_url);
-        } else {
-          window.location.href = data.payment_url;
-        }
+      if (data && data.bitcoin_address) {
+        console.log("Blockonomics payment created successfully");
+        
+        // Store payment data in sessionStorage
+        sessionStorage.setItem('blockonomics_payment', JSON.stringify({
+          bitcoin_address: data.bitcoin_address,
+          bitcoin_amount: data.bitcoin_amount,
+          usd_amount: data.usd_amount,
+          qr_code_data: data.qr_code_data,
+          payment_window_minutes: data.payment_window_minutes,
+          booking_id: data.booking_id
+        }));
+        
+        // Reload the page to show the Bitcoin payment interface
+        window.location.reload();
       } else {
-        console.error("No payment URL returned");
+        console.error("No Bitcoin address returned");
         toast({
           title: "Payment Error", 
-          description: "No payment URL returned. Please try again.",
+          description: "No Bitcoin address returned. Please try again.",
           variant: "destructive",
         });
       }
@@ -579,7 +591,7 @@ export default function WaitingPage() {
     }
   };
 
-  const shouldShowPaymentButton = bookingStatus === 'pending_payment' && paymentStatus !== 'completed';
+  const shouldShowPaymentButton = bookingStatus === 'pending_payment' && paymentStatus !== 'completed' && paymentStatus !== 'expired';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black/90 via-black/80 to-transparent py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
