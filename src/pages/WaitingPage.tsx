@@ -76,10 +76,10 @@ export default function WaitingPage() {
         const paymentData = JSON.parse(storedPayment);
         setBitcoinPayment(paymentData);
         
-        // Generate QR code using a simple data URL approach
-        // For a more robust solution, you might want to use a QR code library
-        const qrSize = 200;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(paymentData.qr_code_data)}`;
+        // Generate branded QR code with SweetyOnCall colors
+        // Using hotline purple foreground on white background for optimal scanning
+        const qrSize = 256;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(paymentData.qr_code_data)}&color=9b87f5&bgcolor=ffffff`;
         setQrCodeDataUrl(qrUrl);
         
         // Set up payment timer
@@ -592,7 +592,7 @@ export default function WaitingPage() {
                       {qrCodeDataUrl ? (
                         <img 
                           src={qrCodeDataUrl} 
-                          alt="Bitcoin Payment QR Code"
+                          alt="SweetyOnCall Bitcoin Payment QR Code"
                           className="w-64 h-64 rounded-lg"
                         />
                       ) : (
