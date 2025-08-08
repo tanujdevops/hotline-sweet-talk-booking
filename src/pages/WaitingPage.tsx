@@ -6,6 +6,7 @@ import { PRICING_DETAILS } from '@/lib/pricing';
 import { Loader2, PhoneCall, CreditCard, CheckCircle, AlertCircle, Clock, Copy, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import OptimizedHeroImage from "@/components/OptimizedHeroImage";
 
 // Lazy load Supabase client only when needed
 const getSupabase = async () => {
@@ -65,6 +66,41 @@ export default function WaitingPage() {
   const [paymentTimer, setPaymentTimer] = useState<number>(0);
   const [addressCopied, setAddressCopied] = useState(false);
   const [amountCopied, setAmountCopied] = useState(false);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only trigger if not typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      switch (e.key.toLowerCase()) {
+        case 'r':
+          e.preventDefault();
+          handleManualRefresh();
+          break;
+        case ' ':
+          e.preventDefault();
+          if (bitcoinPayment) {
+            const walletString = `${bitcoinPayment.bitcoin_amount.toFixed(8)} BTC to ${bitcoinPayment.bitcoin_address}`;
+            navigator.clipboard.writeText(walletString);
+            toast({
+              title: "Quick Copy Complete",
+              description: "Payment details ready for your wallet",
+            });
+          }
+          break;
+        case 'a':
+          e.preventDefault();
+          if (bitcoinPayment) {
+            copyAmount();
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [bitcoinPayment, toast]);
   
   // Load Bitcoin payment data and get real timer from API
   useEffect(() => {
@@ -567,95 +603,125 @@ export default function WaitingPage() {
   const shouldShowPaymentButton = bookingStatus === 'pending_payment' && paymentStatus !== 'completed' && paymentStatus !== 'expired';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black/90 via-black/80 to-transparent py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background gradient overlay for brand consistency */}
+    <div className="min-h-screen bg-gradient-to-b from-black/90 via-black/80 to-transparent relative overflow-hidden">
+      {/* Hero-style optimized background */}
+      <OptimizedHeroImage className="hero-bg opacity-20" />
+      
+      {/* Futuristic gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-hotline/5 via-transparent to-hotline-pink/5 pointer-events-none" />
       
-      <div className="max-w-md mx-auto relative z-10">
-        <Card className="bg-black/30 backdrop-blur-sm border border-hotline/20 shadow-2xl">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-white bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">
-              Booking Confirmed! ✨
-            </CardTitle>
-            <CardDescription className="text-gray-300 text-lg">
-              Your booking details are below
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Booking ID:</span>
-                <span className="font-mono font-medium">{bookingId?.slice(0, 6) || 'Loading...'}</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        if (bookingId) {
-                          navigator.clipboard.writeText(bookingId.slice(0, 6));
-                        }
-                      }}
-                      aria-label="Copy Booking ID"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <span>Copy Booking ID</span>
-                  </TooltipContent>
-                </Tooltip>
+      <div className="container mx-auto relative z-10 flex justify-center py-4 sm:py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl w-full">
+          <div className="bg-black/30 backdrop-blur-lg border border-hotline/20 rounded-2xl shadow-2xl overflow-hidden">
+            {/* Futuristic header with pulse glow effect */}
+            <div className="pulse-glow bg-gradient-to-r from-hotline to-hotline-pink p-0.5 rounded-t-2xl">
+              <div className="bg-black/80 backdrop-blur-sm rounded-t-2xl px-4 sm:px-6 py-6 sm:py-8 text-center">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-3 sm:mb-4 text-transparent bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text">
+                  Booking Confirmed! ✨
+                </h1>
+                <p className="text-base sm:text-lg text-gray-200 font-medium">
+                  Your AI connection details below
+                </p>
               </div>
             </div>
             
-            {planDetails && (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Selected Plan</p>
-                <p className="font-medium">{planDetails.label}</p>
+            {/* Main content area */}
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              {/* Minimalist booking details */}
+              <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-hotline/20">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-400">Booking ID</p>
+                      <p className="font-mono font-bold text-white text-sm sm:text-base">{bookingId?.slice(0, 6) || 'Loading...'}</p>
+                    </div>
+                    {planDetails && (
+                      <div className="sm:border-l border-hotline/30 sm:pl-4">
+                        <p className="text-xs sm:text-sm text-gray-400">Plan</p>
+                        <p className="font-medium text-white text-sm sm:text-base">{planDetails.label}</p>
+                      </div>
+                    )}
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (bookingId) {
+                            navigator.clipboard.writeText(bookingId.slice(0, 6));
+                          }
+                        }}
+                        className="text-hotline hover:text-hotline-pink hover:bg-hotline/10"
+                        aria-label="Copy Booking ID"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <span>Copy Booking ID</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-            )}
             
-            <div className={`rounded-xl border-2 p-6 mt-6 shadow-2xl ${getStatusColor(bookingStatus)}`}>
-              <div className="flex items-center gap-3">
-                {loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-current" />
-                ) : bookingStatus === 'calling' ? (
-                  <PhoneCall className="h-6 w-6 animate-pulse text-current" />
-                ) : bookingStatus === 'queued' ? (
-                  <Clock className="h-6 w-6 text-current" />
-                ) : bookingStatus === 'completed' ? (
-                  <CheckCircle className="h-6 w-6 text-current" />
-                ) : bookingStatus === 'pending_payment' ? (
-                  <CreditCard className="h-6 w-6 text-current" />
-                ) : (
-                  <div className="h-4 w-4 rounded-full bg-current" />
-                )}
-                <div className="flex-1">
-                  <p className="text-lg font-bold text-current">
-                    {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1).replace('_', ' ')}
-                  </p>
-                  <p className="text-sm font-medium text-current opacity-80 mt-1">
-                    {statusMessages[bookingStatus as keyof typeof statusMessages] || "Processing your booking..."}
-                  </p>
-                  {bookingStatus === 'queued' && queuePosition && (
-                    <p className="text-sm font-bold text-current mt-2 bg-white bg-opacity-20 rounded-full px-3 py-1 inline-block">
-                      Queue position: #{queuePosition}
+              {/* Modern status display with glassmorphism */}
+              <div className={`relative rounded-2xl border-2 p-4 sm:p-6 lg:p-8 shadow-2xl backdrop-blur-lg ${getStatusColor(bookingStatus)} hover:scale-[1.02] transition-all duration-300`}>
+                <div className="flex items-center gap-4 sm:gap-6">
+                  {/* Animated status icon */}
+                  <div className="relative">
+                    {loading ? (
+                      <Loader2 className="h-8 w-8 animate-spin text-current" />
+                    ) : bookingStatus === 'calling' ? (
+                      <div className="relative">
+                        <PhoneCall className="h-8 w-8 animate-pulse text-current" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-ping" />
+                      </div>
+                    ) : bookingStatus === 'queued' ? (
+                      <div className="relative">
+                        <Clock className="h-8 w-8 text-current animate-pulse" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full animate-ping" />
+                      </div>
+                    ) : bookingStatus === 'completed' ? (
+                      <CheckCircle className="h-8 w-8 text-current animate-pulse" />
+                    ) : bookingStatus === 'pending_payment' ? (
+                      <div className="relative">
+                        <CreditCard className="h-8 w-8 text-current animate-bounce" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-hotline-pink rounded-full animate-ping" />
+                      </div>
+                    ) : (
+                      <div className="h-6 w-6 rounded-full bg-current animate-pulse" />
+                    )}
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h2 className="text-xl sm:text-2xl font-bold text-transparent bg-gradient-to-r from-current to-current/80 bg-clip-text mb-2">
+                      {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1).replace('_', ' ')}
+                    </h2>
+                    <p className="text-sm sm:text-base font-medium text-current/90 mb-3">
+                      {statusMessages[bookingStatus as keyof typeof statusMessages] || "Processing your booking..."}
                     </p>
+                    
+                    {bookingStatus === 'queued' && queuePosition && (
+                      <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 sm:px-4 py-2">
+                        <span className="text-xs sm:text-sm font-bold text-current">Queue position:</span>
+                        <span className="text-base sm:text-lg font-black text-current">#{queuePosition}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {isIOSDevice && (
+                    <Button
+                      size="sm"
+                      onClick={handleManualRefresh}
+                      className="bg-white/10 border-current/30 text-current hover:bg-white/20 backdrop-blur-sm pulse-glow"
+                      disabled={loading}
+                    >
+                      <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
                   )}
                 </div>
-                {isIOSDevice && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleManualRefresh}
-                    className="bg-white bg-opacity-20 border-current text-current hover:bg-white hover:bg-opacity-30"
-                    disabled={loading}
-                  >
-                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                  </Button>
-                )}
               </div>
-            </div>
             
             {/* iOS Safari specific refresh prompt */}
             {needsRefresh && isIOSDevice && (
@@ -691,144 +757,185 @@ export default function WaitingPage() {
             )}
             
             {shouldShowPaymentButton && bitcoinPayment && paymentStatus !== 'expired' && (
-              <div className="bg-gradient-to-br from-hotline/10 via-black/20 to-hotline-pink/10 border-2 border-hotline/30 rounded-xl p-6 mt-6 shadow-2xl backdrop-blur-sm">
-                <div className="flex flex-col space-y-6">
-                  {/* Header */}
-                  <div className="text-center">
-                    <div className="flex items-center justify-center space-x-3 mb-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-hotline to-hotline-pink rounded-full flex items-center justify-center shadow-lg">
-                        <CreditCard className="w-6 h-6 text-white" />
+              <div className="relative overflow-hidden rounded-2xl">
+                {/* Futuristic payment container with animated border */}
+                <div className="pulse-glow bg-gradient-to-r from-hotline to-hotline-pink p-0.5 rounded-2xl">
+                  <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-4 sm:p-6 lg:p-8 border border-hotline/20">
+                    {/* Header with floating elements */}
+                    <div className="text-center mb-6 sm:mb-8">
+                      <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4 mb-4 sm:mb-6">
+                        <div className="relative">
+                          <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gradient-to-r from-hotline to-hotline-pink rounded-full flex items-center justify-center shadow-2xl pulse-glow">
+                            <CreditCard className="w-5 sm:w-7 h-5 sm:h-7 text-white animate-pulse" />
+                          </div>
+                          <div className="absolute -top-1 -right-1 w-3 sm:w-4 h-3 sm:h-4 bg-hotline-pink rounded-full animate-ping" />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl sm:text-3xl font-bold text-transparent bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text mb-1">
+                            Bitcoin Payment Required
+                          </h3>
+                          <p className="text-gray-300 text-xs sm:text-sm">Send payment to activate your AI connection</p>
+                        </div>
                       </div>
-                      <h3 className="text-2xl font-bold text-white bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-transparent">
-                        Bitcoin Payment Required
-                      </h3>
-                    </div>
-                    
-                    {/* Payment Timer - Prominent */}
-                    {paymentTimer > 0 && (
-                      <div className="bg-gradient-to-r from-hotline to-hotline-pink text-white px-4 py-2 rounded-full inline-flex items-center space-x-2 mb-4">
-                        <Clock className="h-5 w-5" />
-                        <span className="font-bold text-lg">
-                          {formatTimer(paymentTimer)}
-                        </span>
-                        <span className="text-sm">remaining</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Amount Display - Large and Prominent with Copy */}
-                  <div className="bg-secondary/30 rounded-xl p-6 border-2 border-hotline/10 shadow-inner">
-                    <div className="text-center space-y-4">
-                      <p className="text-sm text-muted-foreground uppercase tracking-wide">Send Exactly</p>
                       
-                      {/* Bitcoin Amount with Copy Button */}
-                      <div className="flex items-center justify-center space-x-3">
-                        <p className="text-3xl font-black text-hotline-pink font-mono">
-                          {bitcoinPayment.bitcoin_amount.toFixed(8)} BTC
+                      {/* Futuristic countdown timer */}
+                      {paymentTimer > 0 && (
+                        <div className="relative inline-block">
+                          <div className="bg-gradient-to-r from-hotline to-hotline-pink text-white px-4 sm:px-6 lg:px-8 py-3 sm:py-4 rounded-2xl flex items-center space-x-2 sm:space-x-4 pulse-glow shadow-2xl">
+                            <Clock className="h-5 sm:h-6 w-5 sm:w-6 animate-spin" />
+                            <div className="text-center">
+                              <div className="text-2xl sm:text-3xl font-black font-mono tracking-wider">
+                                {formatTimer(paymentTimer)}
+                              </div>
+                              <div className="text-xs opacity-80 tracking-wide">TIME REMAINING</div>
+                            </div>
+                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-r from-hotline to-hotline-pink rounded-2xl blur-lg opacity-30 -z-10" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Holographic Bitcoin amount card */}
+                    <div className="relative mb-6 sm:mb-8">
+                      <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-4 sm:p-6 lg:p-8 border border-hotline/40 hover:border-hotline/60 transition-all duration-300">
+                        <div className="text-center space-y-4 sm:space-y-6">
+                          <div className="flex items-center justify-center space-x-2 mb-4">
+                            <div className="w-2 h-2 bg-hotline-pink rounded-full animate-pulse" />
+                            <p className="text-xs sm:text-sm text-gray-300 uppercase tracking-widest font-bold">SEND EXACTLY</p>
+                            <div className="w-2 h-2 bg-hotline rounded-full animate-pulse" />
+                          </div>
+                          
+                          {/* Main Bitcoin amount with futuristic styling */}
+                          <div className="relative group">
+                            <div className="text-center">
+                              <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-transparent bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text font-mono mb-2">
+                                {bitcoinPayment.bitcoin_amount.toFixed(8)}
+                              </div>
+                              <div className="text-xl sm:text-2xl font-bold text-transparent bg-gradient-to-r from-hotline-pink to-hotline bg-clip-text">
+                                BTC
+                              </div>
+                            </div>
+                            
+                            {/* Copy button with glow effect */}
+                            <div className="flex justify-center mt-4 sm:mt-6">
+                              <Button
+                                onClick={copyAmount}
+                                disabled={amountCopied}
+                                className={`
+                                  ${amountCopied 
+                                    ? 'bg-green-600 hover:bg-green-700 border-green-600' 
+                                    : 'bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90'
+                                  } text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl shadow-2xl pulse-glow transition-all duration-300 min-w-[140px] sm:min-w-[160px]
+                                `}
+                              >
+                                {amountCopied ? (
+                                  <>
+                                    <CheckCircle className="h-5 w-5 mr-2" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-5 w-5 mr-2" />
+                                    Copy Amount
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="pt-4 border-t border-hotline/20">
+                            <p className="text-2xl font-bold text-gray-200">
+                              ${bitcoinPayment.usd_amount.toFixed(2)} <span className="text-gray-400 text-lg">USD</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Glow effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-hotline/20 to-hotline-pink/20 rounded-2xl blur-xl opacity-50 -z-10" />
+                    </div>
+                  
+                    {/* Futuristic Bitcoin address card */}
+                    <div className="relative">
+                      <div className="bg-black/80 backdrop-blur-xl rounded-2xl p-8 border border-hotline/40 hover:border-hotline/60 transition-all duration-300">
+                        <div className="text-center mb-6">
+                          <div className="flex items-center justify-center space-x-2 mb-4">
+                            <div className="w-2 h-2 bg-hotline rounded-full animate-pulse" />
+                            <p className="text-transparent bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text text-lg font-bold uppercase tracking-widest">
+                              Bitcoin Address
+                            </p>
+                            <div className="w-2 h-2 bg-hotline-pink rounded-full animate-pulse" />
+                          </div>
+                          <p className="text-gray-300 text-sm">Your unique payment destination</p>
+                        </div>
+                        
+                        {/* Address display with holographic effect */}
+                        <div className="relative mb-6">
+                          <div className="bg-gradient-to-br from-black/90 to-gray-900/90 rounded-xl p-6 border border-hotline/30 backdrop-blur-sm">
+                            <code className="block text-gray-100 font-mono text-base md:text-lg break-all leading-relaxed text-center font-medium">
+                              {bitcoinPayment.bitcoin_address}
+                            </code>
+                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-br from-hotline/10 to-hotline-pink/10 rounded-xl blur-lg opacity-70 -z-10" />
+                        </div>
+                        
+                        {/* Enhanced copy button */}
+                        <div className="flex justify-center">
+                          <Button
+                            onClick={copyAddress}
+                            disabled={addressCopied}
+                            className={`
+                              ${addressCopied 
+                                ? 'bg-green-600 hover:bg-green-700 border-green-600' 
+                                : 'bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90'
+                              } text-white px-10 py-4 text-lg font-bold rounded-xl shadow-2xl pulse-glow transition-all duration-300 min-w-[180px]
+                            `}
+                          >
+                            {addressCopied ? (
+                              <>
+                                <CheckCircle className="h-6 w-6 mr-2 animate-pulse" />
+                                Address Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-6 w-6 mr-2" />
+                                Copy Address
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        
+                        {/* Copy all button */}
+                        <div className="flex justify-center mt-4">
+                          <Button
+                            onClick={() => {
+                              const walletString = `Bitcoin Address: ${bitcoinPayment.bitcoin_address}\nAmount: ${bitcoinPayment.bitcoin_amount.toFixed(8)} BTC`;
+                              navigator.clipboard.writeText(walletString);
+                              toast({
+                                title: "Payment Details Copied",
+                                description: "Both address and amount copied for easy wallet pasting",
+                                variant: "default",
+                              });
+                            }}
+                            variant="outline"
+                            className="bg-black/30 border-hotline/40 text-hotline hover:bg-hotline/10 hover:border-hotline/60 px-6 py-2 text-sm font-medium rounded-lg transition-all duration-300"
+                          >
+                            📋 Copy All Details
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-hotline/20 to-hotline-pink/20 rounded-2xl blur-xl opacity-40 -z-10" />
+                    </div>
+                  
+                  {/* Streamlined Important Notice */}
+                  <div className="bg-black/30 backdrop-blur-sm border border-hotline/30 rounded-xl p-4 hover:border-hotline/50 transition-all duration-300">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <AlertCircle className="h-5 w-5 text-hotline animate-pulse" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-200">
+                          <strong className="text-transparent bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text">Important:</strong> Send the exact Bitcoin amount shown above. Your call starts automatically once payment confirms (10-30 minutes).
                         </p>
-                        <Button
-                          size="sm"
-                          onClick={copyAmount}
-                          disabled={amountCopied}
-                          className={`
-                            ${amountCopied 
-                              ? 'bg-green-600 hover:bg-green-700 text-white' 
-                              : 'bg-hotline/20 hover:bg-hotline/30 text-hotline border-hotline/50'
-                            } transition-all duration-200 px-3 py-2
-                          `}
-                          variant="outline"
-                        >
-                          {amountCopied ? (
-                            <>
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-4 w-4 mr-1" />
-                              Copy
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                      
-                      <p className="text-xl font-bold text-foreground">
-                        ${bitcoinPayment.usd_amount.toFixed(2)} USD
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Bitcoin Address - Prominent and Copyable */}
-                  <div className="bg-gradient-to-r from-gray-900/95 to-black/95 rounded-xl p-6 border-2 border-hotline/30 backdrop-blur-sm shadow-2xl">
-                    <div className="text-center mb-4">
-                      <p className="text-hotline text-base font-semibold mb-2">Bitcoin Address</p>
-                      <p className="text-gray-300 text-sm">Copy this address to send your Bitcoin payment</p>
-                    </div>
-                    
-                    <div className="bg-black/60 rounded-lg p-4 border-2 border-hotline/20 mb-4">
-                      <code className="block text-white font-mono text-base break-all leading-relaxed text-center">
-                        {bitcoinPayment.bitcoin_address}
-                      </code>
-                    </div>
-                    
-                    <div className="flex justify-center">
-                      <Button
-                        onClick={copyAddress}
-                        disabled={addressCopied}
-                        className={`
-                          ${addressCopied 
-                            ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
-                            : 'bg-hotline hover:bg-hotline-dark text-white border-hotline'
-                          } transition-all duration-200 px-6 py-3 text-base font-semibold min-w-[140px]
-                        `}
-                      >
-                        {addressCopied ? (
-                          <>
-                            <CheckCircle className="h-5 w-5 mr-2" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-5 w-5 mr-2" />
-                            Copy Address
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Helpful Payment Instructions */}
-                  <div className="space-y-4">
-                    {/* How to Pay Instructions */}
-                    <div className="bg-hotline/10 border-2 border-hotline/20 p-5 rounded-xl">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-hotline rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">💡</span>
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="text-hotline font-semibold mb-2">How to Send Payment</h4>
-                          <div className="space-y-2 text-sm text-muted-foreground">
-                            <p><strong>Option 1:</strong> Copy the Bitcoin address and amount, then paste them in your Bitcoin wallet app</p>
-                            <p><strong>Option 2:</strong> Use your wallet's "Send" feature and manually enter the address and exact amount</p>
-                            <p><strong>Popular wallets:</strong> Coinbase, Cash App, Electrum, BlueWallet, Exodus</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Important Notice */}
-                    <div className="bg-secondary/50 border-l-4 border-hotline p-4 rounded-r-lg">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <AlertCircle className="h-5 w-5 text-hotline" />
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-muted-foreground">
-                            <strong>Important:</strong> Send the exact Bitcoin amount shown above. Your call will be initiated automatically once payment is confirmed on the blockchain (usually within 10-30 minutes).
-                          </p>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -869,19 +976,67 @@ export default function WaitingPage() {
             )}
             
             
-            {paymentStatus === 'completed' && (
-              <div className="rounded-xl bg-hotline/10 border-2 border-hotline/30 p-6 mt-4 shadow-lg">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <CheckCircle className="h-8 w-8 text-hotline" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-hotline-dark">Payment Complete ✨</p>
-                    <p className="text-muted-foreground font-medium mt-1">
-                      Your Bitcoin payment has been confirmed on the blockchain. Your call will be initiated shortly!
+            {(paymentStatus === 'completed' || paymentStatus === 'processing') && (
+              <div className="relative overflow-hidden rounded-2xl">
+                <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-8 border border-hotline/40">
+                  <div className="text-center mb-6">
+                    <div className="flex items-center justify-center space-x-3 mb-4">
+                      <CheckCircle className="h-8 w-8 text-hotline animate-pulse" />
+                      <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-hotline to-hotline-pink bg-clip-text">
+                        {paymentStatus === 'completed' ? 'Payment Complete ✨' : 'Payment Detected 🔍'}
+                      </h3>
+                    </div>
+                    <p className="text-gray-200 text-base">
+                      {paymentStatus === 'completed' 
+                        ? 'Your Bitcoin payment has been confirmed on the blockchain. Your call will be initiated shortly!'
+                        : 'Your Bitcoin payment has been detected and is being confirmed on the blockchain.'
+                      }
                     </p>
                   </div>
+                  
+                  {/* Blockchain confirmation progress */}
+                  <div className="bg-black/60 rounded-xl p-6 border border-hotline/30">
+                    <div className="text-center mb-4">
+                      <p className="text-sm text-gray-300 uppercase tracking-widest font-bold">Blockchain Confirmations</p>
+                    </div>
+                    
+                    <div className="flex items-center justify-center space-x-2 mb-4">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="relative">
+                          <div className={`w-4 h-4 rounded-full transition-all duration-500 ${
+                            paymentStatus === 'completed' 
+                              ? 'bg-gradient-to-r from-hotline to-hotline-pink animate-pulse shadow-lg' 
+                              : i < 2 
+                                ? 'bg-gradient-to-r from-hotline to-hotline-pink animate-pulse shadow-lg'
+                                : 'bg-gray-600'
+                          }`} />
+                          {(paymentStatus === 'completed' || i < 2) && (
+                            <div className="absolute inset-0 bg-gradient-to-r from-hotline to-hotline-pink rounded-full blur-sm opacity-60 animate-ping" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400">
+                        {paymentStatus === 'completed' 
+                          ? '6/6 confirmations - Ready to connect!' 
+                          : '2/6 confirmations - Securing transaction...'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {paymentStatus === 'completed' && (
+                    <div className="mt-6 text-center">
+                      <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-hotline to-hotline-pink text-white px-6 py-3 rounded-full pulse-glow">
+                        <div className="w-2 h-2 bg-white rounded-full animate-ping" />
+                        <span className="font-bold">Initiating your AI connection...</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-hotline/20 to-hotline-pink/20 rounded-2xl blur-xl opacity-40 -z-10" />
               </div>
             )}
             
@@ -896,21 +1051,72 @@ export default function WaitingPage() {
                     <p className="text-muted-foreground font-medium mt-1">
                       {paymentError}
                     </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        {/* Return to Home Button */}
-        <div className="flex justify-center mt-8">
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Floating Action Buttons */}
+        <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 flex flex-col gap-3 z-20">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleManualRefresh}
+                className="w-12 sm:w-14 h-12 sm:h-14 rounded-full bg-gradient-to-r from-hotline to-hotline-pink pulse-glow shadow-2xl hover:scale-110 transition-all duration-300"
+                disabled={loading}
+              >
+                <RefreshCw className={`h-5 sm:h-6 w-5 sm:w-6 text-white ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <span>Refresh Status (R)</span>
+            </TooltipContent>
+          </Tooltip>
+          
+          {bitcoinPayment && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => {
+                    const walletString = `${bitcoinPayment.bitcoin_amount.toFixed(8)} BTC to ${bitcoinPayment.bitcoin_address}`;
+                    navigator.clipboard.writeText(walletString);
+                    toast({
+                      title: "Quick Copy Complete",
+                      description: "Payment details ready for your wallet",
+                    });
+                  }}
+                  className="w-12 sm:w-14 h-12 sm:h-14 rounded-full bg-black/40 backdrop-blur-sm border border-hotline/40 text-hotline hover:bg-hotline/20 hover:border-hotline/60 hover:scale-110 transition-all duration-300"
+                >
+                  <Copy className="h-5 sm:h-6 w-5 sm:w-6" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <span>Quick Copy (Space)</span>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+        
+        {/* Hero-style Return Home Button */}
+        <div className="flex justify-center mt-8 sm:mt-12 pb-4">
           <Link to="/">
-            <Button className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white px-6 py-4 text-lg rounded-md flex items-center gap-3 transition-all duration-300 shadow-2xl backdrop-blur-sm border border-hotline/20">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7m-9 2v6m0 0h4m-4 0a2 2 0 01-2-2v-4a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2z" /></svg>
-              Return Home
+            <Button className="bg-gradient-to-r from-hotline to-hotline-pink hover:opacity-90 text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg rounded-xl flex items-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl pulse-glow">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 sm:h-6 w-5 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7m-9 2v6m0 0h4m-4 0a2 2 0 01-2-2v-4a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2z" />
+              </svg>
+              <span className="hidden sm:inline">Return to SweetyOnCall</span>
+              <span className="sm:hidden">Home</span>
             </Button>
           </Link>
         </div>
+      </div>
+      
+      {/* Keyboard shortcuts handler */}
+      <div className="sr-only">
+        Press R to refresh, Space to quick copy
       </div>
     </div>
   );
