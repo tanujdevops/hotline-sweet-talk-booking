@@ -550,22 +550,20 @@ export default function WaitingPage() {
             )}
             
             {shouldShowPaymentButton && bitcoinPayment && (
-              <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-xl p-6 mt-6 shadow-lg">
+              <div className="bg-card border-2 border-hotline/20 rounded-xl p-6 mt-6 shadow-lg">
                 <div className="flex flex-col space-y-6">
                   {/* Header */}
                   <div className="text-center">
                     <div className="flex items-center justify-center space-x-2 mb-2">
-                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm5.293 6.707l-6 6a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 10.586l5.293-5.293a1 1 0 111.414 1.414z"/>
-                        </svg>
+                      <div className="w-8 h-8 bg-hotline rounded-full flex items-center justify-center">
+                        <CreditCard className="w-5 h-5 text-white" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900">Bitcoin Payment Required</h3>
+                      <h3 className="text-xl font-bold text-foreground">Bitcoin Payment Required</h3>
                     </div>
                     
                     {/* Payment Timer - Prominent */}
                     {paymentTimer > 0 && (
-                      <div className="bg-orange-500 text-white px-4 py-2 rounded-full inline-flex items-center space-x-2 mb-4">
+                      <div className="bg-gradient-to-r from-hotline to-hotline-pink text-white px-4 py-2 rounded-full inline-flex items-center space-x-2 mb-4">
                         <Clock className="h-5 w-5" />
                         <span className="font-bold text-lg">
                           {formatTimer(paymentTimer)}
@@ -576,13 +574,13 @@ export default function WaitingPage() {
                   </div>
 
                   {/* Amount Display - Large and Prominent */}
-                  <div className="bg-white rounded-xl p-6 border-2 border-orange-100 shadow-inner">
+                  <div className="bg-secondary/30 rounded-xl p-6 border-2 border-hotline/10 shadow-inner">
                     <div className="text-center space-y-2">
-                      <p className="text-sm text-gray-600 uppercase tracking-wide">Send Exactly</p>
-                      <p className="text-3xl font-black text-orange-600 font-mono">
+                      <p className="text-sm text-muted-foreground uppercase tracking-wide">Send Exactly</p>
+                      <p className="text-3xl font-black text-hotline-pink font-mono">
                         {bitcoinPayment.bitcoin_amount.toFixed(8)} BTC
                       </p>
-                      <p className="text-xl font-bold text-gray-900">
+                      <p className="text-xl font-bold text-foreground">
                         ${bitcoinPayment.usd_amount.toFixed(2)} USD
                       </p>
                     </div>
@@ -590,7 +588,7 @@ export default function WaitingPage() {
                   
                   {/* QR Code - Large and Centered */}
                   <div className="flex justify-center">
-                    <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-100">
+                    <div className="bg-card p-6 rounded-2xl shadow-lg border-2 border-hotline/10">
                       {qrCodeDataUrl ? (
                         <img 
                           src={qrCodeDataUrl} 
@@ -598,11 +596,11 @@ export default function WaitingPage() {
                           className="w-64 h-64 rounded-lg"
                         />
                       ) : (
-                        <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <QrCode className="h-16 w-16 text-gray-400" />
+                        <div className="w-64 h-64 bg-secondary/30 rounded-lg flex items-center justify-center">
+                          <QrCode className="h-16 w-16 text-hotline" />
                         </div>
                       )}
-                      <p className="text-center text-sm text-gray-600 mt-3 font-medium">
+                      <p className="text-center text-sm text-muted-foreground mt-3 font-medium">
                         Scan with your Bitcoin wallet
                       </p>
                     </div>
@@ -622,7 +620,7 @@ export default function WaitingPage() {
                         className={`
                           ${addressCopied 
                             ? 'bg-green-600 hover:bg-green-700 text-white' 
-                            : 'bg-orange-500 hover:bg-orange-600 text-white'
+                            : 'bg-hotline hover:bg-hotline-dark text-white'
                           } transition-all duration-200 px-4 py-2
                         `}
                       >
@@ -642,13 +640,13 @@ export default function WaitingPage() {
                   </div>
                   
                   {/* Important Notice */}
-                  <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                  <div className="bg-secondary/50 border-l-4 border-hotline p-4 rounded-r-lg">
                     <div className="flex">
                       <div className="flex-shrink-0">
-                        <AlertCircle className="h-5 w-5 text-yellow-500" />
+                        <AlertCircle className="h-5 w-5 text-hotline" />
                       </div>
                       <div className="ml-3">
-                        <p className="text-sm text-yellow-800">
+                        <p className="text-sm text-muted-foreground">
                           <strong>Important:</strong> Send the exact Bitcoin amount shown above. Your call will be initiated automatically once the payment is confirmed on the blockchain (usually within 10-30 minutes).
                         </p>
                       </div>
