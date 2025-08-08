@@ -442,14 +442,16 @@ export default function WaitingPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Booking ID:</span>
-                <span className="font-mono font-medium">{bookingId.slice(0, 6)}</span>
+                <span className="font-mono font-medium">{bookingId?.slice(0, 6) || 'Loading...'}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => {
-                        navigator.clipboard.writeText(bookingId.slice(0, 6));
+                        if (bookingId) {
+                          navigator.clipboard.writeText(bookingId.slice(0, 6));
+                        }
                       }}
                       aria-label="Copy Booking ID"
                     >

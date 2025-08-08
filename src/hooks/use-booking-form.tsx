@@ -423,8 +423,13 @@ export function useBookingForm() {
               booking_id: data.booking_id
             }));
             
-            // Navigate to waiting page with payment details
-            navigate(`/waiting/${bookingId.substring(0, 6)}`);
+            // Navigate to waiting page with payment details and full booking ID
+            navigate(`/waiting/${bookingId.substring(0, 6)}`, {
+              state: { 
+                bookingId: bookingId,
+                planKey: dbPlanKey 
+              }
+            });
           } else {
             console.error("No Bitcoin address returned");
             toast({
