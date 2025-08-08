@@ -688,14 +688,14 @@ export default function WaitingPage() {
             )}
             
             {paymentStatus === 'completed' && (
-              <div className="rounded-xl bg-green-100 border-2 border-green-300 p-6 mt-4 shadow-lg">
+              <div className="rounded-xl bg-hotline/10 border-2 border-hotline/30 p-6 mt-4 shadow-lg">
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
-                    <CheckCircle className="h-8 w-8 text-green-600" />
+                    <CheckCircle className="h-8 w-8 text-hotline" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-green-800">Payment Complete ✨</p>
-                    <p className="text-green-700 font-medium mt-1">
+                    <p className="text-lg font-bold text-hotline-dark">Payment Complete ✨</p>
+                    <p className="text-muted-foreground font-medium mt-1">
                       Your Bitcoin payment has been confirmed on the blockchain. Your call will be initiated shortly!
                     </p>
                   </div>
@@ -704,14 +704,14 @@ export default function WaitingPage() {
             )}
             
             {paymentError && (
-              <div className="rounded-xl bg-red-100 border-2 border-red-300 p-6 mt-4 shadow-lg">
+              <div className="rounded-xl bg-destructive/10 border-2 border-destructive/30 p-6 mt-4 shadow-lg">
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
-                    <AlertCircle className="h-8 w-8 text-red-600" />
+                    <AlertCircle className="h-8 w-8 text-destructive" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-red-800">Payment Issue</p>
-                    <p className="text-red-700 font-medium mt-1">
+                    <p className="text-lg font-bold text-destructive">Payment Issue</p>
+                    <p className="text-muted-foreground font-medium mt-1">
                       {paymentError}
                     </p>
                   </div>
