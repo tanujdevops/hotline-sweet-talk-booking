@@ -103,11 +103,13 @@ serve(async (req) => {
       throw new Error("No Bitcoin address returned from Blockonomics");
     }
 
-    // Update booking with Blockonomics details
+    // Update booking with Blockonomics details and creation timestamp
+    const createdAt = new Date();
     const updateData = {
       blockonomics_address: bitcoinAddress,
       bitcoin_amount: btcAmount,
       bitcoin_price_usd: btcPriceUsd,
+      blockonomics_created_at: createdAt.toISOString(),
       payment_status: 'pending'
     };
 

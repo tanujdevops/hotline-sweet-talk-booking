@@ -68,32 +68,92 @@ export default function WaitingPage() {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [addressCopied, setAddressCopied] = useState(false);
   
-  // Load Bitcoin payment data from sessionStorage
+  // Load Bitcoin payment data and get real timer from API
   useEffect(() => {
-    const storedPayment = sessionStorage.getItem('blockonomics_payment');
-    if (storedPayment) {
-      try {
-        const paymentData = JSON.parse(storedPayment);
-        setBitcoinPayment(paymentData);
-        
-        // Generate branded QR code with SweetyOnCall colors
-        // Using hotline purple foreground on white background for optimal scanning
-        const qrSize = 256;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(paymentData.qr_code_data)}&color=9b87f5&bgcolor=ffffff`;
-        setQrCodeDataUrl(qrUrl);
-        
-        // Set up payment timer
-        const windowMinutes = paymentData.payment_window_minutes || 20;
-        setPaymentTimer(windowMinutes * 60); // Convert to seconds
-        
-        console.log("Loaded Bitcoin payment data:", paymentData);
-      } catch (error) {
-        console.error("Failed to parse Bitcoin payment data:", error);
-      }
-    }
-  }, []);
+    const loadPaymentData = async () => {
+      if (!bookingId) return;
 
-  // Payment timer countdown
+      // First, try to load from sessionStorage for immediate display
+      const storedPayment = sessionStorage.getItem('blockonomics_payment');
+      if (storedPayment) {
+        try {
+          const paymentData = JSON.parse(storedPayment);
+          setBitcoinPayment(paymentData);
+          
+          // Generate branded QR code
+          const qrSize = 256;
+          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(paymentData.qr_code_data)}&color=9b87f5&bgcolor=ffffff`;
+          setQrCodeDataUrl(qrUrl);
+          
+          console.log("Loaded Bitcoin payment data from sessionStorage:", paymentData);
+        } catch (error) {
+          console.error("Failed to parse Bitcoin payment data:", error);
+        }
+      }
+
+      // Get real timer status from API
+      try {
+        const supabase = await getSupabase();
+        const { data: statusData, error: statusError } = await supabase.functions.invoke('get-blockonomics-status', {
+          body: { bookingId }
+        });
+
+        if (statusError) {
+          console.error('Error getting Blockonomics status:', statusError);
+          return;
+        }
+
+        if (statusData?.success) {
+          console.log("Blockonomics status:", statusData);
+          
+          // Set the real remaining time from server
+          setPaymentTimer(statusData.remainingSeconds);
+          
+          // If no sessionStorage data but we have payment details, populate it
+          if (!storedPayment && statusData.bitcoinAddress) {
+            const paymentData = {
+              bitcoin_address: statusData.bitcoinAddress,
+              bitcoin_amount: statusData.bitcoinAmount,
+              usd_amount: statusData.bitcoinAmount * statusData.bitcoin_price_usd || 0, // Approximate
+              qr_code_data: `bitcoin:${statusData.bitcoinAddress}?amount=${statusData.bitcoinAmount}&label=SweetyOnCall%20Payment`,
+              payment_window_minutes: statusData.paymentWindow
+            };
+            
+            setBitcoinPayment(paymentData);
+            
+            // Generate QR code
+            const qrSize = 256;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(paymentData.qr_code_data)}&color=9b87f5&bgcolor=ffffff`;
+            setQrCodeDataUrl(qrUrl);
+          }
+          
+          // Handle expired payments
+          if (statusData.expired && statusData.remainingSeconds === 0) {
+            toast({
+              title: "Payment Window Expired",
+              description: "This payment window has expired. Please create a new payment.",
+              variant: "destructive",
+            });
+          }
+          
+          // Handle received payments
+          if (statusData.paymentReceived) {
+            setPaymentStatus('completed');
+            toast({
+              title: "Payment Received!",
+              description: "Your Bitcoin payment has been detected. Waiting for confirmations...",
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching payment status:', error);
+      }
+    };
+
+    loadPaymentData();
+  }, [bookingId, toast]);
+
+  // Payment timer countdown with periodic server sync
   useEffect(() => {
     if (paymentTimer > 0) {
       const interval = setInterval(() => {
@@ -109,6 +169,53 @@ export default function WaitingPage() {
       return () => clearInterval(interval);
     }
   }, [paymentTimer]);
+
+  // Periodically sync timer with server to handle clock drift
+  useEffect(() => {
+    if (!bookingId || !bitcoinPayment) return;
+
+    const syncTimer = async () => {
+      try {
+        const supabase = await getSupabase();
+        const { data: statusData, error: statusError } = await supabase.functions.invoke('get-blockonomics-status', {
+          body: { bookingId }
+        });
+
+        if (statusError) {
+          console.error('Error syncing timer:', statusError);
+          return;
+        }
+
+        if (statusData?.success) {
+          // Update timer if there's significant drift (>5 seconds)
+          const currentTimer = paymentTimer;
+          const serverTimer = statusData.remainingSeconds;
+          const drift = Math.abs(currentTimer - serverTimer);
+          
+          if (drift > 5) {
+            console.log(`Timer drift detected: ${drift}s, syncing to server time`);
+            setPaymentTimer(serverTimer);
+          }
+
+          // Handle received payments
+          if (statusData.paymentReceived && paymentStatus !== 'completed') {
+            setPaymentStatus('completed');
+            toast({
+              title: "Payment Received!",
+              description: "Your Bitcoin payment has been detected. Processing...",
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error syncing timer:', error);
+      }
+    };
+
+    // Sync every 30 seconds
+    const syncInterval = setInterval(syncTimer, 30000);
+    
+    return () => clearInterval(syncInterval);
+  }, [bookingId, bitcoinPayment, paymentTimer, paymentStatus, toast]);
 
   // Copy address to clipboard function
   const copyAddress = async () => {
