@@ -410,21 +410,23 @@ export default function WaitingPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'calling':
+        return 'bg-green-100 text-green-800 border-green-300';
       case 'completed':
-        return 'bg-green-500/20 text-green-500';
+        return 'bg-green-100 text-green-800 border-green-300';
       case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'initiating':
-        return 'bg-yellow-500/20 text-yellow-500';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'queued':
-        return 'bg-blue-500/20 text-blue-500';
+        return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'pending_payment':
-        return 'bg-purple-500/20 text-purple-500';
+        return 'bg-orange-100 text-orange-800 border-orange-300';
       case 'cancelled':
       case 'failed':
       case 'payment_failed':
-        return 'bg-red-500/20 text-red-500';
+        return 'bg-red-100 text-red-800 border-red-300';
       default:
-        return 'bg-gray-500/20 text-gray-500';
+        return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -472,40 +474,46 @@ export default function WaitingPage() {
               </div>
             )}
             
-            <div className={`rounded-lg p-4 mt-6 ${getStatusColor(bookingStatus)}`}>
-              <div className="flex items-center gap-2">
+            <div className={`rounded-xl border-2 p-6 mt-6 shadow-lg ${getStatusColor(bookingStatus)}`}>
+              <div className="flex items-center gap-3">
                 {loading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-6 w-6 animate-spin text-current" />
                 ) : bookingStatus === 'calling' ? (
-                  <PhoneCall className="h-5 w-5 animate-pulse" />
+                  <PhoneCall className="h-6 w-6 animate-pulse text-current" />
                 ) : bookingStatus === 'queued' ? (
-                  <Clock className="h-5 w-5" />
+                  <Clock className="h-6 w-6 text-current" />
+                ) : bookingStatus === 'completed' ? (
+                  <CheckCircle className="h-6 w-6 text-current" />
+                ) : bookingStatus === 'pending_payment' ? (
+                  <CreditCard className="h-6 w-6 text-current" />
                 ) : (
-                  <div className="h-3 w-3 rounded-full bg-current" />
+                  <div className="h-4 w-4 rounded-full bg-current" />
                 )}
-                <p className="text-sm font-medium">
-                  Status: {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1).replace('_', ' ')}
-                </p>
+                <div className="flex-1">
+                  <p className="text-lg font-bold text-current">
+                    {bookingStatus?.charAt(0).toUpperCase() + bookingStatus?.slice(1).replace('_', ' ')}
+                  </p>
+                  <p className="text-sm font-medium text-current opacity-80 mt-1">
+                    {statusMessages[bookingStatus as keyof typeof statusMessages] || "Processing your booking..."}
+                  </p>
+                  {bookingStatus === 'queued' && queuePosition && (
+                    <p className="text-sm font-bold text-current mt-2 bg-white bg-opacity-20 rounded-full px-3 py-1 inline-block">
+                      Queue position: #{queuePosition}
+                    </p>
+                  )}
+                </div>
                 {isIOSDevice && (
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     onClick={handleManualRefresh}
-                    className="ml-auto"
+                    className="bg-white bg-opacity-20 border-current text-current hover:bg-white hover:bg-opacity-30"
                     disabled={loading}
                   >
                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                   </Button>
                 )}
               </div>
-              <p className="text-sm mt-2">
-                {statusMessages[bookingStatus as keyof typeof statusMessages] || "Processing your booking..."}
-              </p>
-              {bookingStatus === 'queued' && queuePosition && (
-                <p className="text-sm mt-1 font-medium">
-                  Queue position: #{queuePosition}
-                </p>
-              )}
             </div>
             
             {/* iOS Safari specific refresh prompt */}
@@ -542,81 +550,109 @@ export default function WaitingPage() {
             )}
             
             {shouldShowPaymentButton && bitcoinPayment && (
-              <div className="rounded-lg bg-orange-500/10 border border-orange-200 p-4 mt-6">
-                <div className="flex flex-col space-y-4">
-                  <div className="flex items-start space-x-2">
-                    <CreditCard className="h-5 w-5 text-orange-500 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Bitcoin Payment Required</p>
-                      <p className="text-sm text-muted-foreground">
-                        Send exactly <strong>{bitcoinPayment.bitcoin_amount.toFixed(8)} BTC</strong> (${bitcoinPayment.usd_amount.toFixed(2)}) to complete your booking.
+              <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-xl p-6 mt-6 shadow-lg">
+                <div className="flex flex-col space-y-6">
+                  {/* Header */}
+                  <div className="text-center">
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm5.293 6.707l-6 6a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 10.586l5.293-5.293a1 1 0 111.414 1.414z"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900">Bitcoin Payment Required</h3>
+                    </div>
+                    
+                    {/* Payment Timer - Prominent */}
+                    {paymentTimer > 0 && (
+                      <div className="bg-orange-500 text-white px-4 py-2 rounded-full inline-flex items-center space-x-2 mb-4">
+                        <Clock className="h-5 w-5" />
+                        <span className="font-bold text-lg">
+                          {formatTimer(paymentTimer)}
+                        </span>
+                        <span className="text-sm">remaining</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Amount Display - Large and Prominent */}
+                  <div className="bg-white rounded-xl p-6 border-2 border-orange-100 shadow-inner">
+                    <div className="text-center space-y-2">
+                      <p className="text-sm text-gray-600 uppercase tracking-wide">Send Exactly</p>
+                      <p className="text-3xl font-black text-orange-600 font-mono">
+                        {bitcoinPayment.bitcoin_amount.toFixed(8)} BTC
+                      </p>
+                      <p className="text-xl font-bold text-gray-900">
+                        ${bitcoinPayment.usd_amount.toFixed(2)} USD
                       </p>
                     </div>
                   </div>
                   
-                  {/* Payment Timer */}
-                  {paymentTimer > 0 && (
-                    <div className="flex items-center space-x-2 text-orange-600">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-sm font-medium">
-                        Payment window: {formatTimer(paymentTimer)}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* QR Code */}
+                  {/* QR Code - Large and Centered */}
                   <div className="flex justify-center">
-                    <div className="bg-white p-4 rounded-lg border">
+                    <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-100">
                       {qrCodeDataUrl ? (
                         <img 
                           src={qrCodeDataUrl} 
                           alt="Bitcoin Payment QR Code"
-                          className="w-48 h-48"
+                          className="w-64 h-64 rounded-lg"
                         />
                       ) : (
-                        <div className="w-48 h-48 bg-gray-100 flex items-center justify-center">
-                          <QrCode className="h-8 w-8 text-gray-400" />
+                        <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <QrCode className="h-16 w-16 text-gray-400" />
                         </div>
                       )}
+                      <p className="text-center text-sm text-gray-600 mt-3 font-medium">
+                        Scan with your Bitcoin wallet
+                      </p>
                     </div>
                   </div>
                   
-                  {/* Bitcoin Address */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-600 mb-1">Bitcoin Address:</p>
-                    <div className="flex items-center space-x-2">
-                      <code className="flex-1 text-xs bg-white px-2 py-1 rounded border break-all">
+                  {/* Bitcoin Address - Clean and Copyable */}
+                  <div className="bg-gray-900 rounded-xl p-4">
+                    <p className="text-white text-sm font-medium mb-2 text-center">Bitcoin Address</p>
+                    <div className="flex items-center space-x-3 bg-gray-800 rounded-lg p-3">
+                      <code className="flex-1 text-white font-mono text-sm break-all bg-transparent">
                         {bitcoinPayment.bitcoin_address}
                       </code>
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={copyAddress}
                         disabled={addressCopied}
+                        className={`
+                          ${addressCopied 
+                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                            : 'bg-orange-500 hover:bg-orange-600 text-white'
+                          } transition-all duration-200 px-4 py-2
+                        `}
                       >
                         {addressCopied ? (
-                          <CheckCircle className="h-4 w-4" />
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Copied!
+                          </>
                         ) : (
-                          <Copy className="h-4 w-4" />
+                          <>
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy
+                          </>
                         )}
                       </Button>
                     </div>
                   </div>
                   
-                  {/* Amount Details */}
-                  <div className="text-xs text-gray-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Amount (USD):</span>
-                      <span>${bitcoinPayment.usd_amount.toFixed(2)}</span>
+                  {/* Important Notice */}
+                  <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <AlertCircle className="h-5 w-5 text-yellow-500" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Important:</strong> Send the exact Bitcoin amount shown above. Your call will be initiated automatically once the payment is confirmed on the blockchain (usually within 10-30 minutes).
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Amount (BTC):</span>
-                      <span>{bitcoinPayment.bitcoin_amount.toFixed(8)} BTC</span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
-                    <strong>Important:</strong> Send the exact Bitcoin amount shown above. Your call will be initiated automatically once the payment is confirmed on the blockchain.
                   </div>
                 </div>
               </div>
@@ -654,13 +690,15 @@ export default function WaitingPage() {
             )}
             
             {paymentStatus === 'completed' && (
-              <div className="rounded-lg bg-green-500/10 border border-green-200 p-4 mt-2">
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+              <div className="rounded-xl bg-green-100 border-2 border-green-300 p-6 mt-4 shadow-lg">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium text-green-700">Payment Complete</p>
-                    <p className="text-sm text-green-600">
-                      Your payment has been processed successfully.
+                    <p className="text-lg font-bold text-green-800">Payment Complete ✨</p>
+                    <p className="text-green-700 font-medium mt-1">
+                      Your Bitcoin payment has been confirmed on the blockchain. Your call will be initiated shortly!
                     </p>
                   </div>
                 </div>
@@ -668,12 +706,14 @@ export default function WaitingPage() {
             )}
             
             {paymentError && (
-              <div className="rounded-lg bg-rose-500/10 border border-rose-200 p-4 mt-2">
-                <div className="flex items-start space-x-2">
-                  <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5" />
+              <div className="rounded-xl bg-red-100 border-2 border-red-300 p-6 mt-4 shadow-lg">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-8 w-8 text-red-600" />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium text-rose-700">Payment Error</p>
-                    <p className="text-sm text-rose-600">
+                    <p className="text-lg font-bold text-red-800">Payment Issue</p>
+                    <p className="text-red-700 font-medium mt-1">
                       {paymentError}
                     </p>
                   </div>
